@@ -1,0 +1,45 @@
+{
+  "jev": {
+    "keyFile": "~/.jevellan-harness/secrets/jev.key",
+    "model": "jev-latest",
+    "timeoutMs": 4000
+  },
+  "providers": [
+    {
+      "name": "claude-main",
+      "kind": "claude-subscription",
+      "tokenFile": "~/.jevellan-harness/secrets/claude-main.token",
+      "ceilingPct": 90,
+      "models": [
+        { "id": "claude-opus-5-5", "label": "Opus", "efforts": ["low", "medium", "high", "xhigh", "max"] },
+        { "id": "claude-fable-5-1", "label": "Fable", "efforts": ["low", "medium", "high", "xhigh", "max"] },
+        { "id": "claude-sonnet-5-5", "label": "Sonnet", "efforts": ["low", "medium", "high"] },
+        { "id": "claude-haiku-5-5", "label": "Haiku", "efforts": ["low", "medium"] }
+      ]
+    },
+    {
+      "name": "claude-second",
+      "kind": "claude-subscription",
+      "tokenFile": "~/.jevellan-harness/secrets/claude-second.token",
+      "ceilingPct": 90,
+      "models": "same as claude-main"
+    },
+    {
+      "name": "codex",
+      "kind": "codex-subscription",
+      "ceilingPct": 90,
+      "models": [
+        { "id": "gpt-6-astra", "label": "GPT", "efforts": ["low", "medium", "high", "xhigh"] }
+      ]
+    },
+    {
+      "name": "glm",
+      "kind": "claude-endpoint",
+      "baseUrl": "https://api.z.ai/api/anthropic",
+      "keyFile": "~/.jevellan-harness/secrets/glm.key",
+      "models": [
+        { "id": "glm-5.3", "label": "GLM", "efforts": ["low", "medium", "high"] }
+      ]
+    }
+  ]
+}

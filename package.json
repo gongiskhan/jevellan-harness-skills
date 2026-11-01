@@ -1,0 +1,18 @@
+{
+  "name": "jevellan-harness-skills",
+  "version": "0.0.0",
+  "description": "Skills that turn a Claude Code session into a coordinator that distributes work to other sessions, with placement by Jev and a durable ledger.",
+  "private": true,
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/gongiskhan/jevellan-harness-skills.git"
+  },
+  "type": "module",
+  "engines": {
+    "node": ">=22.13"
+  },
+  "scripts": {
+    "test": "node --test --test-concurrency=4 \"test/**/*.test.mjs\""
+  }
+}
