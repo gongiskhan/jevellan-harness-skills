@@ -109,3 +109,19 @@ model, which would all run inside every worker that shares the owner's config fo
   22:46:14Z created and removed `.git/index.lock`, which moved the mtime of that `.git` folder; no file in it
   changed (`index` still 19:19:29Z). No git command runs there again, and H12 compares file contents and refs, not
   the folder's own mtime.
+
+## 2026-11-01 The worker's shell does not see the OAuth token (phase 1)
+
+A `claude -p` worker started with `CLAUDE_CODE_OAUTH_TOKEN` in its environment and `bypassPermissions`, asked to run
+`printenv CLAUDE_CODE_OAUTH_TOKEN | wc -c`, answered `0`: Claude Code 2.1.316 keeps that variable out of the Bash
+tool's environment. A worker running `env` therefore cannot print the token into its transcript or the runtime log.
+(`CLAUDE_CODE_SUBPROCESS_ENV_SCRUB`, which needs bubblewrap, is a separate and stronger mode that also confines the
+subprocess; it is not used, `bwrap` is installed at `/usr/bin/bwrap`.)
+
+## 2026-11-01 Hook timings (phase 1, unit suites)
+
+Over 46 runs each with a small ledger: Stop hook median about 60 ms (max 83), PostToolUse about 58 ms (max 69),
+SessionStart about 58 ms (max 69), all inside the 300 ms budget; most of it is Node's start-up. 10 processes
+appending 50 lines each through the library took about 295 ms with `seq` contiguous; through the command line about
+4.3 s. A lock left by a dead pid was taken over in 0.7 ms. `ledger.mjs wait` returned between 43 and 438 ms after
+the report line was written.

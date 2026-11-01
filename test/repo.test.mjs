@@ -24,6 +24,6 @@ test('no attribution in commit messages', () => {
 
 test('no em dash in tracked text files', () => {
   const files = git('ls-files').split('\n').filter((f) => /\.(md|mjs|json)$/.test(f));
-  const offenders = files.filter((f) => readFileSync(path.join(root, f), 'utf8').includes('—'));
+  const offenders = files.filter((f) => readFileSync(path.join(root, f), 'utf8').includes('\u2014'));
   assert.deepEqual(offenders, []);
 });
