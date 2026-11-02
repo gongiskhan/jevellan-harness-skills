@@ -35,6 +35,18 @@ function ledger(args) {
   }
 }
 
+// What a running step is doing now: the runtime skill's status script (its last log line, redacted by the runtime).
+function liveLine(taskId, step, runtime) {
+  const skill = runtime === 'codex' ? 'jevellan-runtime-codex' : 'jevellan-runtime-claude';
+  const r = spawnSync(process.execPath, [path.join(REPO, 'skills', skill, 'scripts', 'status.mjs'), '--task', taskId, '--step', String(step), '--json'], { cwd: PROJECT, encoding: 'utf8', env: { ...process.env, JH_PROJECT: PROJECT }, timeout: 15000 });
+  try {
+    const j = JSON.parse(r.stdout);
+    return `${j.state}${j.lastLine ? `: ${j.lastLine}` : ''}`;
+  } catch {
+    return null;
+  }
+}
+
 const esc = (value) => String(value ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 const time = (iso) => (iso ? esc(String(iso).replace('T', ' ').replace(/\.\d+Z$/, 'Z')) : '');
 const STATE_CLASS = { 'waiting-owner': 'warn', running: 'run', landing: 'run', failed: 'bad', queued: 'idle', done: 'good', stopped: 'idle' };
@@ -130,7 +142,11 @@ function taskPage(id) {
   const lines = events.filter((e) => LINE[e.kind] && e.kind !== 'step.report').map((e) => `<tr><td class="muted">${time(e.t)}</td><td>${e.step ? `s${esc(e.step)}` : ''}</td><td>${LINE[e.kind](e.data ?? {})}</td></tr>`).join('');
   const reports = events.filter((e) => e.kind === 'step.report').map(reportCard).join('') || '<p class="muted">No report yet.</p>';
   const shots = evidenceOf(t).map((file) => `<a href="/file?path=${encodeURIComponent(file)}"><img src="/file?path=${encodeURIComponent(file)}" alt="${esc(path.basename(file))}" loading="lazy"><div class="muted">${esc(path.basename(file))}</div></a>`).join('');
-  const steps = (t.steps ?? []).map((s) => `<tr><td>${esc(s.ordinal)}</td><td>${esc(s.duty)}</td><td>${stateBadge(s.state)}</td><td>${esc([s.model, s.effort, s.provider && `via ${s.provider}`].filter(Boolean).join(' '))}</td></tr>`).join('');
+  const runtimeOf = (ordinal) => [...events].reverse().find((e) => e.kind === 'step.started' && e.step === ordinal)?.data?.runtime;
+  const steps = (t.steps ?? []).map((s) => {
+    const live = s.state === 'running' ? liveLine(id, s.ordinal, runtimeOf(s.ordinal)) : null;
+    return `<tr><td>${esc(s.ordinal)}</td><td>${esc(s.duty)}</td><td>${stateBadge(s.state)}</td><td>${esc([s.model, s.effort, s.provider && `via ${s.provider}`].filter(Boolean).join(' '))}${live ? `<div class="muted">now: ${esc(live)}</div>` : ''}</td></tr>`;
+  }).join('');
   const brief = t.text ? `<details class="card"><summary>Brief</summary><pre>${esc(t.text)}</pre></details>` : '';
   return page(`${id} ${t.title}`, `<p><a href="/">All tasks</a></p><h1>${esc(id)} ${esc(t.title)}</h1><div>${stateBadge(t.state)}<span class="muted">${esc(t.kind)}${t.duty ? ` ${esc(t.duty)}` : ''}${t.reason ? `: ${esc(t.reason)}` : ''}</span></div>${brief}
 <h2>Steps</h2>${steps ? `<div class="card"><table>${steps}</table></div>` : '<p class="muted">No steps yet.</p>'}
