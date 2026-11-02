@@ -15,7 +15,7 @@ Times are UTC.
 | H8 Needs-decision | passed | 8/8 | 149 s | 2026-11-02T11:30:13.336Z |
 | H9 Restart | passed | 8/8 | 135 s | 2026-11-02T11:32:28.599Z |
 | H10 Codex | passed | 9/9 | 37 s | 2026-11-02T11:33:05.685Z |
-| H11 Trigger evals | failed | 19/21 | 0 s | 2026-11-02T13:43:42.948Z |
+| H11 Trigger evals | blocked: jevellan-placement (role-phrase runs 24/27 below 98%) after the improvement rounds section 10 allows; every failing run of the placement skill is a role-missing run with the placement skill removed (its cases 9 and 10), where neither its description nor its body is loaded, so no round on it could change them; one of the three answers named the missing skill in words the scorer does not match; the coordinator now meets every threshold; see docs/decisions.md H-030 and H-040 | 20/21 | 0 s | 2026-11-02T13:45:38.058Z |
 | H12 No leaks, no runtime | passed | 13/13 | 1 s | 2026-11-02T13:43:44.361Z |
 
 ## H1 Install
@@ -283,7 +283,7 @@ Notes:
 
 ## H11 Trigger evals
 
-Status: failed. Started 2026-11-02T13:43:42.699Z, 0 s.
+Status: blocked: jevellan-placement (role-phrase runs 24/27 below 98%) after the improvement rounds section 10 allows; every failing run of the placement skill is a role-missing run with the placement skill removed (its cases 9 and 10), where neither its description nor its body is loaded, so no round on it could change them; one of the three answers named the missing skill in words the scorer does not match; the coordinator now meets every threshold; see docs/decisions.md H-030 and H-040. Started 2026-11-02T13:45:37.846Z, 0 s.
 
 - PASS the run covered every skill: 17 skills in the run, 17 in the package
 - PASS every skill has at least five positive and five negative cases
@@ -305,7 +305,7 @@ Status: failed. Started 2026-11-02T13:43:42.699Z, 0 s.
 - PASS jevellan-workflow-bug meets the thresholds: positives 24/24, negatives fired 0/18, role phrase 21/21, role missing 3/3
 - PASS jevellan-workflow-feature meets the thresholds: positives 24/24, negatives fired 0/18, role phrase 21/21, role missing 3/3
 - PASS the role lint passes: notice: scripts/lib/cli.mjs differs between the 3 skills that keep a copy: version 1 in jevellan-ledger; version 2 in jevellan-runtime-claude, jevellan-runtime-codex notice: scripts/lib/env.mjs differs between the 2 skills that keep a copy: version 1 in jevellan-runtime-claude; version 2 in jevellan-runtime-codex check-roles: 17 skills, 20 event kinds, clean
-- FAIL evals/RESULTS.md is committed and matches the run: tracked: evals/RESULTS.md, evals/results.json; uncommitted: M evals/RESULTS.md  M evals/results.json
+- PASS evals/RESULTS.md is committed and matches the run: tracked: evals/RESULTS.md, evals/results.json; uncommitted: none
 
 Notes:
 - run of 2026-11-02T13:25:26Z: model claude-sonnet-5-5, effort low, 3 runs per case, provider claude-second, Claude Code 2.1.316; thresholds {"positive":0.9,"falsePositive":0.05,"rolePhrase":0.98}
@@ -366,18 +366,18 @@ Before: 155b2d5, measured 2026-11-02T09:30:34.790Z; after: 155b2d5 + uncommitted
 
 | Journey | v0.1.0 (records at that tag) | 0.2.0 (this run) |
 |---|---|---|
-| H1 Install | passed, 23/23, 3 s (one-turn session in the sandbox 3 s) | passed, 23/23, 5 s (one-turn session in the sandbox 4 s) |
+| H1 Install | passed, 23/23, 3 s (one-turn session in the sandbox 3 s) | passed, 23/23, 4 s (one-turn session in the sandbox 3 s) |
 | H2 Ledger | passed, 24/24, 7 s (10 x 50 appends through ledger.mjs 5 s; wait after the report line 0 s) | passed, 24/24, 7 s (10 x 50 appends through ledger.mjs 5 s; wait after the report line 0 s) |
 | H3 Hooks | passed, 14/14, 25 s (worker without a report 6 s; worker with a valid report 6 s; worker with an invalid report 10 s) | passed, 14/14, 44 s (worker without a report 16 s; worker with a valid report 6 s; worker with an invalid report 19 s) |
-| H4 Placement | passed, 17/17, 3 s (placement 1 s) | passed, 17/17, 6 s (placement 1 s) |
-| H5 Worker | passed, 26/26, 323 s (placement 0 s; start to report 278 s; resume to report 31 s; stop 1 s) | passed, 26/26, 57 s (placement 1 s; start to report 29 s; resume to report 13 s; stop 1 s) |
-| H6 The chain | passed, 13/13, 175 s (request to landing 155 s) | passed, 13/13, 149 s (request to landing 125 s) |
+| H4 Placement | passed, 17/17, 3 s (placement 1 s) | passed, 17/17, 6 s (placement 2 s) |
+| H5 Worker | passed, 26/26, 323 s (placement 0 s; start to report 278 s; resume to report 31 s; stop 1 s) | passed, 26/26, 450 s (placement 1 s; start to report 371 s; resume to report 63 s; stop 1 s) |
+| H6 The chain | passed, 13/13, 175 s (request to landing 155 s) | passed, 13/13, 125 s (request to landing 105 s) |
 | H7 Three in parallel | passed, 10/10, 672 s (wall time, request to the last landing 377 s; task T67AEHV (README: how to run) 66 s; task TJTX078 (Unit test for the HTML escape helper) 96 s; task TKZD411 (Customers page: empty-state message) 371 s) | passed, 10/10, 522 s (wall time, request to the last landing 502 s; task TYJMZ7Y (README: how to run) 87 s; task TW3G0NB (Unit test for an untested pure function ) 101 s; task TYDWRBY (Customers page empty-state message with ) 407 s) |
 | H8 Needs-decision | passed, 8/8, 155 s (request to done report 110 s) | passed, 8/8, 149 s (request to done report 115 s) |
 | H9 Restart | passed, 8/8, 164 s (request to landing, across the restart 144 s) | passed, 8/8, 135 s (request to landing, across the restart 115 s) |
 | H10 Codex | passed, 9/9, 63 s (task to report 63 s) | passed, 9/9, 37 s (task to report 37 s) |
-| H11 Trigger evals | blocked, 19/21, 0 s | blocked, 19/21, 0 s |
-| H12 No leaks, no runtime | passed, 13/13, 2 s | passed, 13/13, 4 s |
+| H11 Trigger evals | blocked, 19/21, 0 s | blocked, 20/21, 0 s |
+| H12 No leaks, no runtime | passed, 13/13, 2 s | passed, 13/13, 1 s |
 
 ### What changed in the journeys for this run, and why
 
@@ -388,3 +388,4 @@ Before: 155b2d5, measured 2026-11-02T09:30:34.790Z; after: 155b2d5 + uncommitted
 - H11: the trigger evals were not run again (docs/decisions.md H-035: no description changed; the Interface sections are appended last and left out of the placement and landing policies). The journey reads the recorded measurement and stays blocked by section 10's round limit, with the reason recorded for the first run (JH_H11_BLOCK_REASON).
 - H12: the check for the OAuth variable's assignment was named after the very string it searches for, so its own record (H12.json, RESULTS.md) matched it on any second run; it now has a name without the literal, and the first run after the rename still saw the old record, the second passed 13/13. JH_RUN_START (09:22:51Z, the time of this task's message) dates the checks on the other run's folders, which the other run may legitimately have changed since the first build run.
 - After the plugin change (hook claims, --plugin-dir for workers, the worktree link only for an installation in the project), H1, H3, H4, H5 and H6 ran again on the final 0.2.0 code: H1, H4, H5 and H6 passed (H6 run 8 on a fresh clone). H3's valid-report worker wrote its file with a shell printf instead of the Write tool, so the two checks that assume a Write event failed; no tool call lacked its hook. The prompt now names the Write tool, and the no-file-contents check reads only this run's task (the sandbox's append-only ledger keeps the earlier run's printf line). Then 14/14.
+- 0.2.1 (the placement skill renamed from jevellan-router to jevellan-placement, H-040): H1, H4, H5, H6 (run 9, on a fresh clone) and H12 ran again and passed; installing 0.2.1 on the sandbox moved its jevellan-router to .jevellan/archive/skills/jevellan-router-20261102T132226882Z. H5's first try waited on a step that never started: Jev placed it on Codex and the Claude runtime refused; H5 now has the owner place the step on Claude when Jev chooses another kind (it is the Claude runtime's journey), and the second try passed 26/26 (Jev chose Claude). H11 reads the trigger evals merged with the placement and coordinator skills measured again (three runs per case): the coordinator meets every threshold (positives 22/24, role phrase 18/18), the placement skill stays below on role-phrase runs (24/27, was 22/27 as jevellan-router; role-missing 3/6, was 1/6), every failing run a role-missing run with the placement skill removed. Records of earlier runs (H7, H8, the other fifteen skills' evals) name the skill as it was then.
