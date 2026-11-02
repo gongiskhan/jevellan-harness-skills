@@ -1,0 +1,70 @@
+[
+  {
+    "query": "Your step is duty converse. Use the duty skill for converse now and follow it.\n\n# Your step\n\nTask T7CV2N: Reply to the owner\nKind: single. Step 1 of 1: converse.\n\nThe owner wrote: \"honestly not sure the CSV export is worth it, thoughts?\" Reply as the coordinator, one turn.\n\nStart the step now. End by writing .jevellan/report.json.",
+    "should_trigger": true,
+    "role_phrase": true
+  },
+  {
+    "query": "Your step is duty converse. Use the duty skill for converse now and follow it.\n\nStart the step now. End by writing .jevellan/report.json.",
+    "should_trigger": true,
+    "role_phrase": true
+  },
+  {
+    "query": "Your step is duty converse. Use the duty skill for converse now and follow it.\n\n# Your step\n\nTask T3RT8Y: Reply to the owner\nKind: single. Step 1 of 1: converse.\n\nThe owner wrote: \"rough week, two releases slipped. are we overcommitting?\" Reply in one turn.\n\nStart the step now. End by writing .jevellan/report.json.",
+    "should_trigger": true,
+    "role_phrase": true
+  },
+  {
+    "query": "This step's duty is converse: one conversation turn with the owner in the coordinator's voice. The owner said: \"I think we should drop the tests for now to ship faster.\" Use the duty skill for converse now.",
+    "should_trigger": true,
+    "role_phrase": true
+  },
+  {
+    "query": "Worker step for task T3RT8Y, duty converse: the owner asked \"what would you do differently on this project if you started over?\". Hold that one conversation turn as the converse duty describes and end with the report.",
+    "should_trigger": true
+  },
+  {
+    "query": "Task step with duty converse. The owner's message, in Portuguese: \"achas que devíamos mudar para TypeScript?\" Reply in their language, as the converse duty says.",
+    "should_trigger": true,
+    "held_out": true
+  },
+  {
+    "query": "Your step is duty converse. Use the duty skill for converse now and follow it.\n\n# Your step\n\nTask T9QD4F: Reply to the owner\nKind: single. Step 1 of 1: converse.\n\nThe owner wrote: \"you got the landing wrong yesterday, again.\" Reply in one turn.\n\nStart the step now. End by writing .jevellan/report.json.",
+    "should_trigger": true,
+    "role_phrase": true,
+    "held_out": true
+  },
+  {
+    "query": "Your step is duty answer. Use the duty skill for answer now and follow it.\n\n# Your step\n\nTask T2QA9M: What is an idempotency key?\nKind: single. Step 1 of 1: answer.\n\nThe owner asks: what is an idempotency key in a payments API, and why would the invoice webhooks need one? A few sentences.\n\nStart the step now. End by writing .jevellan/report.json.",
+    "should_trigger": false,
+    "role_phrase": true
+  },
+  {
+    "query": "Your step is duty plan. Use the duty skill for plan now and follow it.\n\n# Your step\n\nTask T4RT6M: Dark mode toggle on the settings page\nKind: feature. Step 1 of 4: plan.\n\nAdd a dark mode toggle to the settings page that remembers the choice per user.\n\nStep instructions:\nWrite plan.md at the worktree root: the change in one paragraph, the files to touch, the tests to add or change, open questions as needs-decision only if a choice is the owner's.\n\nStart the step now. End by writing .jevellan/report.json.",
+    "should_trigger": false,
+    "role_phrase": true
+  },
+  {
+    "query": "Your step is duty investigate. Use the duty skill for investigate now and follow it.\n\n# Your step\n\nTask T4QK7W: How are sessions stored?\nKind: single. Step 1 of 1: investigate.\n\nExplain how the app stores user sessions (cookie, memory or database) and what happens to them when the server restarts, with file references.\n\nStart the step now. End by writing .jevellan/report.json.",
+    "should_trigger": false,
+    "role_phrase": true
+  },
+  {
+    "query": "hey, long day here. how's it going?",
+    "should_trigger": false
+  },
+  {
+    "query": "Tabs or spaces for a new Python project? Give me your honest opinion.",
+    "should_trigger": false
+  },
+  {
+    "query": "This project's work runs through the coordinator skill: use it for any request to do, plan, track or report on work here.\nOpen work in this project's ledger: none.\n\nhonestly not sure the CSV export is worth it, thoughts?",
+    "should_trigger": false,
+    "role_phrase": true
+  },
+  {
+    "query": "I'm feeling stuck on my side project and I don't know whether to keep going. Can we talk it through?",
+    "should_trigger": false,
+    "held_out": true
+  }
+]

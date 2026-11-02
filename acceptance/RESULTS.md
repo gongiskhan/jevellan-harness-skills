@@ -5,7 +5,7 @@ Times are UTC.
 
 | Journey | Status | Checks | Elapsed | Finished |
 |---|---|---|---|---|
-| H1 Install | failed | 21/22 | 3 s | 2026-11-01T23:45:24.276Z |
+| H1 Install | passed | 23/23 | 3 s | 2026-11-02T02:23:39.591Z |
 | H2 Ledger | passed | 24/24 | 6 s | 2026-11-01T23:46:02.475Z |
 | H3 Hooks | passed | 14/14 | 23 s | 2026-11-01T23:47:07.319Z |
 | H4 Placement | passed | 17/17 | 1 s | 2026-11-02T00:30:00.468Z |
@@ -18,17 +18,18 @@ Times are UTC.
 
 ## H1 Install
 
-Status: failed. Started 2026-11-01T23:45:20.903Z, 3 s.
+Status: passed. Started 2026-11-02T02:23:36.111Z, 3 s.
 
-Timings: one-turn session in the sandbox 2998 ms.
+Timings: one-turn session in the sandbox 2897 ms.
 
 - PASS install on a fresh clone exits 0
 - PASS project.json detects testCommand npm test: npm test
 - PASS project.json detects devCommand npm start (no dev script): npm start
-- PASS project.json defaultBranch main, pushAfterLanding false, retentionDays 3: {"name":"clone","defaultBranch":"main","testCommand":"npm test","devCommand":"npm start","riskyPaths":[],"checks":[],"pushAfterLanding":false,"retentionDays":3}
+- PASS project.json detects setupCommand npm ci (package-lock.json): npm ci
+- PASS project.json defaultBranch main, pushAfterLanding false, retentionDays 3: {"name":"clone","defaultBranch":"main","testCommand":"npm test","devCommand":"npm start","setupCommand":"npm ci","riskyPaths":[],"checks":[],"pushAfterLanding":false,"retentionDays":3}
 - PASS install on the sandbox exits 0
-- PASS every package skill is installed (2): jevellan-ledger, jevellan-runtime-claude
-- FAIL the package has 17 skills: 2 skill folders with SKILL.md
+- PASS every package skill is installed (17): jevellan-coordinator, jevellan-duty-answer, jevellan-duty-automate, jevellan-duty-converse, jevellan-duty-document, jevellan-duty-implement, jevellan-duty-investigate, jevellan-duty-plan, jevellan-duty-verify, jevellan-git, jevellan-ledger, jevellan-router, jevellan-runtime-claude, jevellan-runtime-codex, jevellan-workflow-automation, jevellan-workflow-bug, jevellan-workflow-feature
+- PASS the package has 17 skills: 17 skill folders with SKILL.md
 - PASS installed skills are byte copies of the package
 - PASS Stop hook installed with the absolute Node 22 path: [{"command":"\"/home/ggomes/.nvm/versions/node/v22.23.2/bin/node\" \"/home/ggomes/jevellan-projects/jevellan-harness-sandbox/.claude/skills/jevellan-ledger/hooks/stop.mjs\""}]
 - PASS PostToolUse hook with matcher Bash|Edit|Write|MultiEdit|NotebookEdit
@@ -44,9 +45,6 @@ Timings: one-turn session in the sandbox 2998 ms.
 - PASS the installed SessionStart hook ran in a real session and printed the coordinator line: This project's work runs through the coordinator skill: use it for any request to do, plan, track or report on work here.
 - PASS the installed Stop hook ran in that session
 - PASS the sandbox git status stays clean, nothing of .claude or .jevellan tracked: status "" tracked ""
-
-Notes:
-- set the sandbox testCommand to "TZ=UTC SANDBOX_DATA_DIR=.sandbox-data npm test" (H-002)
 
 ## H2 Ledger
 

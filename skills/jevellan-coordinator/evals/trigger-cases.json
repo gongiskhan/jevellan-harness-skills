@@ -1,0 +1,72 @@
+[
+  {
+    "query": "This project's work runs through the coordinator skill: use it for any request to do, plan, track or report on work here.\nOpen work in this project's ledger: none.\n\nAdd a How to run section to the README listing the commands in package.json.",
+    "should_trigger": true,
+    "role_phrase": true
+  },
+  {
+    "query": "This project's work runs through the coordinator skill: use it for any request to do, plan, track or report on work here.\nOpen work in this project's ledger: none.\n\nThe customers page shows an empty table when there are no customers. Make it show a friendly empty-state message instead, with a test.",
+    "should_trigger": true,
+    "role_phrase": true
+  },
+  {
+    "query": "This project's work runs through the coordinator skill: use it for any request to do, plan, track or report on work here.\nOpen work in this project's ledger:\n- T8QW2N \"CSV export on the invoices page\" (feature) running: step 2 implement on claude-sonnet-5-5\n\nWhere are we with the CSV export? Anything waiting on me?",
+    "should_trigger": true,
+    "role_phrase": true
+  },
+  {
+    "query": "Three tasks in parallel: (1) README how to run; (2) a unit test for one untested pure function in src; (3) an empty-state message on the customers page when there are no customers, with a test.",
+    "should_trigger": true
+  },
+  {
+    "query": "Give me a status report on the work in this project: what is running, what landed today, what failed and what is waiting for my answer.",
+    "should_trigger": true
+  },
+  {
+    "query": "I want CSV export on the invoices page. Turn it into a task for this project, run it through planning, implementation and verification, and tell me when I can try it.",
+    "should_trigger": true
+  },
+  {
+    "query": "Corre isto como tarefa do projeto: a lista de faturas precisa de paginação, 25 por página, com testes. Avisa-me quando estiver pronto para experimentar.",
+    "should_trigger": true,
+    "held_out": true
+  },
+  {
+    "query": "This project's work runs through the coordinator skill: use it for any request to do, plan, track or report on work here.\nOpen work in this project's ledger:\n- T5HB7C \"Invoice dates shown in the wrong timezone\" (bug) waiting on the owner: \"Use UTC or the browser's timezone?\" 1) UTC 2) Browser timezone\n\nGo with option 2, and after that queue a task to add a dark mode toggle to the settings page.",
+    "should_trigger": true,
+    "role_phrase": true,
+    "held_out": true
+  },
+  {
+    "query": "Your step is duty implement. Use the duty skill for implement now and follow it.\n\n# Your step\n\nTask T8QW2N: CSV export on the invoices page\nKind: feature. Step 2 of 4: implement.\n\nAdd an Export CSV button to the invoices page that downloads the rows currently shown, with the same filters.\n\nStep instructions:\nFollow plan.md when it exists. Commit on the task branch. Add or change the tests that cover what you changed, and run only those.\n\nPlan: plan.md in the worktree root.\n\nStart the step now. End by writing .jevellan/report.json.",
+    "should_trigger": false,
+    "role_phrase": true
+  },
+  {
+    "query": "Task T3K9QZ \"README: how to run\" is created (kind single, duty document) and has no worktree yet. Use the git skill to make the worktree.",
+    "should_trigger": false,
+    "role_phrase": true,
+    "context_skill": "jevellan-coordinator"
+  },
+  {
+    "query": "In my Go side project (~/code/rss-reader, not this repository), how do I make an http.Client give up after 5 seconds? Just the code.",
+    "should_trigger": false
+  },
+  {
+    "query": "What does Array.prototype.flatMap do differently from map followed by flat? Two sentences.",
+    "should_trigger": false
+  },
+  {
+    "query": "Explain the difference between git rebase and git merge for a junior developer, in two short paragraphs.",
+    "should_trigger": false
+  },
+  {
+    "query": "A question about a Python data pipeline I keep in another repository: why does pandas read_csv give me an object column for dates instead of datetime64, and how do I fix it?",
+    "should_trigger": false
+  },
+  {
+    "query": "Write a bash one-liner that lists the 10 largest files under the current folder, with human-readable sizes.",
+    "should_trigger": false,
+    "held_out": true
+  }
+]

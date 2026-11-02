@@ -1,0 +1,70 @@
+[
+  {
+    "query": "Your step is duty implement. Use the duty skill for implement now and follow it.\n\n# Your step\n\nTask T8QW2N: CSV export on the invoices page\nKind: feature. Step 2 of 4: implement.\n\nAdd an Export CSV button to the invoices page that downloads the rows currently shown, with the same filters.\n\nStep instructions:\nFollow plan.md when it exists. Commit on the task branch. Add or change the tests that cover what you changed, and run only those.\n\nPlan: plan.md in the worktree root.\n\nStart the step now. End by writing .jevellan/report.json.",
+    "should_trigger": true,
+    "role_phrase": true
+  },
+  {
+    "query": "Your step is duty implement. Use the duty skill for implement now and follow it.\n\nStart the step now. End by writing .jevellan/report.json.",
+    "should_trigger": true,
+    "role_phrase": true
+  },
+  {
+    "query": "Your step is duty implement. Use the duty skill for implement now and follow it.\n\n# Your step\n\nTask T5HB7C: Invoice dates shown in the wrong timezone\nKind: bug. Step 1 of 2: implement.\n\nInvoice dates on the invoices page show one day early for owners in UTC-5. They should show the date the invoice was issued, in the owner's timezone.\n\nStep instructions:\nReproduce first with a failing test when the bug is testable, then fix. Commit on the task branch.\n\nThis step runs again after a failure. What failed:\nverify: test/dates.test.js expected \"2026-10-31\" but got \"2026-10-30\" for an invoice issued at 23:30 UTC.\n\nStart the step now. End by writing .jevellan/report.json.",
+    "should_trigger": true,
+    "role_phrase": true
+  },
+  {
+    "query": "This worker session runs step 1 of single task T3K9QZ, whose duty is implement: change the code on the task branch, commit, and report. Use the duty skill for implement now.",
+    "should_trigger": true,
+    "role_phrase": true
+  },
+  {
+    "query": "You're the worker on step 2 of feature task T4RT6M (dark mode toggle), and your duty is implement. Do it the way the implement duty says and end by writing .jevellan/report.json.",
+    "should_trigger": true
+  },
+  {
+    "query": "Task step with duty implement: add the empty-state message to the customers page as plan.md describes, commit it on this branch, then write the report file.",
+    "should_trigger": true,
+    "held_out": true
+  },
+  {
+    "query": "Your step is duty implement. Use the duty skill for implement now and follow it.\n\n# Your step\n\nTask T7EM2Q: Empty state on the customers page\nKind: feature. Step 2 of 3: implement.\n\nWhen there are no customers, the customers page should show \"No customers yet\" and a button to add the first one, instead of an empty table.\n\nStep instructions:\nFollow plan.md when it exists. Commit on the task branch. Add or change the tests that cover what you changed, and run only those.\n\nStart the step now. End by writing .jevellan/report.json.",
+    "should_trigger": true,
+    "role_phrase": true,
+    "held_out": true
+  },
+  {
+    "query": "Your step is duty plan. Use the duty skill for plan now and follow it.\n\n# Your step\n\nTask T4RT6M: Dark mode toggle on the settings page\nKind: feature. Step 1 of 4: plan.\n\nAdd a dark mode toggle to the settings page that remembers the choice per user.\n\nStep instructions:\nWrite plan.md at the worktree root: the change in one paragraph, the files to touch, the tests to add or change, open questions as needs-decision only if a choice is the owner's.\n\nStart the step now. End by writing .jevellan/report.json.",
+    "should_trigger": false,
+    "role_phrase": true
+  },
+  {
+    "query": "Your step is duty verify. Use the duty skill for verify now and follow it.\n\n# Your step\n\nTask T8QW2N: CSV export on the invoices page\nKind: feature. Step 3 of 4: verify.\n\nAdd an Export CSV button to the invoices page that downloads the rows currently shown, with the same filters.\n\nStep instructions:\nRun the project's test command, then the browser journeys for every screen the change touches, at desktop and phone widths, saving screenshots to .jevellan/evidence/. Report testsRun with passed true only when everything you ran passed.\n\nProject settings (.jevellan/project.json):\n- testCommand: TZ=UTC SANDBOX_DATA_DIR=.sandbox-data npm test\n- devCommand: npm start\n\nStart the step now. End by writing .jevellan/report.json.",
+    "should_trigger": false,
+    "role_phrase": true
+  },
+  {
+    "query": "Your step is duty document. Use the duty skill for document now and follow it.\n\n# Your step\n\nTask T8QW2N: CSV export on the invoices page\nKind: feature. Step 4 of 4: document.\n\nAdd an Export CSV button to the invoices page that downloads the rows currently shown, with the same filters.\n\nStep instructions:\nUpdate the docs the project keeps (README, docs/, changelog if the project uses one) for what changed. Nothing else.\n\nEarlier steps of this task:\n- implement (done): Added an Export CSV button to the invoices page; the file has the visible rows and columns.\n- verify (done): npm test passed (36 tests); export checked at desktop and phone widths.\n\nStart the step now. End by writing .jevellan/report.json.",
+    "should_trigger": false,
+    "role_phrase": true
+  },
+  {
+    "query": "Implement a debounce function in TypeScript with a cancel method, and show a usage example.",
+    "should_trigger": false
+  },
+  {
+    "query": "Fix this off-by-one: function sum(xs){let t=0;for(let i=0;i<=xs.length;i++)t+=xs[i];return t}",
+    "should_trigger": false
+  },
+  {
+    "query": "This project's work runs through the coordinator skill: use it for any request to do, plan, track or report on work here.\nOpen work in this project's ledger: none.\n\nImplement the empty-state message on the customers page.",
+    "should_trigger": false,
+    "role_phrase": true
+  },
+  {
+    "query": "Add a --verbose flag to my Python argparse script that turns on debug logging. The parser is: parser = argparse.ArgumentParser(); parser.add_argument('path')",
+    "should_trigger": false,
+    "held_out": true
+  }
+]

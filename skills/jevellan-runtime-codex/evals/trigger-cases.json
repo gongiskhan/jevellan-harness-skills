@@ -1,0 +1,84 @@
+[
+  {
+    "query": "Placement printed {\"provider\":\"codex\",\"model\":\"gpt-6-astra\",\"effort\":\"medium\",\"kind\":\"codex-subscription\"} for step 2 (implement) of feature task T8QW2N, whose worktree is ~/.jevellan-harness/worktrees/sandbox/csv-export-T8QW2N. Use the runtime skill for provider kind codex-subscription to start the step.",
+    "should_trigger": true,
+    "role_phrase": true,
+    "context_skill": "jevellan-coordinator"
+  },
+  {
+    "query": "Placement printed {\"provider\":\"codex\",\"model\":\"gpt-6-astra\",\"effort\":\"high\",\"kind\":\"codex-subscription\"} for step 2 (automate) of automation task T2KD8F. Use the runtime skill for provider kind codex-subscription to start the step.",
+    "should_trigger": true,
+    "role_phrase": true,
+    "context_skill": "jevellan-workflow-automation"
+  },
+  {
+    "query": "Placement printed {\"provider\":\"codex\",\"model\":\"gpt-6-astra\",\"effort\":\"medium\",\"kind\":\"codex-subscription\"} for step 3 (verify) of feature task T4RT6M. Use the runtime skill for provider kind codex-subscription to start the step.",
+    "should_trigger": true,
+    "role_phrase": true,
+    "context_skill": "jevellan-workflow-feature"
+  },
+  {
+    "query": "Step 2 of T8QW2N runs on the codex provider and its report says progress. Resume it with \"Continue.\" on its Codex thread.",
+    "should_trigger": true,
+    "context_skill": "jevellan-coordinator"
+  },
+  {
+    "query": "The investigate step of T6NP3X runs as a codex exec turn on the codex provider. Is that process still alive? Show me the last event in its log.",
+    "should_trigger": true
+  },
+  {
+    "query": "Stop the Codex step 2 of task T8QW2N; it has been stuck for an hour.",
+    "should_trigger": true
+  },
+  {
+    "query": "Placement put step 1 of T6NP3X on the codex provider, model gpt-6-astra, effort medium. Start that step with the Codex runtime in the task's worktree.",
+    "should_trigger": true,
+    "held_out": true
+  },
+  {
+    "query": "Placement printed {\"provider\":\"codex\",\"model\":\"gpt-6-astra\",\"effort\":\"xhigh\",\"kind\":\"codex-subscription\"} for step 1 (investigate) of T9LM2C. Use the runtime skill for provider kind codex-subscription to start the step.",
+    "should_trigger": true,
+    "role_phrase": true,
+    "held_out": true,
+    "context_skill": "jevellan-coordinator"
+  },
+  {
+    "query": "Placement printed {\"provider\":\"codex\",\"model\":\"gpt-6-astra\",\"effort\":\"medium\",\"kind\":\"codex-subscription\"} for step 2 (implement) of feature task T8QW2N, whose worktree is ~/.jevellan-harness/worktrees/sandbox/csv-export-T8QW2N. Use the runtime skill for provider kind codex-subscription to start the step.",
+    "should_trigger": false,
+    "remove_role": "runtime",
+    "expect_role_missing": "runtime",
+    "role_phrase": true,
+    "context_skill": "jevellan-coordinator"
+  },
+  {
+    "query": "Placement printed {\"provider\":\"claude-second\",\"model\":\"claude-sonnet-5-5\",\"effort\":\"medium\",\"kind\":\"claude-subscription\"} for step 1 (document) of T3K9QZ, whose worktree is ~/.jevellan-harness/worktrees/sandbox/readme-how-to-run-T3K9QZ. Use the runtime skill for provider kind claude-subscription to start the step.",
+    "should_trigger": false,
+    "role_phrase": true,
+    "context_skill": "jevellan-coordinator"
+  },
+  {
+    "query": "Placement printed {\"provider\":\"glm\",\"model\":\"glm-5.3\",\"effort\":\"high\",\"kind\":\"claude-endpoint\"} for step 1 (investigate) of T6NP3X. Use the runtime skill for provider kind claude-endpoint to start the step.",
+    "should_trigger": false,
+    "role_phrase": true,
+    "context_skill": "jevellan-coordinator"
+  },
+  {
+    "query": "Task T3K9QZ \"README: how to run\" (single, duty document) is created and its worktree is ready. Step 1 has not been placed yet. Use the placement skill now and continue with its answer.",
+    "should_trigger": false,
+    "role_phrase": true,
+    "context_skill": "jevellan-coordinator"
+  },
+  {
+    "query": "codex login status says I'm not logged in. How do I log the Codex CLI in with my ChatGPT account?",
+    "should_trigger": false
+  },
+  {
+    "query": "Write a Python script that calls the OpenAI Responses API with gpt-4.1 and streams the answer to stdout.",
+    "should_trigger": false
+  },
+  {
+    "query": "What is the difference between codex exec and running codex interactively?",
+    "should_trigger": false,
+    "held_out": true
+  }
+]

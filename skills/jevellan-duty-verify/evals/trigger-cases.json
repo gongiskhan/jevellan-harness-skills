@@ -1,0 +1,70 @@
+[
+  {
+    "query": "Your step is duty verify. Use the duty skill for verify now and follow it.\n\n# Your step\n\nTask T8QW2N: CSV export on the invoices page\nKind: feature. Step 3 of 4: verify.\n\nAdd an Export CSV button to the invoices page that downloads the rows currently shown, with the same filters.\n\nStep instructions:\nRun the project's test command, then the browser journeys for every screen the change touches, at desktop and phone widths, saving screenshots to .jevellan/evidence/. Report testsRun with passed true only when everything you ran passed.\n\nProject settings (.jevellan/project.json):\n- testCommand: TZ=UTC SANDBOX_DATA_DIR=.sandbox-data npm test\n- devCommand: npm start\n\nStart the step now. End by writing .jevellan/report.json.",
+    "should_trigger": true,
+    "role_phrase": true
+  },
+  {
+    "query": "Your step is duty verify. Use the duty skill for verify now and follow it.\n\nStart the step now. End by writing .jevellan/report.json.",
+    "should_trigger": true,
+    "role_phrase": true
+  },
+  {
+    "query": "Your step is duty verify. Use the duty skill for verify now and follow it.\n\n# Your step\n\nTask T5HB7C: Invoice dates shown in the wrong timezone\nKind: bug. Step 3 of 3: verify.\n\nInvoice dates on the invoices page show one day early for owners in UTC-5.\n\nStep instructions:\nFull verification before landing: run the whole test command and every browser journey the change could affect.\n\nStart the step now. End by writing .jevellan/report.json.",
+    "should_trigger": true,
+    "role_phrase": true
+  },
+  {
+    "query": "This worker runs step 2 of bug task T5HB7C and its duty is verify: run the tests and the browser journeys, save evidence, fix nothing. Use the duty skill for verify now.",
+    "should_trigger": true,
+    "role_phrase": true
+  },
+  {
+    "query": "You're the worker for the verify step of task T4RT6M (dark mode toggle). Check the branch the way the verify duty says: the tests, then the settings page at desktop and phone widths, screenshots to .jevellan/evidence/, then the report.",
+    "should_trigger": true
+  },
+  {
+    "query": "Task step with duty verify: the implement step says the customers empty state is done. Verify it with the test command and a browser check of the empty customers page, then write .jevellan/report.json.",
+    "should_trigger": true,
+    "held_out": true
+  },
+  {
+    "query": "Your step is duty verify. Use the duty skill for verify now and follow it.\n\n# Your step\n\nTask T7EM2Q: Empty state on the customers page\nKind: feature. Step 3 of 3: verify.\n\nWhen there are no customers, the customers page should show \"No customers yet\" and a button to add the first one.\n\nStep instructions:\nRun the project's test command, then the browser journeys for every screen the change touches, at desktop and phone widths, saving screenshots to .jevellan/evidence/. Report testsRun with passed true only when everything you ran passed.\n\nStart the step now. End by writing .jevellan/report.json.",
+    "should_trigger": true,
+    "role_phrase": true,
+    "held_out": true
+  },
+  {
+    "query": "Your step is duty implement. Use the duty skill for implement now and follow it.\n\n# Your step\n\nTask T8QW2N: CSV export on the invoices page\nKind: feature. Step 2 of 4: implement.\n\nAdd an Export CSV button to the invoices page that downloads the rows currently shown, with the same filters.\n\nStep instructions:\nFollow plan.md when it exists. Commit on the task branch. Add or change the tests that cover what you changed, and run only those.\n\nPlan: plan.md in the worktree root.\n\nStart the step now. End by writing .jevellan/report.json.",
+    "should_trigger": false,
+    "role_phrase": true
+  },
+  {
+    "query": "Your step is duty automate. Use the duty skill for automate now and follow it.\n\n# Your step\n\nTask T2KD8F: Friday invoice export\nKind: automation. Step 2 of 3: automate.\n\nEvery Friday, export the week's invoices from the admin page as CSV and save the file under exports/.\n\nStep instructions:\nBuild the Playwright automation as scripts in the project's automation folder (project.json.automationDir, default automations/). Commit on the task branch.\n\nStart the step now. End by writing .jevellan/report.json.",
+    "should_trigger": false,
+    "role_phrase": true
+  },
+  {
+    "query": "Your step is duty investigate. Use the duty skill for investigate now and follow it.\n\n# Your step\n\nTask T7RQ4D: Why does the customers page load slowly?\nKind: single. Step 1 of 1: investigate.\n\nThe owner reports that the customers page takes several seconds to load with 2,000 customers. Find out what the page does on load and where the time could go. Change nothing.\n\nStart the step now. End by writing .jevellan/report.json.",
+    "should_trigger": false,
+    "role_phrase": true
+  },
+  {
+    "query": "My Jest tests pass locally but fail in CI with a timezone error. What should I check first?",
+    "should_trigger": false
+  },
+  {
+    "query": "Is this regex right for validating an e-mail address? /^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$/",
+    "should_trigger": false
+  },
+  {
+    "query": "This project's work runs through the coordinator skill: use it for any request to do, plan, track or report on work here.\nOpen work in this project's ledger: none.\n\nCheck that the empty state on the customers page works on phones.",
+    "should_trigger": false,
+    "role_phrase": true
+  },
+  {
+    "query": "Write a Playwright test that opens the login page and checks the error message for a wrong password.",
+    "should_trigger": false,
+    "held_out": true
+  }
+]

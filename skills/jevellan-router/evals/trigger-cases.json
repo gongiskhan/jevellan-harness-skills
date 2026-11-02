@@ -1,0 +1,91 @@
+[
+  {
+    "query": "Task T3K9QZ \"README: how to run\" (single, duty document) is created and its worktree is ready. Step 1 has not been placed yet. Use the placement skill now and continue with its answer.",
+    "should_trigger": true,
+    "role_phrase": true,
+    "context_skill": "jevellan-coordinator"
+  },
+  {
+    "query": "Bug task T5HB7C has its worktree and its resolved steps are recorded: 1 implement, 2 verify. Step 1 is next. Use the placement skill now and continue with its answer.",
+    "should_trigger": true,
+    "role_phrase": true,
+    "context_skill": "jevellan-workflow-bug"
+  },
+  {
+    "query": "Step 2 (implement) of feature task T8QW2N reported done and step.done is recorded. Step 3 is verify. Use the placement skill now and continue with its answer.",
+    "should_trigger": true,
+    "role_phrase": true,
+    "context_skill": "jevellan-workflow-feature"
+  },
+  {
+    "query": "Verify step 3 of T8QW2N reported testsRun.passed false, and the retry back to step 2 is recorded. Step 2 must be placed again before it restarts; use the placement skill for it.",
+    "should_trigger": true,
+    "context_skill": "jevellan-coordinator"
+  },
+  {
+    "query": "Which model, effort and provider should step 2 (implement) of task T8QW2N run on? Ask Jev through the placement script; don't pick one yourself.",
+    "should_trigger": true
+  },
+  {
+    "query": "Check the providers for this project's work: which accounts are logged in, how much of their usage is left, and what each one contributes to the placement menu.",
+    "should_trigger": true
+  },
+  {
+    "query": "New feature task T4RT6M (dark mode toggle on the settings page) is created. Ask Jev the workflow questions for it: does it need a plan step, and does it need a docs step?",
+    "should_trigger": true,
+    "held_out": true
+  },
+  {
+    "query": "Automation task T2KD8F has its resolved steps recorded, with step 1 (plan) skipped. Step 2 is automate. Use the placement skill now and continue with its answer.",
+    "should_trigger": true,
+    "role_phrase": true,
+    "held_out": true,
+    "context_skill": "jevellan-workflow-automation"
+  },
+  {
+    "query": "Task T3K9QZ \"README: how to run\" (single, duty document) is created and its worktree is ready. Step 1 has not been placed yet. Use the placement skill now and continue with its answer.",
+    "should_trigger": false,
+    "remove_role": "placement",
+    "expect_role_missing": "placement",
+    "role_phrase": true,
+    "context_skill": "jevellan-coordinator"
+  },
+  {
+    "query": "Bug task T5HB7C has its worktree and its resolved steps are recorded: 1 implement, 2 verify. Step 1 is next. Use the placement skill now and continue with its answer.",
+    "should_trigger": false,
+    "remove_role": "placement",
+    "expect_role_missing": "placement",
+    "role_phrase": true,
+    "context_skill": "jevellan-workflow-bug"
+  },
+  {
+    "query": "Placement printed {\"provider\":\"claude-second\",\"model\":\"claude-sonnet-5-5\",\"effort\":\"medium\",\"kind\":\"claude-subscription\"} for step 1 (document) of T3K9QZ, whose worktree is ~/.jevellan-harness/worktrees/sandbox/readme-how-to-run-T3K9QZ. Use the runtime skill for provider kind claude-subscription to start the step.",
+    "should_trigger": false,
+    "role_phrase": true,
+    "context_skill": "jevellan-coordinator"
+  },
+  {
+    "query": "The owner asked: \"Add a How to run section to the README listing the commands in package.json.\" Status shows no open task for it, and the brief is written to .jevellan/briefs/readme-how-to-run.md. Use the ledger skill to create the task.",
+    "should_trigger": false,
+    "role_phrase": true,
+    "context_skill": "jevellan-coordinator"
+  },
+  {
+    "query": "Your step is duty investigate. Use the duty skill for investigate now and follow it.\n\n# Your step\n\nTask T6NP3X: Where are invoice totals computed?\nKind: single. Step 1 of 1: investigate.\n\nFind where the invoice total shown on the invoices page is computed, including tax and discounts, and whether the CSV export uses the same function. Answer with file and line references.\n\nStart the step now. End by writing .jevellan/report.json.",
+    "should_trigger": false,
+    "role_phrase": true
+  },
+  {
+    "query": "I'm writing a Python CLI that calls an LLM API. How should it choose between a small and a large model at runtime based on the prompt length? Show a short function.",
+    "should_trigger": false
+  },
+  {
+    "query": "Set the default model for Claude Code in this repository to Opus through .claude/settings.json.",
+    "should_trigger": false
+  },
+  {
+    "query": "Explain what a model's reasoning effort setting means, and when a higher setting is worth the extra latency.",
+    "should_trigger": false,
+    "held_out": true
+  }
+]

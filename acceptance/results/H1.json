@@ -1,150 +1,154 @@
 {
   "id": "H1",
   "title": "Install",
-  "status": "failed",
-  "startedAt": "2026-11-01T23:45:20.903Z",
-  "finishedAt": "2026-11-01T23:45:24.276Z",
-  "elapsedMs": 3373,
-  "passed": 21,
-  "total": 22,
+  "status": "passed",
+  "startedAt": "2026-11-02T02:23:36.111Z",
+  "finishedAt": "2026-11-02T02:23:39.591Z",
+  "elapsedMs": 3479,
+  "passed": 23,
+  "total": 23,
   "timings": {
-    "one-turn session in the sandbox": 2998
+    "one-turn session in the sandbox": 2897
   },
-  "notes": [
-    "set the sandbox testCommand to \"TZ=UTC SANDBOX_DATA_DIR=.sandbox-data npm test\" (H-002)"
-  ],
+  "notes": [],
   "checks": [
     {
       "name": "install on a fresh clone exits 0",
       "ok": true,
       "detail": "",
-      "at": "2026-11-01T23:45:21.019Z"
+      "at": "2026-11-02T02:23:36.293Z"
     },
     {
       "name": "project.json detects testCommand npm test",
       "ok": true,
       "detail": "npm test",
-      "at": "2026-11-01T23:45:21.019Z"
+      "at": "2026-11-02T02:23:36.293Z"
     },
     {
       "name": "project.json detects devCommand npm start (no dev script)",
       "ok": true,
       "detail": "npm start",
-      "at": "2026-11-01T23:45:21.019Z"
+      "at": "2026-11-02T02:23:36.293Z"
+    },
+    {
+      "name": "project.json detects setupCommand npm ci (package-lock.json)",
+      "ok": true,
+      "detail": "npm ci",
+      "at": "2026-11-02T02:23:36.293Z"
     },
     {
       "name": "project.json defaultBranch main, pushAfterLanding false, retentionDays 3",
       "ok": true,
-      "detail": "{\"name\":\"clone\",\"defaultBranch\":\"main\",\"testCommand\":\"npm test\",\"devCommand\":\"npm start\",\"riskyPaths\":[],\"checks\":[],\"pushAfterLanding\":false,\"retentionDays\":3}",
-      "at": "2026-11-01T23:45:21.019Z"
+      "detail": "{\"name\":\"clone\",\"defaultBranch\":\"main\",\"testCommand\":\"npm test\",\"devCommand\":\"npm start\",\"setupCommand\":\"npm ci\",\"riskyPaths\":[],\"checks\":[],\"pushAfterLanding\":false,\"retentionDays\":3}",
+      "at": "2026-11-02T02:23:36.293Z"
     },
     {
       "name": "install on the sandbox exits 0",
       "ok": true,
       "detail": "",
-      "at": "2026-11-01T23:45:21.083Z"
+      "at": "2026-11-02T02:23:36.378Z"
     },
     {
-      "name": "every package skill is installed (2)",
+      "name": "every package skill is installed (17)",
       "ok": true,
-      "detail": "jevellan-ledger, jevellan-runtime-claude",
-      "at": "2026-11-01T23:45:21.083Z"
+      "detail": "jevellan-coordinator, jevellan-duty-answer, jevellan-duty-automate, jevellan-duty-converse, jevellan-duty-document, jevellan-duty-implement, jevellan-duty-investigate, jevellan-duty-plan, jevellan-duty-verify, jevellan-git, jevellan-ledger, jevellan-router, jevellan-runtime-claude, jevellan-runtime-codex, jevellan-workflow-automation, jevellan-workflow-bug, jevellan-workflow-feature",
+      "at": "2026-11-02T02:23:36.378Z"
     },
     {
       "name": "the package has 17 skills",
-      "ok": false,
-      "detail": "2 skill folders with SKILL.md",
-      "at": "2026-11-01T23:45:21.084Z"
+      "ok": true,
+      "detail": "17 skill folders with SKILL.md",
+      "at": "2026-11-02T02:23:36.378Z"
     },
     {
       "name": "installed skills are byte copies of the package",
       "ok": true,
       "detail": "",
-      "at": "2026-11-01T23:45:21.095Z"
+      "at": "2026-11-02T02:23:36.480Z"
     },
     {
       "name": "Stop hook installed with the absolute Node 22 path",
       "ok": true,
       "detail": "[{\"command\":\"\\\"/home/ggomes/.nvm/versions/node/v22.23.2/bin/node\\\" \\\"/home/ggomes/jevellan-projects/jevellan-harness-sandbox/.claude/skills/jevellan-ledger/hooks/stop.mjs\\\"\"}]",
-      "at": "2026-11-01T23:45:21.095Z"
+      "at": "2026-11-02T02:23:36.480Z"
     },
     {
       "name": "PostToolUse hook with matcher Bash|Edit|Write|MultiEdit|NotebookEdit",
       "ok": true,
       "detail": "",
-      "at": "2026-11-01T23:45:21.096Z"
+      "at": "2026-11-02T02:23:36.480Z"
     },
     {
       "name": "SessionStart hook for startup, resume and compact",
       "ok": true,
       "detail": "[\"startup\",\"resume\",\"compact\"]",
-      "at": "2026-11-01T23:45:21.096Z"
+      "at": "2026-11-02T02:23:36.480Z"
     },
     {
       "name": "the owner key in settings.json is untouched",
       "ok": true,
       "detail": "",
-      "at": "2026-11-01T23:45:21.097Z"
+      "at": "2026-11-02T02:23:36.480Z"
     },
     {
       "name": "Node 22 is the hooks' binary",
       "ok": true,
       "detail": "/home/ggomes/.nvm/versions/node/v22.23.2/bin/node",
-      "at": "2026-11-01T23:45:21.102Z"
+      "at": "2026-11-02T02:23:36.486Z"
     },
     {
       "name": "the three exclude lines are present",
       "ok": true,
       "detail": "",
-      "at": "2026-11-01T23:45:21.103Z"
+      "at": "2026-11-02T02:23:36.487Z"
     },
     {
       "name": "a second run changes nothing",
       "ok": true,
       "detail": "[]",
-      "at": "2026-11-01T23:45:21.159Z"
+      "at": "2026-11-02T02:23:36.553Z"
     },
     {
       "name": "--skills-only exits 0",
       "ok": true,
       "detail": "",
-      "at": "2026-11-01T23:45:21.266Z"
+      "at": "2026-11-02T02:23:36.677Z"
     },
     {
       "name": "--skills-only writes the skills",
       "ok": true,
       "detail": "",
-      "at": "2026-11-01T23:45:21.266Z"
+      "at": "2026-11-02T02:23:36.678Z"
     },
     {
       "name": "--skills-only writes no settings.json and no .jevellan",
       "ok": true,
       "detail": "",
-      "at": "2026-11-01T23:45:21.266Z"
+      "at": "2026-11-02T02:23:36.678Z"
     },
     {
       "name": "--skills-only writes the exclude lines",
       "ok": true,
       "detail": "",
-      "at": "2026-11-01T23:45:21.267Z"
+      "at": "2026-11-02T02:23:36.678Z"
     },
     {
       "name": "the installed SessionStart hook ran in a real session and printed the coordinator line",
       "ok": true,
       "detail": "This project's work runs through the coordinator skill: use it for any request to do, plan, track or report on work here.",
-      "at": "2026-11-01T23:45:24.268Z"
+      "at": "2026-11-02T02:23:39.579Z"
     },
     {
       "name": "the installed Stop hook ran in that session",
       "ok": true,
       "detail": "",
-      "at": "2026-11-01T23:45:24.269Z"
+      "at": "2026-11-02T02:23:39.579Z"
     },
     {
       "name": "the sandbox git status stays clean, nothing of .claude or .jevellan tracked",
       "ok": true,
       "detail": "status \"\" tracked \"\"",
-      "at": "2026-11-01T23:45:24.276Z"
+      "at": "2026-11-02T02:23:39.591Z"
     }
   ]
 }

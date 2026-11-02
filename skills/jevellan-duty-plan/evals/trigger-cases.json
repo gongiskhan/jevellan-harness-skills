@@ -1,0 +1,70 @@
+[
+  {
+    "query": "Your step is duty plan. Use the duty skill for plan now and follow it.\n\n# Your step\n\nTask T8QW2N: CSV export on the invoices page\nKind: feature. Step 1 of 4: plan.\n\nAdd an Export CSV button to the invoices page that downloads the rows currently shown, with the same filters.\n\nStep instructions:\nWrite plan.md at the worktree root: the change in one paragraph, the files to touch, the tests to add or change, open questions as needs-decision only if a choice is the owner's.\n\nStart the step now. End by writing .jevellan/report.json.",
+    "should_trigger": true,
+    "role_phrase": true
+  },
+  {
+    "query": "Your step is duty plan. Use the duty skill for plan now and follow it.\n\nStart the step now. End by writing .jevellan/report.json.",
+    "should_trigger": true,
+    "role_phrase": true
+  },
+  {
+    "query": "Your step is duty plan. Use the duty skill for plan now and follow it.\n\n# Your step\n\nTask T2KD8F: Friday invoice export\nKind: automation. Step 1 of 3: plan.\n\nEvery Friday, export the week's invoices from the admin page as CSV and save the file under exports/.\n\nStep instructions:\nWrite plan.md: the flow to automate step by step, the selectors or APIs discovered, what evidence proves it works.\n\nStart the step now. End by writing .jevellan/report.json.",
+    "should_trigger": true,
+    "role_phrase": true
+  },
+  {
+    "query": "This session runs step 1 of feature task T4RT6M (dark mode toggle) and its duty is plan: write plan.md at the worktree root and change nothing else. Use the duty skill for plan now.",
+    "should_trigger": true,
+    "role_phrase": true
+  },
+  {
+    "query": "You are the worker for step 1 of task T8QW2N, and the step's duty is plan. Follow the plan duty: read the code, write plan.md, then end with .jevellan/report.json.",
+    "should_trigger": true
+  },
+  {
+    "query": "Worker step with duty plan, a retry: plan.md already exists from the first attempt and the owner chose option 2 (stream the CSV). Update the plan as the plan duty says and write the report.",
+    "should_trigger": true,
+    "held_out": true
+  },
+  {
+    "query": "Your step is duty plan. Use the duty skill for plan now and follow it.\n\n# Your step\n\nTask T4RT6M: Dark mode toggle on the settings page\nKind: feature. Step 1 of 4: plan.\n\nAdd a dark mode toggle to the settings page that remembers the choice per user.\n\nStep instructions:\nWrite plan.md at the worktree root: the change in one paragraph, the files to touch, the tests to add or change, open questions as needs-decision only if a choice is the owner's.\n\nStart the step now. End by writing .jevellan/report.json.",
+    "should_trigger": true,
+    "role_phrase": true,
+    "held_out": true
+  },
+  {
+    "query": "Your step is duty investigate. Use the duty skill for investigate now and follow it.\n\n# Your step\n\nTask T6NP3X: Where are invoice totals computed?\nKind: single. Step 1 of 1: investigate.\n\nFind where the invoice total shown on the invoices page is computed, including tax and discounts, and whether the CSV export uses the same function. Answer with file and line references.\n\nStart the step now. End by writing .jevellan/report.json.",
+    "should_trigger": false,
+    "role_phrase": true
+  },
+  {
+    "query": "Your step is duty implement. Use the duty skill for implement now and follow it.\n\n# Your step\n\nTask T8QW2N: CSV export on the invoices page\nKind: feature. Step 2 of 4: implement.\n\nAdd an Export CSV button to the invoices page that downloads the rows currently shown, with the same filters.\n\nStep instructions:\nFollow plan.md when it exists. Commit on the task branch. Add or change the tests that cover what you changed, and run only those.\n\nPlan: plan.md in the worktree root.\n\nStart the step now. End by writing .jevellan/report.json.",
+    "should_trigger": false,
+    "role_phrase": true
+  },
+  {
+    "query": "Your step is duty document. Use the duty skill for document now and follow it.\n\n# Your step\n\nTask T8QW2N: CSV export on the invoices page\nKind: feature. Step 4 of 4: document.\n\nAdd an Export CSV button to the invoices page that downloads the rows currently shown, with the same filters.\n\nStep instructions:\nUpdate the docs the project keeps (README, docs/, changelog if the project uses one) for what changed. Nothing else.\n\nEarlier steps of this task:\n- implement (done): Added an Export CSV button to the invoices page; the file has the visible rows and columns.\n- verify (done): npm test passed (36 tests); export checked at desktop and phone widths.\n\nStart the step now. End by writing .jevellan/report.json.",
+    "should_trigger": false,
+    "role_phrase": true
+  },
+  {
+    "query": "Write me a project plan for migrating our front end from Vue 2 to Vue 3 over the next quarter, with milestones.",
+    "should_trigger": false
+  },
+  {
+    "query": "Plan my week: three client calls, a release on Thursday and a dentist appointment on Friday morning.",
+    "should_trigger": false
+  },
+  {
+    "query": "This project's work runs through the coordinator skill: use it for any request to do, plan, track or report on work here.\nOpen work in this project's ledger: none.\n\nPlan the CSV export for the invoices page with me before anything gets built.",
+    "should_trigger": false,
+    "role_phrase": true
+  },
+  {
+    "query": "Outline the steps to set up a Postgres read replica on AWS RDS. Just the plan, I'll do it myself.",
+    "should_trigger": false,
+    "held_out": true
+  }
+]

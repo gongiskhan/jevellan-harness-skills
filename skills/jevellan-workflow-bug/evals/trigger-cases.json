@@ -1,0 +1,84 @@
+[
+  {
+    "query": "Bug task T5HB7C \"Invoice dates shown in the wrong timezone\" is created and its worktree is ready. Use the workflow skill for bug and follow its steps in order.",
+    "should_trigger": true,
+    "role_phrase": true,
+    "context_skill": "jevellan-coordinator"
+  },
+  {
+    "query": "Bug task T7KD3S \"Customer search ignores accents\" is created and its worktree is ready. Use the workflow skill for bug and follow its steps in order.",
+    "should_trigger": true,
+    "role_phrase": true,
+    "context_skill": "jevellan-coordinator"
+  },
+  {
+    "query": "Step 2 (verify) of bug task T5HB7C reported testsRun.passed false. Apply the bug workflow's retry rule.",
+    "should_trigger": true,
+    "context_skill": "jevellan-coordinator"
+  },
+  {
+    "query": "land.mjs answered {\"route\":\"verify-then-land\"} with exit 6 for bug task T5HB7C. Add the extra verify step the bug workflow describes.",
+    "should_trigger": true,
+    "context_skill": "jevellan-coordinator"
+  },
+  {
+    "query": "What are the steps of a bug task in this project, and what is the retry rule when the verify step fails?",
+    "should_trigger": true
+  },
+  {
+    "query": "Bug task T5HB7C has its worktree. Which steps does the bug workflow give it, with which duty and instructions each?",
+    "should_trigger": true,
+    "context_skill": "jevellan-coordinator"
+  },
+  {
+    "query": "Bug task T3XS8L \"Invoice PDF cuts off long addresses\" is created and its worktree is ready. Use the workflow skill for bug and follow its steps in order.",
+    "should_trigger": true,
+    "role_phrase": true,
+    "held_out": true,
+    "context_skill": "jevellan-coordinator"
+  },
+  {
+    "query": "The verify step of bug task T7KD3S failed again after its second retry. What does the bug workflow say to do now?",
+    "should_trigger": true,
+    "held_out": true,
+    "context_skill": "jevellan-coordinator"
+  },
+  {
+    "query": "Bug task T5HB7C \"Invoice dates shown in the wrong timezone\" is created and its worktree is ready. Use the workflow skill for bug and follow its steps in order.",
+    "should_trigger": false,
+    "remove_role": "workflow",
+    "expect_role_missing": "workflow",
+    "role_phrase": true,
+    "context_skill": "jevellan-coordinator"
+  },
+  {
+    "query": "Feature task T8QW2N \"CSV export on the invoices page\" is created and its worktree is ready. Use the workflow skill for feature and follow its steps in order.",
+    "should_trigger": false,
+    "role_phrase": true,
+    "context_skill": "jevellan-coordinator"
+  },
+  {
+    "query": "Automation task T2KD8F \"Friday invoice export\" is created and its worktree is ready. Use the workflow skill for automation and follow its steps in order.",
+    "should_trigger": false,
+    "role_phrase": true,
+    "context_skill": "jevellan-coordinator"
+  },
+  {
+    "query": "Your step is duty implement. Use the duty skill for implement now and follow it.\n\n# Your step\n\nTask T5HB7C: Invoice dates shown in the wrong timezone\nKind: bug. Step 1 of 2: implement.\n\nInvoice dates on the invoices page show one day early for owners in UTC-5. They should show the date the invoice was issued, in the owner's timezone.\n\nStep instructions:\nReproduce first with a failing test when the bug is testable, then fix. Commit on the task branch.\n\nThis step runs again after a failure. What failed:\nverify: test/dates.test.js expected \"2026-10-31\" but got \"2026-10-30\" for an invoice issued at 23:30 UTC.\n\nStart the step now. End by writing .jevellan/report.json.",
+    "should_trigger": false,
+    "role_phrase": true
+  },
+  {
+    "query": "Help me debug why my Jest test times out after 5 seconds when it awaits a mocked fetch.",
+    "should_trigger": false
+  },
+  {
+    "query": "Write a good bug report template for our GitHub issues: steps to reproduce, expected, actual, environment.",
+    "should_trigger": false
+  },
+  {
+    "query": "My Python script crashes with KeyError: 'id' when the API returns an empty list. What's wrong?",
+    "should_trigger": false,
+    "held_out": true
+  }
+]

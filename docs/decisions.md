@@ -339,3 +339,38 @@ What stays open, by design or as a known limit: a worker's raw output still goes
 600 under the harness folder; Claude Code keeps the OAuth token out of the worker's shell, findings), and a worker in
 bypassPermissions could still `cat` a file it is denied to Read; a reused pid can make start wait for an unrelated
 process to exit (only a recorded process start time would close that).
+
+## H-030 The trigger evals: how they run, the rounds, and what stays below threshold
+
+`scripts/run-trigger-evals.mjs` runs every case of `skills/*/evals/trigger-cases.json` (233 cases in Skillio's
+`{query, should_trigger, held_out}` format, extended with `context_skill`, `remove_role`, `expect_role_missing` and
+`role_phrase`) as `claude -p` in a temporary git project holding a small realistic app and the skills, with the
+claude-second token, the worker settings and a dedicated config folder, `claude-sonnet-5-5` at low effort, and reads
+which skills the Skill tool invoked from the stream. Scoring follows section 10: a positive passes when the skill
+fires within the run; a negative fails only when the skill is the session's first choice (a later call that the first
+skill's own body leads to, the router leading to the ledger, is the chain working); a role-missing run passes only
+when it invokes no skill at all and names the missing role.
+
+The harness changed during the loop, each time for a reason found in the failures, and the changes are in the
+script's own text: the scorer's role-missing phrases were widened twice (answers such as "no installed skill has the
+git role" were correct and scored as wrong); the sessions got Read, Glob and Grep besides Skill and three turns
+instead of two (with Skill alone a plain request could only be answered by trying a skill, and two turns cut off the
+coordinator's documented order of status, worktree and workflow); the temporary project got a small app (an empty one
+made sessions answer "there is no code here"). One held-out case (workflow-automation 8) was reworded after it failed,
+to say the worktree is ready as the other workflow cases do; its CHANGELOG says so.
+
+Rounds (each recorded in the skill's CHANGELOG): round 1 changed the duty-document and ledger descriptions, the
+coordinator's step 1 and the role-missing sentence; round 2 the eight duty descriptions and the role-missing sentence
+again; round 3 the coordinator's line on finding a role's skill. Single-run rounds went 243, 240, 244, 246 and 246 of
+248. The final measurement used three runs per case: 732 of 744 runs passed and 15 of 17 skills meet every threshold
+(`evals/RESULTS.md`, `evals/results.json`). Below threshold, with the rounds section 10 allows used:
+
+- the coordinator, positives 21 of 24: every miss is case 4, the H7 request typed with no SessionStart line, where the
+  session starts exploring the project instead; every case with the hook line passes 3 of 3, and an installed project
+  always has the hook (H-010);
+- the router, role-phrase runs 22 of 27: with the placement skill removed, sessions call the guessed name
+  `jevellan-placement` before saying, correctly in every run, that the placement role is missing. Every other role
+  whose skill name matches its role word (git, ledger, runtime, workflow) passes its role-missing cases 3 of 3. The
+  router's own body cannot change a run in which it is not installed, and the calling body of case 9 is the
+  coordinator's, whose rounds are used. Naming the skill after its role would most likely close this; the brief fixes
+  the name, so it is the owner's call.

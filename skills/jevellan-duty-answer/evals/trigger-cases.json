@@ -1,0 +1,70 @@
+[
+  {
+    "query": "Your step is duty answer. Use the duty skill for answer now and follow it.\n\n# Your step\n\nTask T2QA9M: What is an idempotency key?\nKind: single. Step 1 of 1: answer.\n\nThe owner asks: what is an idempotency key in a payments API, and why would the invoice webhooks need one? A few sentences.\n\nStart the step now. End by writing .jevellan/report.json.",
+    "should_trigger": true,
+    "role_phrase": true
+  },
+  {
+    "query": "Your step is duty answer. Use the duty skill for answer now and follow it.\n\nStart the step now. End by writing .jevellan/report.json.",
+    "should_trigger": true,
+    "role_phrase": true
+  },
+  {
+    "query": "Your step is duty answer. Use the duty skill for answer now and follow it.\n\n# Your step\n\nTask T8HJ2P: UTC or local time in the database?\nKind: single. Step 1 of 1: answer.\n\nThe owner asks whether timestamps should be stored in UTC or in local time, and why. Short and concrete.\n\nStart the step now. End by writing .jevellan/report.json.",
+    "should_trigger": true,
+    "role_phrase": true
+  },
+  {
+    "query": "This worker step has duty answer: general knowledge only, no repository access. The question: what is the difference between a 401 and a 403 status code? Use the duty skill for answer now.",
+    "should_trigger": true,
+    "role_phrase": true
+  },
+  {
+    "query": "You are running step 1 of task T5WE3R, duty answer. The owner wants a short explanation of what CORS preflight requests are. Answer as the answer duty says and end with the report.",
+    "should_trigger": true
+  },
+  {
+    "query": "Task step with duty answer: the owner asks whether SQLite is fine for a small invoicing app with five users. Give the answer the answer duty describes and finish with the report.",
+    "should_trigger": true,
+    "held_out": true
+  },
+  {
+    "query": "Your step is duty answer. Use the duty skill for answer now and follow it.\n\n# Your step\n\nTask T6YU1B: When to bump the major version\nKind: single. Step 1 of 1: answer.\n\nThe owner asks when semantic versioning says to bump the major version, with one example from a web API.\n\nStart the step now. End by writing .jevellan/report.json.",
+    "should_trigger": true,
+    "role_phrase": true,
+    "held_out": true
+  },
+  {
+    "query": "Your step is duty converse. Use the duty skill for converse now and follow it.\n\n# Your step\n\nTask T7CV2N: Reply to the owner\nKind: single. Step 1 of 1: converse.\n\nThe owner wrote: \"honestly not sure the CSV export is worth it, thoughts?\" Reply as the coordinator, one turn.\n\nStart the step now. End by writing .jevellan/report.json.",
+    "should_trigger": false,
+    "role_phrase": true
+  },
+  {
+    "query": "Your step is duty investigate. Use the duty skill for investigate now and follow it.\n\n# Your step\n\nTask T6NP3X: Where are invoice totals computed?\nKind: single. Step 1 of 1: investigate.\n\nFind where the invoice total shown on the invoices page is computed, including tax and discounts, and whether the CSV export uses the same function. Answer with file and line references.\n\nStart the step now. End by writing .jevellan/report.json.",
+    "should_trigger": false,
+    "role_phrase": true
+  },
+  {
+    "query": "Your step is duty document. Use the duty skill for document now and follow it.\n\n# Your step\n\nTask T3K9QZ: README: how to run\nKind: single. Step 1 of 1: document.\n\nAdd a How to run section to the README listing the commands in package.json, each with one line on what it does.\n\nStart the step now. End by writing .jevellan/report.json.",
+    "should_trigger": false,
+    "role_phrase": true
+  },
+  {
+    "query": "What's the difference between a 401 and a 403 status code?",
+    "should_trigger": false
+  },
+  {
+    "query": "Quick one: what's the capital of Australia, and why isn't it Sydney?",
+    "should_trigger": false
+  },
+  {
+    "query": "This project's work runs through the coordinator skill: use it for any request to do, plan, track or report on work here.\nOpen work in this project's ledger: none.\n\nWhat does an idempotency key do in a payments API? Just explain it, no task needed.",
+    "should_trigger": false,
+    "role_phrase": true
+  },
+  {
+    "query": "Explain like I'm new to this: what does eventual consistency mean?",
+    "should_trigger": false,
+    "held_out": true
+  }
+]

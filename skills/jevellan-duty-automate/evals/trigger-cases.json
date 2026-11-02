@@ -1,0 +1,70 @@
+[
+  {
+    "query": "Your step is duty automate. Use the duty skill for automate now and follow it.\n\n# Your step\n\nTask T2KD8F: Friday invoice export\nKind: automation. Step 2 of 3: automate.\n\nEvery Friday, export the week's invoices from the admin page as CSV and save the file under exports/.\n\nStep instructions:\nBuild the Playwright automation as scripts in the project's automation folder (project.json.automationDir, default automations/). Commit on the task branch.\n\nStart the step now. End by writing .jevellan/report.json.",
+    "should_trigger": true,
+    "role_phrase": true
+  },
+  {
+    "query": "Your step is duty automate. Use the duty skill for automate now and follow it.\n\nStart the step now. End by writing .jevellan/report.json.",
+    "should_trigger": true,
+    "role_phrase": true
+  },
+  {
+    "query": "Your step is duty automate. Use the duty skill for automate now and follow it.\n\n# Your step\n\nTask T6AU4M: Monthly supplier statements\nKind: automation. Step 2 of 3: automate.\n\nOn the first day of each month, sign in to the supplier portal with the credentials in SUPPLIER_USER and SUPPLIER_PASSWORD and download last month's statement PDF into statements/.\n\nStep instructions:\nBuild the Playwright automation as scripts in the project's automation folder (project.json.automationDir, default automations/). Commit on the task branch.\n\nStart the step now. End by writing .jevellan/report.json.",
+    "should_trigger": true,
+    "role_phrase": true
+  },
+  {
+    "query": "This worker session runs step 2 of automation task T2KD8F and its duty is automate: build the Playwright automation with a dry-run flag and save evidence. Use the duty skill for automate now.",
+    "should_trigger": true,
+    "role_phrase": true
+  },
+  {
+    "query": "You're the worker on the automate step of task T6AU4M. Build it the way the automate duty describes, with --dry-run, evidence under .jevellan/evidence/, and the report at the end.",
+    "should_trigger": true
+  },
+  {
+    "query": "Task step with duty automate: the plan says to script the weekly overdue invoices view as a Playwright flow. Build it as the automate duty says, then write .jevellan/report.json.",
+    "should_trigger": true,
+    "held_out": true
+  },
+  {
+    "query": "Your step is duty automate. Use the duty skill for automate now and follow it.\n\n# Your step\n\nTask T8RM3V: Weekly overdue reminder preview\nKind: automation. Step 2 of 3: automate.\n\nEvery Monday, open the overdue invoices view in the admin page and save a screenshot and a CSV of what it lists, without sending any reminder.\n\nStep instructions:\nBuild the Playwright automation as scripts in the project's automation folder (project.json.automationDir, default automations/). Commit on the task branch.\n\nStart the step now. End by writing .jevellan/report.json.",
+    "should_trigger": true,
+    "role_phrase": true,
+    "held_out": true
+  },
+  {
+    "query": "Your step is duty verify. Use the duty skill for verify now and follow it.\n\n# Your step\n\nTask T8QW2N: CSV export on the invoices page\nKind: feature. Step 3 of 4: verify.\n\nAdd an Export CSV button to the invoices page that downloads the rows currently shown, with the same filters.\n\nStep instructions:\nRun the project's test command, then the browser journeys for every screen the change touches, at desktop and phone widths, saving screenshots to .jevellan/evidence/. Report testsRun with passed true only when everything you ran passed.\n\nProject settings (.jevellan/project.json):\n- testCommand: TZ=UTC SANDBOX_DATA_DIR=.sandbox-data npm test\n- devCommand: npm start\n\nStart the step now. End by writing .jevellan/report.json.",
+    "should_trigger": false,
+    "role_phrase": true
+  },
+  {
+    "query": "Your step is duty implement. Use the duty skill for implement now and follow it.\n\n# Your step\n\nTask T7EM2Q: Empty state on the customers page\nKind: feature. Step 2 of 3: implement.\n\nWhen there are no customers, the customers page should show \"No customers yet\" and a button to add the first one, instead of an empty table.\n\nStep instructions:\nFollow plan.md when it exists. Commit on the task branch. Add or change the tests that cover what you changed, and run only those.\n\nStart the step now. End by writing .jevellan/report.json.",
+    "should_trigger": false,
+    "role_phrase": true
+  },
+  {
+    "query": "Your step is duty plan. Use the duty skill for plan now and follow it.\n\n# Your step\n\nTask T2KD8F: Friday invoice export\nKind: automation. Step 1 of 3: plan.\n\nEvery Friday, export the week's invoices from the admin page as CSV and save the file under exports/.\n\nStep instructions:\nWrite plan.md: the flow to automate step by step, the selectors or APIs discovered, what evidence proves it works.\n\nStart the step now. End by writing .jevellan/report.json.",
+    "should_trigger": false,
+    "role_phrase": true
+  },
+  {
+    "query": "Write a cron line that runs backup.sh every night at 2am and e-mails me when it fails.",
+    "should_trigger": false
+  },
+  {
+    "query": "How do I record a Playwright test with codegen and save it as a TypeScript file?",
+    "should_trigger": false
+  },
+  {
+    "query": "This project's work runs through the coordinator skill: use it for any request to do, plan, track or report on work here.\nOpen work in this project's ledger: none.\n\nAutomate the Friday invoice export from the admin page.",
+    "should_trigger": false,
+    "role_phrase": true
+  },
+  {
+    "query": "Set up a GitHub Actions workflow that runs the test suite on every pull request.",
+    "should_trigger": false,
+    "held_out": true
+  }
+]

@@ -1,0 +1,70 @@
+[
+  {
+    "query": "Your step is duty investigate. Use the duty skill for investigate now and follow it.\n\n# Your step\n\nTask T6NP3X: Where are invoice totals computed?\nKind: single. Step 1 of 1: investigate.\n\nFind where the invoice total shown on the invoices page is computed, including tax and discounts, and whether the CSV export uses the same function. Answer with file and line references.\n\nStart the step now. End by writing .jevellan/report.json.",
+    "should_trigger": true,
+    "role_phrase": true
+  },
+  {
+    "query": "Your step is duty investigate. Use the duty skill for investigate now and follow it.\n\nStart the step now. End by writing .jevellan/report.json.",
+    "should_trigger": true,
+    "role_phrase": true
+  },
+  {
+    "query": "Your step is duty investigate. Use the duty skill for investigate now and follow it.\n\n# Your step\n\nTask T7RQ4D: Why does the customers page load slowly?\nKind: single. Step 1 of 1: investigate.\n\nThe owner reports that the customers page takes several seconds to load with 2,000 customers. Find out what the page does on load and where the time could go. Change nothing.\n\nStart the step now. End by writing .jevellan/report.json.",
+    "should_trigger": true,
+    "role_phrase": true
+  },
+  {
+    "query": "This session is running step 1 of task T6NP3X, a single task whose duty is investigate: answer with file and line references, change nothing, and end by writing .jevellan/report.json. Use the duty skill for investigate now.",
+    "should_trigger": true,
+    "role_phrase": true
+  },
+  {
+    "query": "You are the worker on task T9LM2C, step 1 of 1, duty investigate. The question from the owner: which environment variables does the server read at start-up, and which of them have defaults? Follow the investigate duty and finish with the report file.",
+    "should_trigger": true
+  },
+  {
+    "query": "Worker session for task T3VX8K, duty investigate: the owner wants to know whether anything in src/ still calls the old formatMoney helper. Read only, cite paths and lines, then write .jevellan/report.json.",
+    "should_trigger": true,
+    "held_out": true
+  },
+  {
+    "query": "Your step is duty investigate. Use the duty skill for investigate now and follow it.\n\n# Your step\n\nTask T4QK7W: How are sessions stored?\nKind: single. Step 1 of 1: investigate.\n\nExplain how the app stores user sessions (cookie, memory or database) and what happens to them when the server restarts, with file references.\n\nStart the step now. End by writing .jevellan/report.json.",
+    "should_trigger": true,
+    "role_phrase": true,
+    "held_out": true
+  },
+  {
+    "query": "Your step is duty plan. Use the duty skill for plan now and follow it.\n\n# Your step\n\nTask T8QW2N: CSV export on the invoices page\nKind: feature. Step 1 of 4: plan.\n\nAdd an Export CSV button to the invoices page that downloads the rows currently shown, with the same filters.\n\nStep instructions:\nWrite plan.md at the worktree root: the change in one paragraph, the files to touch, the tests to add or change, open questions as needs-decision only if a choice is the owner's.\n\nStart the step now. End by writing .jevellan/report.json.",
+    "should_trigger": false,
+    "role_phrase": true
+  },
+  {
+    "query": "Your step is duty implement. Use the duty skill for implement now and follow it.\n\n# Your step\n\nTask T8QW2N: CSV export on the invoices page\nKind: feature. Step 2 of 4: implement.\n\nAdd an Export CSV button to the invoices page that downloads the rows currently shown, with the same filters.\n\nStep instructions:\nFollow plan.md when it exists. Commit on the task branch. Add or change the tests that cover what you changed, and run only those.\n\nPlan: plan.md in the worktree root.\n\nStart the step now. End by writing .jevellan/report.json.",
+    "should_trigger": false,
+    "role_phrase": true
+  },
+  {
+    "query": "Your step is duty verify. Use the duty skill for verify now and follow it.\n\n# Your step\n\nTask T8QW2N: CSV export on the invoices page\nKind: feature. Step 3 of 4: verify.\n\nAdd an Export CSV button to the invoices page that downloads the rows currently shown, with the same filters.\n\nStep instructions:\nRun the project's test command, then the browser journeys for every screen the change touches, at desktop and phone widths, saving screenshots to .jevellan/evidence/. Report testsRun with passed true only when everything you ran passed.\n\nProject settings (.jevellan/project.json):\n- testCommand: TZ=UTC SANDBOX_DATA_DIR=.sandbox-data npm test\n- devCommand: npm start\n\nStart the step now. End by writing .jevellan/report.json.",
+    "should_trigger": false,
+    "role_phrase": true
+  },
+  {
+    "query": "Where in the React source code is the cleanup function of useEffect scheduled? I'm just curious, a rough pointer is enough.",
+    "should_trigger": false
+  },
+  {
+    "query": "Any idea why my laptop fan spins up every time I open Slack?",
+    "should_trigger": false
+  },
+  {
+    "query": "This project's work runs through the coordinator skill: use it for any request to do, plan, track or report on work here.\nOpen work in this project's ledger: none.\n\nFind out where the invoice totals are computed and tell me.",
+    "should_trigger": false,
+    "role_phrase": true
+  },
+  {
+    "query": "Investigate this stack trace and tell me the likely cause: TypeError: Cannot read properties of undefined (reading 'id') at renderRow (table.js:41).",
+    "should_trigger": false,
+    "held_out": true
+  }
+]
