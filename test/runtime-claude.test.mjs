@@ -21,9 +21,12 @@ const argv = process.argv.slice(2);
 const at = argv.indexOf('--session-id') >= 0 ? argv.indexOf('--session-id') : argv.indexOf('--resume');
 const sid = argv[at + 1];
 const record = { argv, cwd: process.cwd(), envKeys: Object.keys(process.env).sort(), hasToken: Boolean(process.env.CLAUDE_CODE_OAUTH_TOKEN),
-  configDir: process.env.CLAUDE_CONFIG_DIR, jh: { task: process.env.JH_TASK, step: process.env.JH_STEP, duty: process.env.JH_DUTY, project: process.env.JH_PROJECT, session: process.env.JH_SESSION } };
+  configDir: process.env.CLAUDE_CONFIG_DIR, jh: { task: process.env.JH_TASK, step: process.env.JH_STEP, duty: process.env.JH_DUTY, project: process.env.JH_PROJECT, session: process.env.JH_SESSION, cwd: process.env.JH_CWD } };
 fs.appendFileSync(path.join(out, sid + '.jsonl'), JSON.stringify(record) + '\\n');
-setTimeout(() => process.exit(0), Number(process.env.FAKE_SLEEP_MS || 1500));
+// The worker environment carries no test variable, so how long to live comes from a file named after the task.
+let sleepMs = 1500;
+try { sleepMs = Number(fs.readFileSync(path.join(out, 'sleep-' + process.env.JH_TASK), 'utf8')); } catch {}
+setTimeout(() => process.exit(0), sleepMs);
 `, { mode: 0o755 });
 
 let project;
@@ -33,6 +36,11 @@ const run = (script, args, extra = {}) => spawnSync(NODE, [path.join(project, '.
   encoding: 'utf8',
   env: { PATH: process.env.PATH, HOME: process.env.HOME, USER: process.env.USER, TMPDIR: fakeOut, JH_HARNESS_HOME: HARNESS_HOME, JH_CLAUDE_BIN: fakeBin, ...extra },
 });
+// How long the fake worker of `task` lives.
+const sleepFor = (task, ms) => {
+  fs.mkdirSync(path.join(fakeOut, 'fake-claude'), { recursive: true });
+  fs.writeFileSync(path.join(fakeOut, 'fake-claude', `sleep-${task}`), String(ms));
+};
 const json = (r) => {
   try {
     return JSON.parse(r.stdout);
@@ -142,7 +150,7 @@ describe('start', () => {
     assert.ok(!argv.join(' ').includes(FAKE_TOKEN), 'the token is never on the command line');
     assert.equal(rec.hasToken, true);
     assert.equal(rec.configDir, path.join(HARNESS_HOME, 'claude-config'));
-    assert.deepEqual(rec.jh, { task, step: '1', duty: 'investigate', project: fs.realpathSync(project), session: out.session });
+    assert.deepEqual(rec.jh, { task, step: '1', duty: 'investigate', project: fs.realpathSync(project), session: out.session, cwd: wt });
     assert.equal(rec.cwd, wt);
     const append = fs.readFileSync(out.appendFile, 'utf8');
     assert.match(append, /You are working on one step of one task/);
@@ -193,7 +201,8 @@ describe('resume, stop, status', () => {
     const task = newTask('investigate', 'resume me');
     const wt = worktreeFor(task);
     place(task, 1);
-    const r = run('start.mjs', startArgs(task, 'investigate', wt), { FAKE_SLEEP_MS: '2500' });
+    sleepFor(task, 2500);
+    const r = run('start.mjs', startArgs(task, 'investigate', wt));
     const out = json(r);
     let res = run('resume.mjs', ['--task', task, '--step', '1', '--message', 'Continue.']);
     assert.equal(res.status, 2);
@@ -222,7 +231,8 @@ describe('resume, stop, status', () => {
     const task = newTask('investigate', 'stop me');
     const wt = worktreeFor(task);
     place(task, 1);
-    const out = json(run('start.mjs', startArgs(task, 'investigate', wt), { FAKE_SLEEP_MS: '60000' }));
+    sleepFor(task, 60000);
+    const out = json(run('start.mjs', startArgs(task, 'investigate', wt)));
     assert.ok(waitFor(() => records(out.session).length === 1));
     const r = run('stop.mjs', ['--task', task, '--step', '1']);
     assert.equal(r.status, 0, r.stderr);

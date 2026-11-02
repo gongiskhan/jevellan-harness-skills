@@ -21,6 +21,24 @@ export class LockTimeout extends Error {
   }
 }
 
+// Writes all of `data` at the file's current position (the end, for a file opened to append). writeSync may write
+// fewer bytes than asked; the rest is written in further calls, and a call that writes nothing ends it with an error,
+// so a cut write is never taken for a whole one.
+export function writeAll(fd, data) {
+  const buffer = Buffer.isBuffer(data) ? data : Buffer.from(String(data));
+  let done = 0;
+  while (done < buffer.length) {
+    const n = fs.writeSync(fd, buffer, done, buffer.length - done, null);
+    if (!(n > 0)) {
+      const error = new Error(`write made no progress after ${done} of ${buffer.length} bytes`);
+      error.code = 'ESHORTWRITE';
+      throw error;
+    }
+    done += n;
+  }
+  return done;
+}
+
 export function pidAlive(pid) {
   if (!Number.isInteger(pid) || pid <= 0) return false;
   try {
@@ -68,7 +86,7 @@ function breakStale(file, seen, staleMs) {
     return false;
   }
   try {
-    fs.writeSync(fd, `${process.pid} ${Date.now()}`);
+    writeAll(fd, `${process.pid} ${Date.now()}`);
     const now = readHolder(file);
     if (now && now.text === seen.text && isStale(now, staleMs)) fs.unlinkSync(file);
   } catch (error) {
@@ -90,7 +108,16 @@ export function acquire(file, { timeoutMs = 2000, retryMs = 20, staleMs = 10000 
   for (;;) {
     try {
       const fd = fs.openSync(file, 'wx', 0o600);
-      fs.writeSync(fd, `${process.pid} ${Date.now()}`);
+      try {
+        writeAll(fd, `${process.pid} ${Date.now()}`);
+      } catch (error) {
+        // A lock file with a cut holder text would name the wrong pid; it was never held, so remove it.
+        fs.closeSync(fd);
+        try {
+          fs.unlinkSync(file);
+        } catch {}
+        throw error;
+      }
       fs.closeSync(fd);
       let released = false;
       return () => {

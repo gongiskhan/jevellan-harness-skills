@@ -19,7 +19,7 @@ Check a step:  node <this skill>/scripts/status.mjs --task T --step N
 start and resume return at once; the step runs in the background. Use the ledger skill to wait for its report.
 ```
 
-If no skill with that role is installed, stop, tell the owner which role is missing, and do not improvise it.
+If no skill in your list has that role (a skill's role is the first word of its description), call no skill at all: stop, tell the owner which role is missing, and do not improvise it.
 
 ## Details
 

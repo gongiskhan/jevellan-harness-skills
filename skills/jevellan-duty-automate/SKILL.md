@@ -1,6 +1,6 @@
 ---
 name: jevellan-duty-automate
-description: "Duty automate. Use when this session is running a task step whose duty is automate. Builds Playwright automations with a dry-run flag and evidence. End by writing the report file."
+description: "Duty automate. Use when this session is running a task step whose duty is automate: only when the runtime's instructions for this session say 'Your step is duty automate', never for a request typed by the owner. Builds Playwright automations with a dry-run flag and evidence. End by writing the report file."
 jh-role: duty
 jh-duty: automate
 jh-needs: [repo-write, shell, browser]

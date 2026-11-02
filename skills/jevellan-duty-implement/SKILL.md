@@ -1,6 +1,6 @@
 ---
 name: jevellan-duty-implement
-description: "Duty implement. Use when this session is running a task step whose duty is implement. Changes the code on the task branch and commits. End by writing the report file."
+description: "Duty implement. Use when this session is running a task step whose duty is implement: only when the runtime's instructions for this session say 'Your step is duty implement', never for a request typed by the owner. Changes the code on the task branch and commits. End by writing the report file."
 jh-role: duty
 jh-duty: implement
 jh-needs: [repo-write, shell]

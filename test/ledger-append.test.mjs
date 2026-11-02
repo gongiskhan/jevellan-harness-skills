@@ -156,14 +156,136 @@ describe('refusals', () => {
     assert.equal(verifyLedger(root).ok, true);
   });
 
-  test('a ledger whose last line does not parse refuses further appends', () => {
+  const good = (seq) => JSON.stringify({ seq, t: new Date().toISOString(), kind: 'note', data: { text: `line ${seq}` } });
+
+  test('a last line that does not parse does not stop later appends: seq follows the last line that parses', () => {
     const root = makeRepo();
-    fs.writeFileSync(ledgerFile(root), `${JSON.stringify({ seq: 1, t: new Date().toISOString(), kind: 'note', data: {} })}\n{"seq": 2, "t"\n`);
-    const r = cli(root, ['append', 'note', '--data', '{"text":"x"}']);
-    assert.equal(r.status, 2);
-    assert.match(r.stderr, /last line does not parse; run ledger\.mjs verify/);
+    fs.writeFileSync(ledgerFile(root), `${good(1)}\n{"seq": 2, "t"\n`);
+    const r = cli(root, ['append', 'note', '--data', '{"text":"x"}', '--json']);
+    assert.equal(r.status, 0, r.stderr);
+    assert.equal(r.json().seq, 2);
+    const event = appendEvent(root, { kind: 'note', data: { text: 'y' } });
+    assert.equal(event.seq, 3);
+    // verify still reports the bad line, and only it.
+    const result = verifyLedger(root);
+    assert.equal(result.ok, false);
+    assert.equal(result.lines, 3);
+    assert.equal(result.issues.length, 1);
+    assert.match(result.issues[0], /^line 2 does not parse/);
+  });
+
+  test('a bad last line without its newline is passed over and the next line starts on its own line', () => {
+    const root = makeRepo();
+    fs.writeFileSync(ledgerFile(root), `${good(1)}\n${good(2)}\n{"seq": 3, "t": "cut sho`);
+    const event = appendEvent(root, { kind: 'note', data: { text: 'after the cut' } });
+    assert.equal(event.seq, 3);
+    const lines = ledgerText(root).split('\n');
+    assert.equal(lines[2], '{"seq": 3, "t": "cut sho');
+    assert.deepEqual(JSON.parse(lines[3]), event);
+    assert.deepEqual(verifyLedger(root).issues.map((i) => i.replace(/ \(.*$/, '')), ['line 3 does not parse']);
+  });
+
+  test('lines that parse without an integer seq, and a bad line over 64 KB, are passed over too', () => {
+    const root = makeRepo();
+    const huge = `{"seq": 3, "garbage": "${'x'.repeat(3 * MAX_LINE)}`;
+    fs.writeFileSync(ledgerFile(root), [good(1), good(2), '{"seq":"3"}', '[3]', 'null', '7', huge].join('\n') + '\n');
+    assert.equal(appendEvent(root, { kind: 'note', data: { text: 'next' } }).seq, 3);
+  });
+
+  test('a ledger with no line that parses starts at seq 1', () => {
+    const root = makeRepo();
+    fs.writeFileSync(ledgerFile(root), `not json\n${'y'.repeat(MAX_LINE + 50)}\n\n`);
+    assert.equal(appendEvent(root, { kind: 'note', data: { text: 'first good line' } }).seq, 1);
+  });
+
+  test('a long ledger with a long bad tail keeps numbering from its last good line, read across chunk boundaries', () => {
+    const root = makeRepo();
+    // 150 lines of about 1 KB with two-byte characters, then a cut line of 100 KB: reading back from the end crosses
+    // several 64 KB chunks, and a chunk boundary falls inside a good line.
+    const lines = Array.from({ length: 150 }, (_, i) => JSON.stringify({ seq: i + 1, t: new Date().toISOString(), kind: 'note', data: { text: `line ${i + 1} ${'zé'.repeat(500)}` } }));
+    fs.writeFileSync(ledgerFile(root), `${lines.join('\n')}\n{"seq": 151, "cut": "${'q'.repeat(100 * 1024)}\n`);
+    assert.equal(appendEvent(root, { kind: 'note', data: { text: 'more' } }).seq, 151);
+    assert.equal(verifyLedger(root).issues.length, 1);
   });
 });
+
+// fs.writeSync may write fewer bytes than asked; the ledger and the lock must finish the write or fail loudly.
+// The fake below shortens only the writes that carry `marker`, so every other write goes through as usual.
+function shortWrites(marker, { max = 7, stopAfter = Infinity } = {}) {
+  const original = fs.writeSync;
+  let written = 0;
+  fs.writeSync = function writeSync(fd, data, ...rest) {
+    const bytes = typeof data === 'string' ? Buffer.from(data) : data;
+    if (!Buffer.isBuffer(bytes) || !bytes.includes(marker)) return original.call(fs, fd, data, ...rest);
+    const offset = typeof data === 'string' ? 0 : rest[0] ?? 0;
+    const length = typeof data === 'string' ? bytes.length : rest[1] ?? bytes.length - offset;
+    const n = Math.max(0, Math.min(length, max, stopAfter - written));
+    if (n === 0) return 0;
+    written += n;
+    return original.call(fs, fd, bytes, offset, n, null);
+  };
+  return () => {
+    fs.writeSync = original;
+  };
+}
+
+describe('short writes', () => {
+  test('an append whose writes come back short is continued until the whole line is in the file', () => {
+    const root = makeRepo();
+    appendEvent(root, { kind: 'note', data: { text: 'before' } });
+    const restore = shortWrites('short-write-marker', { max: 7 });
+    let event;
+    try {
+      event = appendEvent(root, { kind: 'note', data: { text: 'short-write-marker in a line long enough to need many writes' } });
+    } finally {
+      restore();
+    }
+    assert.deepEqual(readLedger(root)[1], event);
+    assert.equal(verifyLedger(root).ok, true);
+  });
+
+  test('a write that makes no progress throws; the cut line is passed over by the next append', () => {
+    const root = makeRepo();
+    appendEvent(root, { kind: 'note', data: { text: 'before' } });
+    const restore = shortWrites('stalled-write-marker', { max: 5, stopAfter: 20 });
+    try {
+      assert.throws(() => appendEvent(root, { kind: 'note', data: { text: 'stalled-write-marker' } }), /no progress after 20 of \d+ bytes/);
+    } finally {
+      restore();
+    }
+    assert.equal(ledgerText(root).split('\n')[1].length, 20);
+    const next = appendEvent(root, { kind: 'note', data: { text: 'after the stall' } });
+    assert.equal(next.seq, 2);
+    assert.deepEqual(readLedgerLoose(root).map((e) => e.seq), [1, 2]);
+    assert.deepEqual(verifyLedger(root).issues.map((i) => i.replace(/ \(.*$/, '')), ['line 2 does not parse']);
+  });
+
+  test('the lock file gets its whole holder text even when writes come back short', () => {
+    const dir = tempDir('jh-lock-');
+    const file = path.join(dir, 'ledger.lock');
+    const restore = shortWrites(`${process.pid} `, { max: 3 });
+    let release;
+    try {
+      release = acquire(file, { timeoutMs: 200 });
+    } finally {
+      restore();
+    }
+    assert.match(fs.readFileSync(file, 'utf8'), new RegExp(`^${process.pid} \\d{13}$`));
+    release();
+    assert.equal(fs.existsSync(file), false);
+  });
+});
+
+// The lines of the ledger that parse, ignoring the others.
+function readLedgerLoose(root) {
+  return ledgerText(root).split('\n').flatMap((line) => {
+    try {
+      return [JSON.parse(line)];
+    } catch {
+      return [];
+    }
+  });
+}
 
 describe('the ledger lock', () => {
   test('a lock file held by a dead pid is taken over at once', (t) => {

@@ -20,7 +20,7 @@ To check providers: node <this skill>/scripts/providers.mjs check   prints login
 the answer is the provider kind (claude-subscription, claude-endpoint or codex-subscription): it says which runtime
 skill starts the step.
 
-If no skill with that role is installed, stop, tell the owner which role is missing, and do not improvise it.
+If no skill in your list has that role (a skill's role is the first word of its description), call no skill at all: stop, tell the owner which role is missing, and do not improvise it.
 
 ## How this policy works
 

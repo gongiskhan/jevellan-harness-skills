@@ -274,19 +274,26 @@ function chunk(items, size) {
   return out;
 }
 
-// Files with uncommitted changes in `cwd` (`git status --porcelain -z`, untracked files included, ignored files not).
-// With `paths`, only those paths. The harness's own paths (isHarnessPath) never count in a task worktree; `all`
-// counts them too (the main checkout, where they are the owner's files).
-export function uncommittedFiles(cwd, paths, { all = false } = {}) {
+// `git status --porcelain -z` of `cwd` as [{path, code}], code being the two status letters ("??" untracked). Every
+// untracked file is listed on its own. With `paths`, only those paths (a folder's whole content). `ignored` adds the
+// ignored files, each on its own with the code "!!".
+export function statusEntries(cwd, paths, { ignored = false } = {}) {
   if (paths && paths.length === 0) return [];
-  const args = ['status', '--porcelain=v1', '-z', '--untracked-files=all', '--no-renames'];
-  const out = [];
+  const args = ['status', '--porcelain=v1', '-z', '--untracked-files=all', '--no-renames', ...(ignored ? ['--ignored=traditional'] : [])];
+  const out = new Map();
   // Pathspecs in chunks, so a large change cannot exceed the argument limit.
   for (const part of paths ? chunk(paths, 500) : [null]) {
     const r = git(cwd, part ? [...args, '--', ...part.map((p) => `:(literal)${p}`)] : args);
-    for (const field of r.stdout.split('\0')) if (field.length > 3) out.push(field.slice(3));
+    for (const field of r.stdout.split('\0')) if (field.length > 3) out.set(field.slice(3), field.slice(0, 2));
   }
-  const files = [...new Set(out)];
+  return [...out].map(([file, code]) => ({ path: file, code }));
+}
+
+// Files with uncommitted changes in `cwd`, untracked files included, ignored files not. With `paths`, only those
+// paths. The harness's own paths (isHarnessPath) never count in a task worktree; `all` counts them too (the main
+// checkout, where they are the owner's files).
+export function uncommittedFiles(cwd, paths, { all = false } = {}) {
+  const files = statusEntries(cwd, paths).map((e) => e.path);
   return all ? files : files.filter((file) => !isHarnessPath(file));
 }
 
@@ -462,13 +469,33 @@ function setUpWorktree(root, wtPath, warnings) {
   if (!pointsAt || !samePath(pointsAt, target)) warnings.push(`${link} exists and is not a link to ${target}; it was left as it is`);
 }
 
+// What git status shows in a task worktree outside the harness's own paths, as path -> status letters.
+function workStatus(wtPath) {
+  return new Map(statusEntries(wtPath).filter((e) => !isHarnessPath(e.path)).map((e) => [e.path, e.code]));
+}
+
+function readList(file) {
+  try {
+    const list = JSON.parse(fs.readFileSync(file, 'utf8'));
+    return Array.isArray(list) ? list.filter((f) => typeof f === 'string') : [];
+  } catch {
+    return [];
+  }
+}
+
 // The project's setupCommand (project.json, for example "npm ci") runs once in a new worktree, so workers and the
 // landing checks find the project's dependencies there. Its output goes to <worktree>/.jevellan/setup.log; success
 // leaves .jevellan/setup.done, so a later create of the same task runs it again only when it never succeeded.
+// A setup must leave the worktree as git found it: a tracked file it changed, or an untracked file it created outside
+// the harness's paths (an `npm install` that writes package-lock.json), would be committed by a worker's `git add -A`
+// and land, or make landing refuse the tree. git status before and after the command tells; such a setup fails,
+// naming the files, and they are listed in .jevellan/setup.changed so a later run still counts them as the setup's
+// (they show before that run too). Nothing is removed.
 export function runSetup(L, root, wtPath, config) {
   const command = typeof config.setupCommand === 'string' ? config.setupCommand.trim() : '';
   if (!command) return { ran: false };
-  const done = path.join(wtPath, '.jevellan', 'setup.done');
+  const dir = path.join(wtPath, '.jevellan');
+  const done = path.join(dir, 'setup.done');
   if (fs.existsSync(done)) return { ran: false, already: true };
   const owner = L.project.ownerHome();
   const env = { HOME: owner };
@@ -476,20 +503,37 @@ export function runSetup(L, root, wtPath, config) {
   Object.assign(env, identityEnv(gitIdentity(root, owner)));
   const browsers = path.join(owner, '.cache', 'ms-playwright');
   if (fs.existsSync(browsers)) env.PLAYWRIGHT_BROWSERS_PATH = browsers;
-  const logFile = path.join(wtPath, '.jevellan', 'setup.log');
+  fs.mkdirSync(dir, { recursive: true });
+  const logFile = path.join(dir, 'setup.log');
+  const changedFile = path.join(dir, 'setup.changed');
+  const earlier = readList(changedFile);
+  const before = workStatus(wtPath);
   const t0 = Date.now();
   const r = spawnSync('sh', ['-c', command], { cwd: wtPath, env, encoding: 'utf8', timeout: 15 * 60 * 1000, maxBuffer: 64 * 1024 * 1024 });
-  fs.writeFileSync(logFile, `$ ${command}\n${r.stdout ?? ''}${r.stderr ?? ''}`);
+  const output = `${r.stdout ?? ''}${r.stderr ?? ''}`;
   if (r.status !== 0) {
-    return { ran: true, ok: false, command, exitCode: r.status, logFile, tail: L.redact.redactText(`${r.stdout ?? ''}${r.stderr ?? ''}`.slice(-1500)) };
+    fs.writeFileSync(logFile, `$ ${command}\n${output}`);
+    const problem = r.status === null ? `ended by ${r.signal ?? r.error?.code ?? 'an error'}` : `exit ${r.status}`;
+    return { ran: true, ok: false, command, exitCode: r.status, problem, logFile, tail: L.redact.redactText(output.slice(-1500)) };
   }
+  const after = workStatus(wtPath);
+  const changed = [...after].filter(([file, code]) => before.get(file) !== code || earlier.includes(file)).map(([file]) => file);
+  if (changed.length) {
+    const list = listText(changed);
+    const problem = `it left changes a landing would carry: ${list}`;
+    const note = `[the setupCommand left changes a landing would carry: ${list}. A setup must leave the worktree clean: ignore what it writes in .gitignore, or, for npm without a lockfile, use npm install --no-package-lock]`;
+    fs.writeFileSync(changedFile, `${JSON.stringify(changed)}\n`);
+    fs.writeFileSync(logFile, `$ ${command}\n${output}${output && !output.endsWith('\n') ? '\n' : ''}${note}\n`);
+    return { ran: true, ok: false, command, exitCode: 0, problem, changed, logFile, tail: L.redact.redactText(`${output.slice(-1500)}${output && !output.endsWith('\n') ? '\n' : ''}${note}`) };
+  }
+  fs.writeFileSync(logFile, `$ ${command}\n${output}`);
   fs.writeFileSync(done, `${new Date().toISOString()} ${command} (${Date.now() - t0} ms)\n`);
   return { ran: true, ok: true, command, ms: Date.now() - t0, logFile };
 }
 
 function setupOutcome(setup, wtPath) {
   if (!setup.ran || setup.ok) return null;
-  return new GitSkillError(`the worktree ${wtPath} is ready but its setupCommand "${setup.command}" failed (exit ${setup.exitCode}); see ${setup.logFile}:\n${setup.tail}`);
+  return new GitSkillError(`the worktree ${wtPath} is ready but its setupCommand "${setup.command}" failed (${setup.problem}); see ${setup.logFile}:\n${setup.tail.trimEnd()}`);
 }
 
 async function create(argv) {

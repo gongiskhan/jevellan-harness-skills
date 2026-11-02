@@ -9,7 +9,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { execFileSync, spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { START_LINE, forbiddenReason } from '../install.mjs';
+import { START_LINE, forbiddenReason, setupCommandFor } from '../install.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const INSTALL = path.join(ROOT, 'install.mjs');
@@ -184,7 +184,7 @@ test('a fresh install writes every skill, the three hooks with absolute Node pat
     defaultBranch: 'main',
     testCommand: 'npm test',
     devCommand: 'npm run dev',
-    setupCommand: 'npm install',
+    setupCommand: 'npm install --no-package-lock',
     riskyPaths: [],
     checks: [],
     pushAfterLanding: false,
@@ -313,6 +313,21 @@ test('project.json detects npm start when there is no dev script, and the defaul
   assert.equal(config.defaultBranch, 'trunk');
   assert.equal(config.testCommand, null);
   assert.equal(config.devCommand, 'npm start');
+});
+
+test('setupCommand follows the lockfile; without one, npm installs without writing a package-lock.json', () => {
+  const box = sandbox();
+  const project = (name, files) => {
+    const dir = path.join(box.base, name);
+    fs.mkdirSync(dir);
+    for (const file of files) fs.writeFileSync(path.join(dir, file), file === 'package.json' ? '{}\n' : '');
+    return dir;
+  };
+  assert.equal(setupCommandFor(project('pnpm', ['package.json', 'pnpm-lock.yaml', 'package-lock.json'])), 'pnpm install --frozen-lockfile');
+  assert.equal(setupCommandFor(project('yarn', ['package.json', 'yarn.lock'])), 'yarn install --frozen-lockfile');
+  assert.equal(setupCommandFor(project('npm-locked', ['package.json', 'package-lock.json'])), 'npm ci');
+  assert.equal(setupCommandFor(project('npm-unlocked', ['package.json'])), 'npm install --no-package-lock');
+  assert.equal(setupCommandFor(project('no-node', ['Makefile'])), null);
 });
 
 test('project.json without package.json uses the current branch; an existing project.json is never rewritten', () => {

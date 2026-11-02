@@ -1,6 +1,6 @@
 ---
 name: jevellan-duty-document
-description: "Duty document. Use when this session is running a task step whose duty is document. Changes documentation files only. End by writing the report file."
+description: "Duty document. Use when this session is running a task step whose duty is document: only when the runtime's instructions for this session say 'Your step is duty document', never for a request typed by the owner. Changes documentation files only. End by writing the report file."
 jh-role: duty
 jh-duty: document
 jh-needs: [repo-write]

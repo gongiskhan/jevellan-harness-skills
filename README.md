@@ -118,8 +118,8 @@ A skill is a folder under `skills/` with a `SKILL.md` whose frontmatter has `nam
 (starting with the role word) and `jh-role`, plus `jh-kinds` for a runtime, `jh-duty` and `jh-needs` for a duty, and
 `jh-kind` and a `workflow.json` for a workflow. A new duty is picked up by placement from its `jh-needs`; a new runtime
 from its `jh-kinds`; a new workflow kind by the coordinator through "the workflow skill for <kind>". Its body uses
-role phrases only, and when it uses one it carries the sentence "If no skill with that role is installed, stop, tell
-the owner which role is missing, and do not improvise it." Add `evals/trigger-cases.json` and run
+role phrases only, and when it uses one it carries the role-missing sentence that `scripts/check-roles.mjs` names
+(`ROLE_MISSING_SENTENCE`). Add `evals/trigger-cases.json` and run
 `node scripts/run-trigger-evals.mjs --skill <name>`; `npm test` runs the unit suites and the role lint.
 
 ## Repository

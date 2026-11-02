@@ -5,7 +5,7 @@
 
 import fs from 'node:fs';
 import { parseArgs } from 'node:util';
-import { RuntimeError, currentView, loadTask, projectLib, rootFor } from './lib/task.mjs';
+import { RuntimeError, ledger, loadTask, projectLib, rootFor } from './lib/task.mjs';
 import { pidAlive } from './lib/proc.mjs';
 import { isEntry, main } from './lib/cli.mjs';
 import { importFromRole } from './lib/roles.mjs';
@@ -56,7 +56,8 @@ export async function status(argv) {
   if (!(Number.isInteger(step) && step > 0)) throw new RuntimeError('--step must be a positive integer');
   const root = projectLib.projectRoot(process.cwd()) ?? rootFor(process.cwd());
   const info = loadTask(root, values.task);
-  const view = currentView(info, step);
+  // The step's newest start, even when a retry reset the step since: its process may still be running.
+  const view = ledger.stepView(info.events, step);
   if (!view.started) throw new RuntimeError(`step ${step} of ${values.task} has not started`, 3);
   const d = view.started.data;
   const alive = pidAlive(d.pid);

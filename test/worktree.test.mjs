@@ -229,6 +229,67 @@ describe('worktree.mjs create', () => {
   });
 });
 
+describe('worktree.mjs create: the setup command', () => {
+  const setupFile = (wt, name) => path.join(wt, '.jevellan', name);
+  const worktreeOf = (root, task) => readLedger(root).filter((e) => e.task === task && e.kind === 'task.worktree').at(-1)?.data;
+
+  test('a setup that leaves only ignored files and harness files behind succeeds once', async () => {
+    const { root } = makeProject({ config: { setupCommand: 'mkdir -p deps && echo lib > deps/lib.js && echo note > .jevellan/extra.txt && echo installed' } });
+    commit(root, '.gitignore', 'deps/\n');
+    const t = newTask(root, { title: 'Clean setup' });
+    const out = await create(root, t.task);
+    assert.equal(out.setup.command, 'mkdir -p deps && echo lib > deps/lib.js && echo note > .jevellan/extra.txt && echo installed');
+    assert.ok(fs.existsSync(setupFile(out.path, 'setup.done')));
+    assert.equal(fs.readFileSync(setupFile(out.path, 'setup.log'), 'utf8'), `$ ${out.setup.command}\ninstalled\n`);
+    assert.equal(git(out.path, 'status', '--porcelain', '--untracked-files=all'), '');
+  });
+
+  test('a setup that writes an untracked file fails naming it, keeps failing while the file is there, and passes once it is gone', async () => {
+    const { root } = makeProject({ config: { setupCommand: 'echo "{}" > package-lock.json && echo added 3 packages' } });
+    const t = newTask(root, { title: 'Lockfile setup' });
+    const r = await run(root, ['create', '--task', t.task]);
+    assert.equal(r.status, 2);
+    const wt = worktreeOf(root, t.task);
+    assert.ok(wt, 'the worktree is recorded before its setup runs');
+    assert.match(r.stderr, new RegExp(`^the worktree ${wt.path.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')} is ready but its setupCommand "echo "\\{\\}" > package-lock\\.json && echo added 3 packages" failed \\(it left changes a landing would carry: package-lock\\.json\\); see .*setup\\.log:\nadded 3 packages\n\\[the setupCommand left changes a landing would carry: package-lock\\.json\\. A setup must leave the worktree clean: ignore what it writes in \\.gitignore, or, for npm without a lockfile, use npm install --no-package-lock\\]\n$`));
+    assert.equal(fs.existsSync(setupFile(wt.path, 'setup.done')), false);
+    assert.deepEqual(JSON.parse(fs.readFileSync(setupFile(wt.path, 'setup.changed'), 'utf8')), ['package-lock.json']);
+    assert.match(fs.readFileSync(setupFile(wt.path, 'setup.log'), 'utf8'), /^\$ echo .*\nadded 3 packages\n\[the setupCommand left changes a landing would carry: package-lock\.json\..*\]\n$/);
+    assert.equal(fs.readFileSync(path.join(wt.path, 'package-lock.json'), 'utf8'), '{}\n', 'nothing is removed');
+
+    // The file shows before the next run too; it is still the setup's, so the setup still fails.
+    const again = await run(root, ['create', '--task', t.task]);
+    assert.equal(again.status, 2);
+    assert.match(again.stderr, /failed \(it left changes a landing would carry: package-lock\.json\)/);
+    // A setup that no longer writes it still fails while the file it left is there.
+    writeJson(path.join(root, '.jevellan', 'project.json'), { name: path.basename(root), defaultBranch: 'main', setupCommand: 'echo fixed' });
+    const fixed = await run(root, ['create', '--task', t.task]);
+    assert.equal(fixed.status, 2);
+    assert.match(fixed.stderr, /failed \(it left changes a landing would carry: package-lock\.json\)/);
+    fs.renameSync(path.join(wt.path, 'package-lock.json'), path.join(tempDir('jh-moved-'), 'package-lock.json'));
+    const clean = await run(root, ['create', '--task', t.task, '--json']);
+    assert.equal(clean.status, 0, clean.stderr);
+    assert.equal(clean.json().setup, 'echo fixed');
+    assert.ok(fs.existsSync(setupFile(wt.path, 'setup.done')));
+    assert.equal(readLedger(root).filter((e) => e.task === t.task && e.kind === 'task.worktree').length, 1);
+  });
+
+  test('a setup that changes a tracked file fails naming it; a setup that exits non-zero fails with its exit code', async () => {
+    const { root } = makeProject({ config: { setupCommand: 'echo appended >> README.md' } });
+    const t = newTask(root, { title: 'Tracked change' });
+    const r = await run(root, ['create', '--task', t.task]);
+    assert.equal(r.status, 2);
+    assert.match(r.stderr, /failed \(it left changes a landing would carry: README\.md\)/);
+    assert.equal(fs.existsSync(setupFile(worktreeOf(root, t.task).path, 'setup.done')), false);
+
+    writeJson(path.join(root, '.jevellan', 'project.json'), { name: path.basename(root), defaultBranch: 'main', setupCommand: 'echo nope >&2; exit 3' });
+    const failing = newTask(root, { title: 'Failing setup' });
+    const f = await run(root, ['create', '--task', failing.task]);
+    assert.equal(f.status, 2);
+    assert.match(f.stderr, /is ready but its setupCommand "echo nope >&2; exit 3" failed \(exit 3\); see .*setup\.log:\nnope\n$/);
+  });
+});
+
 describe('worktree.mjs archive', () => {
   test('moves the worktree into the archive, keeps the branch and every file, and stops the task', async () => {
     const { root } = makeProject();

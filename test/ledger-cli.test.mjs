@@ -4,8 +4,9 @@ import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
+import { spawn } from 'node:child_process';
 import { performance } from 'node:perf_hooks';
-import { TaskScript, cli, cliAsync, deadPid, makeRepo, readLedger, sleep, tempDir } from './helpers/ledger-fixture.mjs';
+import { NODE, TaskScript, cli, cliAsync, deadPid, makeRepo, readLedger, sleep, tempDir } from './helpers/ledger-fixture.mjs';
 import { appendEvent } from '../skills/jevellan-ledger/scripts/lib/ledger.mjs';
 import { isTaskId } from '../skills/jevellan-ledger/scripts/lib/ids.mjs';
 
@@ -254,6 +255,22 @@ describe('step.done guard', () => {
     assert.match(r.stderr, /no report since it last started/);
   });
 
+  test('a done report from an older session does not count for the newer start', () => {
+    const root = makeRepo();
+    const s = new TaskScript(root);
+    s.workflow([{ ordinal: 1, duty: 'implement' }]);
+    const add = (kind, session, data) => appendEvent(root, { kind, task: s.task, step: 1, session, data: { ordinal: 1, ...data } });
+    add('step.started', 'session-old', { duty: 'implement' });
+    add('step.failed', 'session-coordinator', { reason: 'given up' });
+    add('step.started', 'session-new', { duty: 'implement' });
+    add('step.report', 'session-old', { status: 'done' });
+    const r = done(root, s);
+    assert.equal(r.status, 2);
+    assert.match(r.stderr, /step 1 has no report since it last started; wait for it/);
+    add('step.report', 'session-new', { status: 'done' });
+    assert.equal(done(root, s).status, 0);
+  });
+
   test('--force records it anyway, marked forced', () => {
     const root = makeRepo();
     const s = started(root);
@@ -264,26 +281,38 @@ describe('step.done guard', () => {
 });
 
 describe('step.retrying guard', () => {
-  function verifyFailed(root) {
+  const FAILING = { status: 'done', testsRun: { command: 'npm test', passed: false, summary: 'failing' } };
+  function verifyFailed(root, end = FAILING) {
     const s = new TaskScript(root);
-    s.workflow([{ ordinal: 1, duty: 'implement' }, { ordinal: 2, duty: 'verify', onFail: { goto: 1, maxLoops: 2 } }]);
+    s.workflow([{ ordinal: 1, duty: 'implement' }, { ordinal: 2, duty: 'verify', onFail: { goto: 1, maxLoops: 2 } }, { ordinal: 3, duty: 'document' }]);
     s.stepDone(1);
     s.started(2, { duty: 'verify' });
-    s.report(2, { status: 'done', testsRun: { command: 'npm test', passed: false, summary: 'failing' } });
+    if (end) s.report(2, end);
     return s;
   }
-  const retry = (root, s, attempt, gotoOrdinal, extra = []) => cli(root, ['append', 'step.retrying', '--task', s.task, '--step', '2', '--data', JSON.stringify({ attempt, gotoOrdinal, reason: 'verify failed' }), ...extra]);
+  // After a retry back to step 1: step 1 runs again and step 2 fails again.
+  function failAgain(s) {
+    s.stepDone(1);
+    s.started(2, { duty: 'verify' });
+    s.report(2, FAILING);
+  }
+  const retryStep = (root, s, step, attempt, gotoOrdinal, extra = []) => cli(root, ['append', 'step.retrying', '--task', s.task, '--step', String(step), '--data', JSON.stringify({ attempt, gotoOrdinal, reason: 'verify failed' }), ...extra]);
+  const retry = (root, s, attempt, gotoOrdinal, extra = []) => retryStep(root, s, 2, attempt, gotoOrdinal, extra);
+  const refused = (r, pattern) => {
+    assert.equal(r.status, 2, r.stdout + r.stderr);
+    assert.match(r.stderr, pattern);
+  };
 
-  test('accepted up to maxLoops, refused beyond it, and --force goes past it', () => {
+  test('accepted up to maxLoops, each time after the step failed again, refused beyond it, and --force goes past it', () => {
     const root = makeRepo();
     const s = verifyFailed(root);
     const first = retry(root, s, 1, 1, ['--json']);
     assert.equal(first.status, 0, first.stderr);
     assert.deepEqual(first.json().data, { attempt: 1, gotoOrdinal: 1, reason: 'verify failed', ordinal: 2 });
+    failAgain(s);
     assert.equal(retry(root, s, 2, 1).status, 0);
-    const third = retry(root, s, 3, 1);
-    assert.equal(third.status, 2);
-    assert.match(third.stderr, /step 2 already retried 2 of 2 times; tell the owner/);
+    failAgain(s);
+    refused(retry(root, s, 3, 1), /step 2 already retried 2 of 2 times; tell the owner/);
     assert.equal(retry(root, s, 3, 1, ['--force']).status, 0);
     assert.equal(readLedger(root).filter((e) => e.kind === 'step.retrying').length, 3);
   });
@@ -291,17 +320,157 @@ describe('step.retrying guard', () => {
   test('refused when gotoOrdinal is not the step onFail names', () => {
     const root = makeRepo();
     const s = verifyFailed(root);
-    const r = retry(root, s, 1, 2);
-    assert.equal(r.status, 2);
-    assert.match(r.stderr, /step 2's onFail goes back to step 1, not 2/);
+    refused(retry(root, s, 1, 2), /step 2's onFail goes back to step 1, not 2/);
   });
 
-  test('a step without onFail may go back anywhere', () => {
+  test('a second retry without running the step again is refused: the first one reset it', () => {
+    const root = makeRepo();
+    const s = verifyFailed(root);
+    assert.equal(retry(root, s, 1, 1).status, 0);
+    refused(retry(root, s, 2, 1), /step 2 has not run since the last retry reset it; there is nothing to retry/);
+    assert.equal(readLedger(root).filter((e) => e.kind === 'step.retrying').length, 1);
+  });
+
+  test('refused for a step without onFail: a failed or lost step without one is placed and started again instead', () => {
     const root = makeRepo();
     const s = new TaskScript(root);
     s.workflow([{ ordinal: 1, duty: 'implement' }]);
-    const r = cli(root, ['append', 'step.retrying', '--task', s.task, '--step', '1', '--data', '{"attempt":1,"gotoOrdinal":1,"reason":"lost"}']);
+    s.started(1);
+    s.failed(1, 'crashed');
+    refused(retryStep(root, s, 1, 1, 1), /step 1 has no onFail in the workflow, so it is not retried with step\.retrying: a failed or lost step without onFail is placed and started again/);
+    // A single task's one step has no onFail either.
+    const single = new TaskScript(root, { kind: 'single', duty: 'implement' });
+    single.started(1);
+    single.lost(1);
+    refused(retryStep(root, single, 1, 1, 1), /step 1 has no onFail in the workflow/);
+    // Step 3 (document) has none in the feature workflow above.
+    const v = verifyFailed(root);
+    v.report(2, { status: 'done' });
+    v.done(2);
+    v.started(3, { duty: 'document' });
+    v.failed(3, 'crashed');
+    refused(retryStep(root, v, 3, 1, 2), /step 3 has no onFail in the workflow/);
+    assert.equal(readLedger(root).filter((e) => e.kind === 'step.retrying').length, 0);
+  });
+
+  test('refused for a step that is not in the workflow, a skipped step, and a task with no workflow yet', () => {
+    const root = makeRepo();
+    const s = verifyFailed(root);
+    s.started(7, { duty: 'verify' });
+    s.failed(7, 'crashed');
+    refused(retryStep(root, s, 7, 1, 1), /step 7 is not in the task's workflow/);
+    const skipped = new TaskScript(root);
+    skipped.workflow([{ ordinal: 1, duty: 'plan', onFail: { goto: 1, maxLoops: 2 } }, { ordinal: 2, duty: 'implement' }], [1]);
+    skipped.started(1, { duty: 'plan' });
+    skipped.failed(1, 'crashed');
+    refused(retryStep(root, skipped, 1, 1, 1), /step 1 is skipped in the task's workflow/);
+    const none = new TaskScript(root, { kind: 'bug' });
+    none.started(1);
+    none.failed(1, 'crashed');
+    refused(retryStep(root, none, 1, 1, 1), new RegExp(`task ${none.task} has no recorded workflow`));
+    assert.equal(readLedger(root).filter((e) => e.kind === 'step.retrying').length, 0);
+  });
+
+  test('refused unless the step ended in a failure, a loss, a blocked report or failing tests', () => {
+    const root = makeRepo();
+    refused(retry(root, verifyFailed(root, { status: 'done', testsRun: { command: 'npm test', passed: true, summary: 'ok' } }), 1, 1), /step 2 ended with a done report; step\.retrying follows a failed or lost step, a blocked report or failing tests/);
+    refused(retry(root, verifyFailed(root, { status: 'needs-decision', question: 'A or B?', options: [{ label: 'A' }, { label: 'B' }] }), 1, 1), /step 2 ended with a needs-decision report/);
+    refused(retry(root, verifyFailed(root, null), 1, 1), /step 2 has not ended since it last started/);
+    const stopped = verifyFailed(root, null);
+    stopped.stopped(2);
+    refused(retry(root, stopped, 1, 1), /step 2 ended with step\.stopped/);
+    const never = new TaskScript(root);
+    never.workflow([{ ordinal: 1, duty: 'implement' }, { ordinal: 2, duty: 'verify', onFail: { goto: 1, maxLoops: 2 } }]);
+    refused(retry(root, never, 1, 1), /step 2 has not run yet; there is nothing to retry/);
+    assert.equal(readLedger(root).filter((e) => e.kind === 'step.retrying').length, 0);
+    // Each of the four failures is accepted.
+    const ends = [
+      (s) => s.failed(2, 'crashed'),
+      (s) => s.lost(2),
+      (s) => s.report(2, { status: 'blocked', summary: 'The browser would not start.' }),
+      (s) => s.report(2, { status: 'progress', testsRun: { command: 'npm test', passed: false, summary: '1 failing' } }),
+    ];
+    for (const end of ends) {
+      const s = verifyFailed(root, null);
+      end(s);
+      const r = retry(root, s, 1, 1);
+      assert.equal(r.status, 0, r.stderr);
+    }
+  });
+});
+
+// A process that stays alive until stop() resolves, which waits until it has exited and was reaped.
+function liveWorker() {
+  const child = spawn(NODE, ['-e', 'setTimeout(() => {}, 120000)'], { stdio: 'ignore' });
+  const exited = new Promise((resolve) => child.once('exit', resolve));
+  return {
+    pid: child.pid,
+    stop: async () => {
+      child.kill('SIGKILL');
+      await exited;
+    },
+  };
+}
+
+describe('a live worker', () => {
+  const failing = { status: 'done', testsRun: { command: 'npm test', passed: false, summary: 'failing' } };
+  const failStep = (root, s, step, extra = []) => cli(root, ['append', 'step.failed', '--task', s.task, '--step', String(step), '--data', '{"reason":"given up"}', ...extra]);
+  const retry = (root, s, extra = []) => cli(root, ['append', 'step.retrying', '--task', s.task, '--step', '2', '--data', '{"attempt":1,"gotoOrdinal":1,"reason":"verify failed"}', ...extra]);
+  const stillRunning = (r, pid) => {
+    assert.equal(r.status, 2, r.stdout + r.stderr);
+    assert.match(r.stderr, new RegExp(`still running \\(pid ${pid}\\); stop it with the runtime skill's stop script, or wait until its process has exited, then append again`));
+  };
+  function verifying(root, pid) {
+    const s = new TaskScript(root);
+    s.workflow([{ ordinal: 1, duty: 'implement' }, { ordinal: 2, duty: 'verify', onFail: { goto: 1, maxLoops: 2 } }]);
+    s.stepDone(1);
+    s.started(2, { duty: 'verify', pid });
+    return s;
+  }
+
+  test('step.failed and step.retrying are refused while the newest start\'s process is alive, even with --force', async () => {
+    const root = makeRepo();
+    const worker = liveWorker();
+    try {
+      const s = verifying(root, worker.pid);
+      stillRunning(failStep(root, s, 2), worker.pid);
+      stillRunning(failStep(root, s, 2, ['--force']), worker.pid);
+      // A failing report while the process is still there (it has not exited yet): no retry beside it either.
+      s.report(2, failing);
+      stillRunning(retry(root, s), worker.pid);
+      stillRunning(retry(root, s, ['--force']), worker.pid);
+      // Any step of the task: the newest start is the one that is alive.
+      stillRunning(failStep(root, s, 1), worker.pid);
+      assert.equal(readLedger(root).some((e) => ['step.failed', 'step.retrying'].includes(e.kind)), false);
+      await worker.stop();
+      const r = retry(root, s);
+      assert.equal(r.status, 0, r.stderr);
+    } finally {
+      await worker.stop();
+    }
+  });
+
+  test('once the process is gone step.failed is accepted', async () => {
+    const root = makeRepo();
+    const worker = liveWorker();
+    const s = verifying(root, worker.pid);
+    await worker.stop();
+    const r = failStep(root, s, 2, ['--json']);
     assert.equal(r.status, 0, r.stderr);
+    assert.deepEqual(r.json().data, { reason: 'given up', ordinal: 2 });
+  });
+
+  test('a start already marked lost does not count as alive when its pid is in use again', async () => {
+    const root = makeRepo();
+    const other = liveWorker();
+    try {
+      const s = verifying(root, other.pid);
+      s.lost(2, other.pid);
+      const r = retry(root, s);
+      assert.equal(r.status, 0, r.stderr);
+    } finally {
+      await other.stop();
+    }
   });
 });
 
@@ -542,7 +711,8 @@ describe('wait', () => {
   test('exits 4 when the step fails', async () => {
     const root = makeRepo();
     const s = new TaskScript(root);
-    s.started(1, { pid: process.pid });
+    // No pid: step.failed is refused while a start's process is alive, and a dead one would be marked lost first.
+    s.started(1);
     const { done } = cliAsync(root, ['wait', '--task', s.task, '--step', '1', '--json']);
     await sleep(300);
     const failed = cli(root, ['append', 'step.failed', '--task', s.task, '--step', '1', '--data', '{"reason":"the worker crashed"}']);
@@ -584,6 +754,23 @@ describe('wait', () => {
     assert.ok(r.ms >= 1000 && r.ms < 3000, `${r.ms} ms`);
     const text = cli(root, ['wait', '--task', s.task, '--step', '1', '--timeout', '1']);
     assert.equal(text.stdout, `Timed out after 1 s waiting for ${s.task} step 1.\n`);
+  });
+
+  test('a report from an older session does not end the wait for the newer start', async () => {
+    const root = makeRepo();
+    const s = new TaskScript(root);
+    const add = (kind, session, data) => appendEvent(root, { kind, task: s.task, step: 1, session, data: { ordinal: 1, ...data } });
+    add('step.started', 'session-old', { duty: 'implement', pid: process.pid });
+    add('step.stopped', 'session-old', { reason: 'stopped' });
+    add('step.started', 'session-new', { duty: 'implement', pid: process.pid });
+    const { done } = cliAsync(root, ['wait', '--task', s.task, '--step', '1', '--timeout', '5', '--json']);
+    await sleep(300);
+    add('step.report', 'session-old', { status: 'done', summary: 'The first worker, late.' });
+    await sleep(1200);
+    add('step.report', 'session-new', { status: 'done', summary: 'The second worker.' });
+    const exit = await done;
+    assert.equal(exit.status, 0, exit.stdout + exit.stderr);
+    assert.equal(JSON.parse(exit.stdout).summary, 'The second worker.');
   });
 
   test('a report from before the latest start does not end the wait', () => {

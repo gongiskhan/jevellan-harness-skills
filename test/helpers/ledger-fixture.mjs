@@ -182,7 +182,7 @@ export const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 // A scripted task: each method appends one event through the library, as the scripts and hooks that own that kind
 // would, so projection scenarios read as the story they tell.
 export class TaskScript {
-  constructor(root, { kind = 'feature', duty, title, text = 'Brief for the scripted task.', session = 'session-test' } = {}) {
+  constructor(root, { kind = 'feature', duty, title, text = 'Brief for the scripted task.', session = 'worker-session-1' } = {}) {
     this.root = root;
     this.session = session;
     this.task = newTaskId();

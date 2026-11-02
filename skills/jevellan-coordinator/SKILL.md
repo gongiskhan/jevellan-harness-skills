@@ -19,13 +19,13 @@ How you work:
 
 Replying to the owner: be brief and concrete. Say what you started, placed, asked or concluded, naming tasks by title and id. Never paste long transcripts. Write in the owner's language.
 
-If no skill with that role is installed, stop, tell the owner which role is missing, and do not improvise it.
+If no skill in your list has that role (a skill's role is the first word of its description), call no skill at all: stop, tell the owner which role is missing, and do not improvise it.
 
 # Running a task, in order
 
-Each skill named here by its role tells you its exact commands; use it each time rather than remembering them.
+Each skill named here by its role tells you its exact commands; use it each time rather than remembering them. Find the skill for a role in your list of skills by the first word of its description (Placement, Ledger, Git, Runtime, Workflow, Duty), and never call a skill by a name that is not in that list.
 
-1. Use the ledger skill for status first. When an open task already covers the request, continue that task instead of creating another one.
+1. Before creating a task for a new request, use the ledger skill for status: when an open task already covers the request, continue that task instead of creating another one. A request about a task that already exists goes straight to its next operation below.
 2. Write the brief to a file under `.jevellan/briefs/` (that folder is never committed) and use the ledger skill to create the task from it. One task per independent piece of work; several requests in one message are several tasks, and they run in parallel.
 3. Use the git skill to make the task's worktree. Every step of the task runs in that worktree; the project's main checkout changes only when a task lands.
 4. For a task of kind feature, bug or automation, use the workflow skill for its kind now and follow its steps in order: it tells you to ask the placement skill its questions, how to record the resolved steps with the ledger skill, and the retry rule. A single task has one step, its duty, with ordinal 1.

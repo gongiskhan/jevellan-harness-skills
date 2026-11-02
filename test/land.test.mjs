@@ -121,11 +121,12 @@ async function worktree(root, task) {
   return r.json();
 }
 
-// A feature task whose worktree holds one commit and whose implement and verify steps are done.
-async function readyTask(root, { title, parent, files = { 'docs/run.md': '# How to run\n\nnpm start\n' }, verifyPassed = true } = {}) {
+// A feature task whose worktree holds one commit and whose implement and verify steps are done. `work(path)` makes
+// that commit instead of `files` and returns its sha.
+async function readyTask(root, { title, parent, files = { 'docs/run.md': '# How to run\n\nnpm start\n' }, verifyPassed = true, work } = {}) {
   const t = newTask(root, { title, parent });
   const wt = await worktree(root, t.task);
-  const head = commit(wt.path, files, `work on ${t.task}`);
+  const head = work ? work(wt.path) : commit(wt.path, files, `work on ${t.task}`);
   t.workflow([{ ordinal: 1, duty: 'implement' }, { ordinal: 2, duty: 'verify', onFail: { goto: 1, maxLoops: 2 } }]);
   t.stepDone(1, { duty: 'implement' });
   t.started(2, { duty: 'verify' });
@@ -133,6 +134,17 @@ async function readyTask(root, { title, parent, files = { 'docs/run.md': '# How 
   t.done(2);
   return { t, wt, head };
 }
+
+// Commits `files` with `git add -f`, so paths the project ignores are committed too.
+const commitForced = (cwd, files, message = 'work') => {
+  for (const [file, text] of Object.entries(files)) {
+    fs.mkdirSync(path.dirname(path.join(cwd, file)), { recursive: true });
+    fs.writeFileSync(path.join(cwd, file), text);
+  }
+  git(cwd, 'add', '-f', '--', ...Object.keys(files));
+  git(cwd, 'commit', '-q', '--no-verify', '-m', message);
+  return sha(cwd, 'HEAD');
+};
 
 const kinds = (root, task) => readLedger(root).filter((e) => e.task === task).map((e) => e.kind);
 const lastOf = (root, task, kind) => readLedger(root).filter((e) => e.task === task && e.kind === kind).at(-1);
@@ -190,6 +202,24 @@ describe('land.mjs refusals', () => {
     assert.equal(r.status, 2);
     assert.equal(r.stderr, 'Jev: no key configured\n');
     assert.deepEqual(r.json(), { error: 'Jev: no key configured', exitCode: 2 });
+    assert.equal(readLedger(root).length, before);
+    assert.equal(fs.existsSync(path.join(root, '.jevellan', 'decisions')), false);
+    assert.equal(sha(root, 'main'), sha(root, 'origin/main'));
+  });
+
+  test('a JH_JEV_URL off the loopback interface is refused before the key goes anywhere, and nothing is written', async () => {
+    const { root } = makeProject();
+    const { t } = await readyTask(root);
+    jev.route = 'land';
+    const calls = jev.calls.length;
+    const before = readLedger(root).length;
+    // 0.0.0.0 reaches the fake on this machine, so a client that sent the request anyway would be seen there.
+    const r = await land(root, t.task, ['--json'], { env: { JH_JEV_URL: JEV_URL.replace('127.0.0.1', '0.0.0.0') } });
+    assert.equal(r.status, 2, r.stderr);
+    const message = 'Jev: JH_JEV_URL must be an http URL on 127.0.0.1, localhost or [::1] (it exists for tests, and the Jev key may only go to the real API or this machine)';
+    assert.equal(r.stderr, `${message}\n`);
+    assert.deepEqual(r.json(), { error: message, exitCode: 2 });
+    assert.equal(jev.calls.length, calls, 'no request reached the server');
     assert.equal(readLedger(root).length, before);
     assert.equal(fs.existsSync(path.join(root, '.jevellan', 'decisions')), false);
     assert.equal(sha(root, 'main'), sha(root, 'origin/main'));
@@ -324,6 +354,107 @@ describe('land.mjs route land', () => {
     assert.match(r.stderr, new RegExp(`has main checked out with uncommitted changes in files the task changes: docs/run\\.md\\. Commit or move them away, then land again; main did not move`));
     assert.equal(sha(root, 'main'), main);
     assert.equal(fs.readFileSync(path.join(root, 'docs', 'run.md'), 'utf8'), 'the owner was writing this\n');
+  });
+
+  test('a checked-out main with ignored files where the task writes refuses, naming them, and overwrites nothing', async () => {
+    const { root } = makeProject({ config: { checks: [] } });
+    commit(root, { '.gitignore': 'build/\n*.log\ndist/\n' }, 'ignore the build output and logs');
+    const { t } = await readyTask(root, {
+      work: (wt) => commitForced(wt, { 'build/out.js': 'built by the task\n', 'app.log': 'the task log\n', dist: 'a file where the owner has a folder\n', 'README.md': '# fixture\n\nfrom the task\n' }),
+    });
+    fs.mkdirSync(path.join(root, 'build'), { recursive: true });
+    fs.writeFileSync(path.join(root, 'build', 'out.js'), 'the owner build\n');
+    fs.writeFileSync(path.join(root, 'app.log'), 'the owner log\n');
+    fs.mkdirSync(path.join(root, 'dist'), { recursive: true });
+    fs.writeFileSync(path.join(root, 'dist', 'keep.txt'), 'the owner dist\n');
+    const main = sha(root, 'main');
+    jev.route = 'land';
+    const r = await land(root, t.task);
+    assert.equal(r.status, 2, r.stderr);
+    assert.equal(r.stderr, `${root} has main checked out with ignored files the task would overwrite: app.log, build/out.js, dist/keep.txt. Commit or move them away, then land again; main did not move\n`);
+    assert.equal(sha(root, 'main'), main);
+    assert.equal(fs.readFileSync(path.join(root, 'build', 'out.js'), 'utf8'), 'the owner build\n');
+    assert.equal(fs.readFileSync(path.join(root, 'app.log'), 'utf8'), 'the owner log\n');
+    assert.equal(fs.readFileSync(path.join(root, 'dist', 'keep.txt'), 'utf8'), 'the owner dist\n');
+
+    // An uncommitted change in a touched file as well: the refusal names both kinds.
+    fs.writeFileSync(path.join(root, 'README.md'), '# fixture\n\nthe owner was writing this\n');
+    const both = await land(root, t.task);
+    assert.equal(both.status, 2);
+    assert.equal(both.stderr, `${root} has main checked out with uncommitted changes in files the task changes: README.md, and ignored files the task would overwrite: app.log, build/out.js, dist/keep.txt. Commit or move them away, then land again; main did not move\n`);
+    assert.equal(kinds(root, t.task).includes('task.landed'), false);
+  });
+
+  test('an ignored file where the task needs a folder stops the fast-forward, naming it, and is not deleted', async () => {
+    const { root } = makeProject({ config: { checks: [] } });
+    commit(root, { '.gitignore': 'logs\n' }, 'ignore logs');
+    const { t } = await readyTask(root, { work: (wt) => commitForced(wt, { 'logs/today.txt': 'tracked by the task\n' }) });
+    fs.writeFileSync(path.join(root, 'logs'), 'the owner log file\n');
+    const main = sha(root, 'main');
+    jev.route = 'land';
+    const r = await land(root, t.task);
+    assert.equal(r.status, 2, r.stderr);
+    assert.equal(r.stderr, `git merge --ff-only in ${root} would overwrite or remove files there that are not committed: logs. Commit or move them away, then land again; main did not move\n`);
+    assert.equal(sha(root, 'main'), main);
+    assert.equal(fs.readFileSync(path.join(root, 'logs'), 'utf8'), 'the owner log file\n');
+    assert.equal(git(root, 'status', '--porcelain'), '');
+  });
+
+  test('the ref-only fast-forward pushes no submodule commit, whatever push.recurseSubmodules says', async () => {
+    const { root } = makeProject({ config: { checks: [] } });
+    // A submodule with a remote of its own, and a commit of it that its remote does not have.
+    const subRemote = tempDir('jh-sub-remote-');
+    git(subRemote, 'init', '-q', '--bare', '-b', 'main');
+    const seed = makeRepo({ installed: false });
+    git(seed, 'push', '-q', subRemote, 'main');
+    git(root, '-c', 'protocol.file.allow=always', 'submodule', 'add', '-q', subRemote, 'sub');
+    git(root, 'commit', '-q', '--no-verify', '-m', 'add the submodule');
+    const subHead = commit(path.join(root, 'sub'), { 'lib.txt': 'v2\n' }, 'lib v2');
+    const { t, head } = await readyTask(root, {
+      work: (wt) => {
+        git(wt, 'update-index', '--add', '--cacheinfo', `160000,${subHead},sub`);
+        git(wt, 'commit', '-q', '--no-verify', '-m', 'use lib v2');
+        return sha(wt, 'HEAD');
+      },
+    });
+    git(root, 'checkout', '-q', '-b', 'owner-side');
+    git(root, 'config', 'push.recurseSubmodules', 'on-demand');
+    git(root, 'config', 'protocol.file.allow', 'always');
+    const subRemoteHas = () => {
+      try {
+        git(subRemote, 'cat-file', '-e', `${subHead}^{commit}`);
+        return true;
+      } catch {
+        return false;
+      }
+    };
+    assert.equal(subRemoteHas(), false);
+    jev.route = 'land';
+    const r = await land(root, t.task, ['--json']);
+    assert.equal(r.status, 0, r.stderr);
+    assert.equal(r.json().method, 'push .');
+    assert.equal(sha(root, 'main'), head);
+    assert.equal(subRemoteHas(), false, 'the submodule commit stayed on this machine');
+    assert.equal(r.json().push, null);
+  });
+
+  test('a setup that runs before the checks and leaves a file behind fails the landing, naming it; main does not move', async () => {
+    const { root } = makeProject();
+    const { t } = await readyTask(root);
+    // The project gets its setup command after the worktree was made, so the landing runs it first.
+    const file = path.join(root, '.jevellan', 'project.json');
+    writeJson(file, { ...JSON.parse(fs.readFileSync(file, 'utf8')), setupCommand: 'echo "{}" > package-lock.json' });
+    const main = sha(root, 'main');
+    jev.route = 'land';
+    const r = await land(root, t.task);
+    assert.equal(r.status, 2, r.stderr);
+    const note = '[the setupCommand left changes a landing would carry: package-lock.json. A setup must leave the worktree clean: ignore what it writes in .gitignore, or, for npm without a lockfile, use npm install --no-package-lock]';
+    assert.match(r.stderr, /^the worktree's setupCommand "echo "\{\}" > package-lock\.json" failed \(it left changes a landing would carry: package-lock\.json\) before the checks \(landing\.checked #\d+\):\n/);
+    assert.ok(r.stderr.endsWith(`:\n${note}\n`), r.stderr);
+    const checked = readLedger(root).filter((e) => e.task === t.task && e.kind === 'landing.checked');
+    assert.deepEqual(checked.map((e) => [e.data.command, e.data.passed, e.data.tail]), [['echo "{}" > package-lock.json', false, note]]);
+    assert.equal(sha(root, 'main'), main);
+    assert.equal(kinds(root, t.task).includes('task.landed'), false);
   });
 
   test('pushAfterLanding true pushes main to origin after landing', async () => {

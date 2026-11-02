@@ -28,7 +28,7 @@ export const ROLE_PHRASES = Object.freeze([
 ]);
 
 export const ROLE_MISSING_SENTENCE =
-  'If no skill with that role is installed, stop, tell the owner which role is missing, and do not improvise it.';
+  "If no skill in your list has that role (a skill's role is the first word of its description), call no skill at all: stop, tell the owner which role is missing, and do not improvise it.";
 
 export const KIND_COUNT = 20;
 export const KINDS_MODULE = 'skills/jevellan-ledger/scripts/lib/ledger.mjs';

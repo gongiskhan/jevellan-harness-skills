@@ -1,6 +1,6 @@
 ---
 name: jevellan-duty-plan
-description: "Duty plan. Use when this session is running a task step whose duty is plan. Writes plan.md at the worktree root, read-only otherwise. End by writing the report file."
+description: "Duty plan. Use when this session is running a task step whose duty is plan: only when the runtime's instructions for this session say 'Your step is duty plan', never for a request typed by the owner. Writes plan.md at the worktree root, read-only otherwise. End by writing the report file."
 jh-role: duty
 jh-duty: plan
 jh-needs: [repo-read]

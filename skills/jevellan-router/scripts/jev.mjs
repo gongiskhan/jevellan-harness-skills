@@ -5,13 +5,17 @@
 // validation with the same rules. The key is read from the file providers.json names (jev.keyFile) at the moment of
 // each call and never cached, printed or logged.
 //
-// JH_JEV_URL overrides the API base, for tests with a fake server.
+// JH_JEV_URL overrides the API base, for tests with a fake server. It is accepted only for an http URL on 127.0.0.1,
+// localhost or [::1] (as JH_ANTHROPIC_URL is in providers.mjs); any other value is refused when the client is made,
+// before the key is read, so the key goes only to the real API or to this machine.
 //
 //   node jev.mjs models [--json]     lists the models the key can use (a check that Jev answers)
 
 import fs from 'node:fs';
 
 export const JEV_API = 'https://api.typesafe.ai/v1';
+const LOOPBACK = Object.freeze(['127.0.0.1', 'localhost', '[::1]']);
+const LOOPBACK_RULE = 'must be an http URL on 127.0.0.1, localhost or [::1] (it exists for tests, and the Jev key may only go to the real API or this machine)';
 
 const MESSAGES = {
   'no-key': 'no key configured',
@@ -27,8 +31,8 @@ const MESSAGES = {
 };
 
 export class JevError extends Error {
-  constructor(kind) {
-    super(MESSAGES[kind] ?? kind);
+  constructor(kind, message) {
+    super(message ?? MESSAGES[kind] ?? kind);
     this.name = 'JevError';
     this.kind = kind;
     this.exitCode = 2;
@@ -151,6 +155,23 @@ export function readKey(keyFile, home) {
   }
 }
 
+// The API base: JEV_API, or the test server a baseUrl option or JH_JEV_URL names, which must be http on the loopback
+// interface. Anything else is a JevError of kind "base-url" naming where the URL came from.
+export function jevBase(baseUrl, env = process.env) {
+  const explicit = baseUrl !== undefined && baseUrl !== null;
+  const from = explicit ? 'the Jev baseUrl' : 'JH_JEV_URL';
+  const override = explicit ? baseUrl : env.JH_JEV_URL;
+  if (override === undefined || override === '' || override === JEV_API) return JEV_API;
+  let url;
+  try {
+    url = new URL(override);
+  } catch {
+    throw new JevError('base-url', `${from} is not a URL; it ${LOOPBACK_RULE}`);
+  }
+  if (url.protocol !== 'http:' || !LOOPBACK.includes(url.hostname)) throw new JevError('base-url', `${from} ${LOOPBACK_RULE}`);
+  return String(override).replace(/\/+$/, '');
+}
+
 const pause = (ms, signal) => new Promise((resolve, reject) => {
   const timer = setTimeout(resolve, ms);
   signal?.addEventListener('abort', () => {
@@ -166,10 +187,11 @@ export class JevClient {
   #base;
   constructor({ key, timeoutMs, fetch: fetchImpl, baseUrl }) {
     if (!Number.isSafeInteger(timeoutMs) || timeoutMs <= 0) throw new JevError('invalid-request');
+    // Refused here, before any request can read the key.
+    this.#base = jevBase(baseUrl);
     this.#key = key;
     this.#fetch = fetchImpl ?? fetch;
     this.#timeoutMs = timeoutMs;
-    this.#base = (baseUrl ?? process.env.JH_JEV_URL ?? JEV_API).replace(/\/+$/, '');
   }
 
   async decide(input, signal) {

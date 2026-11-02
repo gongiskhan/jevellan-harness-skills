@@ -19,7 +19,7 @@ fs.mkdirSync(scratch, { recursive: true });
 const base = fs.mkdtempSync(path.join(scratch, 'check-roles-'));
 const harnessHome = fs.mkdtempSync(path.join(base, 'harness-'));
 
-const SENTENCE = 'If no skill with that role is installed, stop, tell the owner which role is missing, and do not improvise it.';
+const SENTENCE = "If no skill in your list has that role (a skill's role is the first word of its description), call no skill at all: stop, tell the owner which role is missing, and do not improvise it.";
 
 const skill = (front, body) => `---\n${front.trim()}\n---\n\n${body.trim()}\n`;
 
@@ -28,8 +28,8 @@ const coordinatorBody = `
 
 Use the ledger skill to create the task. Use the git skill to make the worktree. Use the workflow skill for <kind>
 and follow its steps in order. For every step, use the placement skill now and continue with its answer, then use
-the runtime skill for provider kind <kind> to start the step. A worker uses the duty skill for <duty> now. If no
-skill with that role is installed, stop, tell the owner which role is missing, and do not improvise it.
+the runtime skill for provider kind <kind> to start the step. A worker uses the duty skill for <duty> now.
+${SENTENCE}
 `;
 
 // The clean roster: one skill per role, names chosen for the fixture only.
@@ -219,7 +219,7 @@ test('a role phrase whose role no skill has fails', () => {
 });
 
 test('a body with role phrases and no role-missing sentence fails', () => {
-  const root = fixture((f) => edit(f, 'skills/jevellan-coordinator/SKILL.md', 'If no\nskill with that role is installed,', 'If no\nskill is around,'), { write: false });
+  const root = fixture((f) => edit(f, 'skills/jevellan-coordinator/SKILL.md', 'call no skill at all', 'stop at once'), { write: false });
   expectProblem(root, `skills/jevellan-coordinator/SKILL.md: the body uses role phrases but lacks the sentence "${SENTENCE}"`);
   // A body without role phrases does not need it, and role phrases match whatever their case.
   const phrased = fixture((f) => edit(f, 'skills/jevellan-router/SKILL.md', 'Run the script', 'Ask The Ledger Skill first. Run the script'), { write: false });

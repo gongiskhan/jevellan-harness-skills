@@ -10,7 +10,7 @@
 // - ENABLE_CLAUDEAI_MCP_SERVERS=false and CLAUDE_CODE_DISABLE_BACKGROUND_TASKS=1;
 // - GIT_AUTHOR_* and GIT_COMMITTER_* from the machine's git config;
 // - PLAYWRIGHT_BROWSERS_PATH when ~/.cache/ms-playwright exists;
-// - JH_TASK, JH_STEP, JH_DUTY, JH_PROJECT, JH_SESSION for the hooks.
+// - JH_TASK, JH_STEP, JH_DUTY, JH_PROJECT, JH_SESSION and JH_CWD (the step's worktree) for the hooks.
 //
 // Values may be secrets: the result only ever goes into a child process environment, never onto a command line,
 // into a log or into a file.
@@ -25,6 +25,9 @@ export const CLAUDE_KINDS = ['claude-subscription', 'claude-endpoint'];
 export function claudeConfigDir() {
   const dir = path.join(harnessHome(), 'claude-config');
   fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
+  try {
+    fs.chmodSync(dir, 0o700);
+  } catch {}
   return dir;
 }
 
@@ -55,8 +58,8 @@ export function providerLogin(provider) {
   return env;
 }
 
-export function workerEnv({ provider, task, step, duty, project, session, base = process.env }) {
-  const env = baseWorkerEnv({ task, step, duty, project, session, base });
+export function workerEnv({ provider, task, step, duty, project, session, cwd, base = process.env }) {
+  const env = baseWorkerEnv({ task, step, duty, project, session, cwd, base });
   Object.assign(env, providerLogin(provider));
   env.CLAUDE_CONFIG_DIR = claudeConfigDir();
   env.ENABLE_CLAUDEAI_MCP_SERVERS = 'false';
@@ -64,12 +67,31 @@ export function workerEnv({ provider, task, step, duty, project, session, base =
   return env;
 }
 
-// The --settings JSON every worker gets (H-001, H-014): the owner's personal instruction files stay out, and no
-// commit or pull request of a worker carries attribution.
+// The harness's secrets folder, as it is named and as it resolves (a symlinked harness home has two spellings).
+export function secretsDirs() {
+  const dir = path.join(harnessHome(), 'secrets');
+  const dirs = [dir];
+  try {
+    const real = fs.realpathSync(dir);
+    if (!dirs.includes(real)) dirs.push(real);
+  } catch {}
+  return dirs;
+}
+
+// The --settings JSON every worker gets (H-001, H-014): the owner's personal instruction files stay out, no commit
+// or pull request of a worker carries attribution, and the Read and Edit tools (and the tools built on them: Grep,
+// Glob, Write) may not touch the harness's secrets folder. A permission path that starts with "//" is absolute from
+// the filesystem root ("/x" would be relative to a settings file); deny rules hold under bypassPermissions too
+// ("auto-approves every tool call (except explicit deny rules)", Claude Code 2.1.316). The rules do not reach a
+// Bash command that reads the folder; nothing short of a sandbox does. The worker's raw output goes to
+// ~/.jevellan-harness/logs/<session>.log and its native transcript to the harness's claude-config folder, both
+// mode 600 in mode 700 folders under the harness folder, never into the project (status.mjs redacts what it shows).
 export function workerSettings() {
   const home = ownerHome();
+  const secrets = secretsDirs().map((dir) => `/${dir}/**`);
   return JSON.stringify({
     claudeMdExcludes: [`${home}/.claude/**`, `${home}/CLAUDE.md`, `${home}/CLAUDE.local.md`],
     attribution: { commit: '', pr: '', sessionUrl: false },
+    permissions: { deny: [...secrets.map((p) => `Read(${p})`), ...secrets.map((p) => `Edit(${p})`)] },
   });
 }

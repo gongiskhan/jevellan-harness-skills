@@ -8,9 +8,14 @@ import fs from 'node:fs';
 import { isMain, runHook } from '../scripts/lib/hook.mjs';
 import { appendEvent } from '../scripts/lib/ledger.mjs';
 import { projectPaths } from '../scripts/lib/project.mjs';
+import { redactText } from '../scripts/lib/redact.mjs';
 
+export const COMMAND_CHARS = 200;
+
+// The command is redacted whole before it is cut: a secret that crosses the cut would no longer match as a whole
+// value once cut, and its first characters would reach the ledger.
 export function summarize(tool, input = {}) {
-  if (tool === 'Bash') return String(input.command ?? '').slice(0, 200);
+  if (tool === 'Bash') return redactText(String(input.command ?? '')).slice(0, COMMAND_CHARS);
   if (tool === 'NotebookEdit') return String(input.notebook_path ?? '');
   if (['Edit', 'Write', 'MultiEdit'].includes(tool)) return String(input.file_path ?? '');
   return '';

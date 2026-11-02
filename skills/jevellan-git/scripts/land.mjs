@@ -31,8 +31,9 @@
 //      environment: nothing from providers or Jev. Each check appends landing.checked {command, passed, tail}; a
 //      failure (or a check that moved HEAD) is exit 2 with the tail. Then the target moves by fast-forward only:
 //      where it is checked out (the main checkout for the default branch) the files the task touches must be clean
-//      there and `git merge --ff-only` updates that working tree; where it is not checked out, `git push .` moves the
-//      ref alone. When the target moved meanwhile, merge, checks and fast-forward repeat, up to 3 rounds. Then
+//      there and not ignored there, and `git merge --ff-only --no-overwrite-ignore` updates that working tree; where
+//      it is not checked out, `git push --no-recurse-submodules .` moves the ref alone. When the target moved
+//      meanwhile, merge, checks and fast-forward repeat, up to 3 rounds. Then
 //      task.landed {commit, target, method}, and a push to origin only when project.json pushAfterLanding is true.
 //    - verify-then-land: prints {"route":"verify-then-land"} and exits 6. The coordinator runs one more verify step;
 //      the next call that finds that landing.decided still open (no landing.checked, task.asked or task.landed after
@@ -82,6 +83,7 @@ import {
   resolveRef,
   runCli,
   runSetup,
+  statusEntries,
   uncommittedFiles,
   warn,
 } from './worktree.mjs';
@@ -437,9 +439,18 @@ export function mergeInto(worktree, into, branch, env) {
   return { kind: 'conflict', files };
 }
 
+// The files git names under a "would be overwritten" or "would lose untracked files" refusal: its tab-indented lines.
+export function refusedFiles(stderr) {
+  return [...new Set(String(stderr ?? '').split('\n').filter((l) => l.startsWith('\t')).map((l) => l.trim()).filter(Boolean))];
+}
+
 // Moves the target to `branch` by fast-forward only. Where the target is checked out, the files the task touches must
-// be clean there and `merge --ff-only` updates that working tree; elsewhere `push .` moves the ref and no working
-// tree changes. Returns {kind: landed | moved | refused}.
+// be clean there, and not ignored files either (the owner's build output, logs or local settings, which a plain
+// `merge --ff-only` overwrites, or deletes to make room for a folder, without a word); `merge --ff-only
+// --no-overwrite-ignore` then updates that working tree, and refuses whatever the check could not see (an ignored file
+// where the task needs a folder), naming it. Elsewhere `push --no-recurse-submodules .` moves the ref and no working
+// tree changes; without that flag, push.recurseSubmodules or submodule.recurse would make it push the submodules'
+// commits to their remotes, and only pushAfterLanding may push anything. Returns {kind: landed | moved | refused}.
 export function fastForward(root, into, branch, env) {
   const head = resolveRef(root, `refs/heads/${branch}`);
   if (!head) return { kind: 'refused', reason: `the branch ${branch} does not exist` };
@@ -454,18 +465,28 @@ export function fastForward(root, into, branch, env) {
   const holder = listWorktrees(root).find((e) => e.branch === `refs/heads/${into}` && !e.bare && !e.prunable);
   if (holder) {
     const touched = git(root, ['diff', '--name-only', '--no-renames', '-z', current, head]).stdout.split('\0').filter(Boolean);
-    const dirty = uncommittedFiles(holder.path, touched, { all: true });
-    if (dirty.length) {
-      return { kind: 'refused', reason: `${holder.path} has ${into} checked out with uncommitted changes in files the task changes: ${listText(dirty)}. Commit or move them away, then land again` };
+    const found = statusEntries(holder.path, touched, { ignored: true });
+    const dirty = found.filter((e) => e.code !== '!!').map((e) => e.path);
+    const ignored = found.filter((e) => e.code === '!!').map((e) => e.path);
+    if (dirty.length || ignored.length) {
+      const what = [
+        ...(dirty.length ? [`uncommitted changes in files the task changes: ${listText(dirty)}`] : []),
+        ...(ignored.length ? [`ignored files the task would overwrite: ${listText(ignored)}`] : []),
+      ].join(', and ');
+      return { kind: 'refused', reason: `${holder.path} has ${into} checked out with ${what}. Commit or move them away, then land again` };
     }
-    const r = git(holder.path, ['merge', '--ff-only', '--no-edit', head], { permitted: [0, 1, 128], env });
+    const r = git(holder.path, ['merge', '--ff-only', '--no-overwrite-ignore', '--no-edit', head], { permitted: [0, 1, 128], env });
     if (r.code !== 0) {
       if (moved()) return { kind: 'moved' };
+      const files = refusedFiles(r.stderr);
+      if (files.length) {
+        return { kind: 'refused', reason: `git merge --ff-only in ${holder.path} would overwrite or remove files there that are not committed: ${listText(files)}. Commit or move them away, then land again` };
+      }
       return { kind: 'refused', reason: `git merge --ff-only in ${holder.path} failed: ${firstLine(r.stderr) || firstLine(r.stdout)}` };
     }
     return { kind: 'landed', commit: head, method: 'merge --ff-only', checkout: holder.path };
   }
-  const r = git(root, ['push', '--quiet', '.', `refs/heads/${branch}:refs/heads/${into}`], { permitted: [0, 1, 128], env });
+  const r = git(root, ['push', '--quiet', '--no-recurse-submodules', '.', `refs/heads/${branch}:refs/heads/${into}`], { permitted: [0, 1, 128], env });
   if (r.code !== 0) {
     // A concurrent update of the target shows as a rejected non-fast-forward.
     if (moved()) return { kind: 'moved' };
@@ -608,7 +629,14 @@ async function decide(ctx) {
   const jevError = (error) => new GitSkillError(P.jev.jevMessage(error));
   if (json.length > STATE_LIMIT) throw jevError(new P.jev.JevError('state-too-large'));
   const config = P.providers.loadProviders();
-  const client = P.jev.jevClient(config.jev, { home: config.ownerHome });
+  let client;
+  try {
+    // Refuses a JH_JEV_URL off the loopback interface before the key is read.
+    client = P.jev.jevClient(config.jev, { home: config.ownerHome });
+  } catch (error) {
+    if (error instanceof P.jev.JevError) throw jevError(error);
+    throw error;
+  }
   const questions = landingQuestions(lp);
   const started = Date.now();
   let response;
@@ -695,7 +723,7 @@ async function landRoute(ctx, { forced, reason }) {
       const setup = runSetup(L, root, wt.path, readProjectConfig(L, root));
       if (setup.ran && !setup.ok) {
         const event = append(ctx, 'landing.checked', { command: setup.command, passed: false, tail: setup.tail });
-        throw new GitSkillError(`the worktree's setupCommand "${setup.command}" failed before the checks (landing.checked #${event.seq}):\n${setup.tail}`);
+        throw new GitSkillError(`the worktree's setupCommand "${setup.command}" failed (${setup.problem}) before the checks (landing.checked #${event.seq}):\n${String(event.data.tail ?? '').trimEnd()}`);
       }
     }
     for (const check of settings.checks) {

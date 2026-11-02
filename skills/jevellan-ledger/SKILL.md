@@ -1,6 +1,6 @@
 ---
 name: jevellan-ledger
-description: Ledger. Use when a session must create a task, record or read what happened to a task, wait for a step's report, or show status. The ledger is the only durable state; its hooks record sessions automatically.
+description: Ledger. Use when a session must create a task, record a note or a standing preference about how work runs, record or read what happened to a task, wait for a step's report, or show status. The ledger is the only durable state; its hooks record sessions automatically.
 jh-role: ledger
 ---
 
@@ -42,7 +42,7 @@ step.message.
     tests)
   - a failure: `append step.failed --task T --step N --data '{"reason":"..."}'`
   - a retry: `append step.retrying --task T --step N --data '{"attempt":1,"gotoOrdinal":2,"reason":"..."}'` (refused
-    beyond the step's maxLoops)
+    beyond the step's maxLoops, for a step without onFail or one that did not fail, and while a worker of the task runs)
   - a message to a step: `append step.message --task T --step N --data '{"direction":"owner","text":"..."}'`
 - `--data-file F` (`-` for stdin) may replace `--data` whenever the JSON holds apostrophes or is long.
 - Every command accepts `--json`. Exit codes: 0 ok, 2 refused with the reason on stderr, 3 not found.

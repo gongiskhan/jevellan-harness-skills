@@ -470,6 +470,63 @@ describe('retries reset steps', () => {
   });
 });
 
+describe('a start is ended only by its own session\'s report', () => {
+  // Two starts of one step in two sessions: the first worker's report, arriving late, must not end the second start.
+  function twoStarts(repo) {
+    const s = new TaskScript(repo, { kind: 'feature' });
+    s.workflow(FEATURE);
+    const add = (kind, session, data) => appendEvent(repo, { kind, task: s.task, step: 1, session, data: { ordinal: 1, ...data } });
+    add('step.started', 'session-old', { duty: 'implement', pid: process.pid });
+    add('step.failed', 'session-coordinator', { reason: 'given up on' });
+    const second = add('step.started', 'session-new', { duty: 'implement', pid: process.pid });
+    return { s, add, second };
+  }
+
+  test('a report from an older session stays lastReport but does not end the latest start', () => {
+    const repo = makeRepo();
+    const { s, add, second } = twoStarts(repo);
+    const late = add('step.report', 'session-old', { status: 'blocked', summary: 'The first worker, late.' });
+    let view = stepView(s.info().events, 1);
+    assert.equal(view.started.seq, second.seq);
+    assert.equal(view.end, null);
+    assert.equal(view.lastReport.seq, late.seq);
+    assert.equal(view.state, 'running');
+    // The task is running, not waiting on the owner for the old worker's question.
+    assert.equal(s.view().state, 'running');
+    // Its own session's report ends it.
+    const own = add('step.report', 'session-new', { status: 'done' });
+    view = stepView(s.info().events, 1);
+    assert.equal(view.end.seq, own.seq);
+    assert.equal(view.state, 'reported-done');
+  });
+
+  test('step.failed, step.lost and step.stopped end the latest start whatever their session', () => {
+    for (const [kind, data, state] of [['step.failed', { reason: 'r' }, 'failed'], ['step.lost', { pid: 4242 }, 'lost'], ['step.stopped', { reason: 'r' }, 'stopped']]) {
+      const repo = makeRepo();
+      const { s, add } = twoStarts(repo);
+      const end = add(kind, 'session-someone-else', data);
+      const view = stepView(s.info().events, 1);
+      assert.equal(view.end.seq, end.seq, kind);
+      assert.equal(view.state, state, kind);
+    }
+  });
+
+  test('status does not mark the newer start lost because of the old session\'s report', () => {
+    const repo = makeRepo();
+    const s = new TaskScript(repo, { kind: 'single', duty: 'investigate' });
+    const add = (kind, session, data) => appendEvent(repo, { kind, task: s.task, step: 1, session, data: { ordinal: 1, ...data } });
+    add('step.started', 'session-old', { duty: 'investigate', pid: deadPid() });
+    add('step.lost', 'session-old', { pid: 1 });
+    add('step.started', 'session-new', { duty: 'investigate', pid: deadPid() });
+    add('step.report', 'session-old', { status: 'done' });
+    // The new start's pid is gone and nothing of its own session ended it: it is lost, not done.
+    const result = projectAll(repo);
+    assert.equal(result.lost.length, 1);
+    assert.equal(result.lost[0].session, 'session-new');
+    assert.equal(result.tasks[0].state, 'failed');
+  });
+});
+
 describe('lost detection', () => {
   test('status appends step.lost when the pid is dead and nothing ended the step, once', () => {
     const repo = makeRepo();

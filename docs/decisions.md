@@ -304,3 +304,38 @@ then a second landing), but the cause was the setup. `land.mjs` now runs the pro
 worktree before the checks whenever `.jevellan/setup.done` is missing (a worktree made before the project had a setup
 command, or one whose setup failed), records a failure as a failed `landing.checked`, and the sandbox's project.json
 has `"setupCommand": "npm ci"`.
+
+## H-029 The one review: what it found and what changed
+
+Section 0 asks for one review at the end, restricted to the guarded scripts, the hooks and secrets. Five reviewers
+(ledger, hooks, runtimes, git, secrets) reported findings with failure scenarios; each finding went to two
+independent skeptics told to refute it. 17 held up, 10 were refuted. All 17 were fixed, each with a test that failed
+before the fix:
+
+- Stop hook (high): it moved report.json before appending step.report, so a failed append lost a valid report and the
+  step later showed as lost. It now appends first (with the archive path) and moves the file only after; a failed
+  append leaves the file and blocks with the reason. A report whose line would pass 64 KB is recorded with its long
+  lists cut and `trimmed: true` (the archived file keeps it whole). The Codex runner does the same, writes its log
+  line by line through the redactor, and survives Codex dying before it read its message.
+- Runtimes (high): liveness is taken from the task's newest `step.started` whatever ended or reset it after, so a
+  worker that is still exiting is never invisible to start, resume or stop; the start and resume guards are re-run
+  inside the ledger lock, so two starts cannot use one placement; `stopGroup` watches and signals the process group,
+  never a bare pid. Workers get `JH_CWD` (their worktree), and their settings deny Read and Edit of the harness's
+  secrets folder.
+- Landing (high): the fast-forward of the checkout that holds the target uses `--no-overwrite-ignore`, and a refusal
+  names ignored files that would be overwritten; the ref-only `git push .` uses `--no-recurse-submodules`.
+- Ledger: `step.retrying` is refused for a step without onFail, a skipped step, a step that did not fail, and beyond
+  maxLoops; `step.failed` and `step.retrying` are refused while a worker of the task is alive; a report from an older
+  session no longer ends a newer start; an unparsable last line no longer stops every later append, and short writes
+  are completed.
+- Hooks and redaction: post-tool redacts before cutting the command to 200 characters, and the redactor also masks a
+  cut-off start of a known secret at the end of a string; the answer/converse fallback strips only the trailing json
+  block; the Stop hook also looks for the report in `JH_CWD` and the folders between it and the hook's cwd.
+- Setup and Jev: a package.json without a lockfile gets `npm install --no-package-lock`, and `runSetup` fails when the
+  setup changed tracked files or left untracked ones outside `.jevellan/`; `JH_JEV_URL` is accepted only for a
+  loopback address, as H-016 said.
+
+What stays open, by design or as a known limit: a worker's raw output still goes to its log without redaction (mode
+600 under the harness folder; Claude Code keeps the OAuth token out of the worker's shell, findings), and a worker in
+bypassPermissions could still `cat` a file it is denied to Read; a reused pid can make start wait for an unrelated
+process to exit (only a recorded process start time would close that).

@@ -5,8 +5,10 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
-import { LEDGER_SKILL, NODE, TaskScript, addWorktree, childEnv, ledgerFile, ledgerText, makeRepo, readLedger, runHook, tempDir, writeJson } from './helpers/ledger-fixture.mjs';
+import { HARNESS_HOME, LEDGER_SKILL, NODE, TaskScript, addWorktree, childEnv, git, ledgerFile, ledgerText, makeRepo, readLedger, runHook, tempDir, writeJson } from './helpers/ledger-fixture.mjs';
 import { oneLine } from '../skills/jevellan-ledger/scripts/lib/format.mjs';
+import { MAX_LINE } from '../skills/jevellan-ledger/scripts/lib/ledger.mjs';
+import { redactText } from '../skills/jevellan-ledger/scripts/lib/redact.mjs';
 
 const MISSING = 'End the step by writing .jevellan/report.json with status progress, done, blocked or needs-decision (see your duty skill).';
 const COORDINATOR = "This project's work runs through the coordinator skill: use it for any request to do, plan, track or report on work here.";
@@ -130,6 +132,102 @@ describe('stop hook', () => {
     assert.equal(readLedger(root).at(-1).kind, 'session.ended');
   });
 
+  test('a valid report too big for one ledger line is recorded cut to fit, and the archived file keeps all of it', (t) => {
+    const root = makeRepo();
+    const wt = addWorktree(root, 'big-report');
+    const s = new TaskScript(root, { kind: 'single', duty: 'implement' });
+    s.started(1);
+    const { env, session } = worker(root, s);
+    // Schema-valid, and far over 64 KB once serialized: 200 long paths, 50 screenshots and 4000-character texts in a
+    // script of 3-byte characters.
+    const wide = '中'.repeat(1000);
+    const body = {
+      status: 'done',
+      summary: '報'.repeat(4000),
+      changedFiles: Array.from({ length: 200 }, (_, i) => `src/${wide}-${i}.js`),
+      testsRun: { command: 'npm test', passed: true, summary: '34 passed' },
+      screenshots: Array.from({ length: 50 }, (_, i) => ({ path: `.jevellan/evidence/${i}.png`, caption: '图'.repeat(300) })),
+      limitations: '限'.repeat(4000),
+      ownerCommands: [{ command: 'gh auth login', cwd: 'home', why: 'Only you can log in.' }],
+    };
+    writeJson(reportPath(wt), body);
+    const r = hook(t, 'stop', stopInput(wt, session), { cwd: wt, env });
+    assert.equal(r.stdout, '');
+    const [report] = reports(root);
+    assert.ok(report, 'the report is recorded');
+    const line = ledgerText(root).split('\n').find((l) => l.includes('"step.report"'));
+    assert.ok(Buffer.byteLength(line) <= MAX_LINE);
+    const d = report.data;
+    assert.equal(d.status, 'done');
+    assert.equal(d.summary, body.summary);
+    assert.deepEqual(d.testsRun, body.testsRun);
+    assert.equal(d.trimmed, true);
+    assert.deepEqual(d.originalCounts, { changedFiles: 200, screenshots: 50, ownerCommands: 1, limitations: 4000 });
+    assert.ok(d.changedFiles.length > 0 && d.changedFiles.length < 200, `${d.changedFiles.length} changed files kept`);
+    assert.deepEqual(d.changedFiles, body.changedFiles.slice(0, d.changedFiles.length));
+    assert.ok(d.limitations.includes(d.reportFile), 'the line says where the full report is');
+    assert.deepEqual(JSON.parse(fs.readFileSync(d.reportFile, 'utf8')), body);
+    assert.equal(fs.existsSync(reportPath(wt)), false);
+    assert.equal(readLedger(root).at(-1).kind, 'session.ended');
+    // A trimmed implement report with changed files still has commits to land.
+    assert.notEqual(s.view().state, 'done');
+  });
+
+  test('when the ledger cannot take the report, report.json stays and the worker is told to end again', (t) => {
+    const root = makeRepo();
+    const s = new TaskScript(root);
+    s.started(1);
+    const { env, session } = worker(root, s);
+    writeJson(reportPath(root), { status: 'done', summary: 'Kept through a failed append.' });
+    const ledger = ledgerFile(root);
+    fs.renameSync(ledger, `${ledger}.aside`);
+    fs.mkdirSync(ledger); // every append now fails at once (EISDIR)
+    for (let i = 1; i <= 2; i += 1) {
+      const blocked = hook(t, 'stop', stopInput(root, session), { cwd: root, env });
+      const out = JSON.parse(blocked.stdout);
+      assert.equal(out.decision, 'block');
+      assert.match(out.reason, /^The ledger could not record the report \(.*EISDIR.*\)\. Leave \.jevellan\/report\.json as it is and end your turn again\.$/);
+      assert.equal(fs.existsSync(reportPath(root)), true, 'the report stays where the worker wrote it');
+    }
+    // The blocks are spent: the hook lets the turn end, still without losing the file.
+    const third = hook(t, 'stop', stopInput(root, session), { cwd: root, env });
+    assert.equal(third.stdout, '');
+    assert.equal(fs.existsSync(reportPath(root)), true);
+    const archive = path.join(root, '.jevellan', 'reports');
+    assert.deepEqual(fs.existsSync(archive) ? fs.readdirSync(archive) : [], [], 'nothing was archived');
+    assert.match(fs.readFileSync(path.join(root, '.jevellan', 'hooks.log'), 'utf8'), /not recorded[\s\S]*not recorded[\s\S]*not recorded/);
+    fs.renameSync(ledger, `${ledger}.dir`);
+    fs.renameSync(`${ledger}.aside`, ledger);
+    const fixed = hook(t, 'stop', stopInput(root, session), { cwd: root, env });
+    assert.equal(fixed.stdout, '');
+    const [report] = reports(root);
+    assert.equal(report.data.summary, 'Kept through a failed append.');
+    assert.equal(fs.existsSync(report.data.reportFile), true);
+    assert.equal(fs.existsSync(reportPath(root)), false);
+  });
+
+  test('a report at the worktree root is found from a nested repository inside it (JH_CWD)', (t) => {
+    const root = makeRepo();
+    const wt = addWorktree(root, 'nested-repo');
+    const s = new TaskScript(root);
+    s.started(1, { cwd: wt });
+    const { env, session } = worker(root, s);
+    const nested = path.join(wt, 'vendor', 'lib');
+    fs.mkdirSync(nested, { recursive: true });
+    git(nested, 'init', '-q', '-b', 'main');
+    const deep = path.join(nested, 'src');
+    fs.mkdirSync(deep);
+    // The runtime may name the worktree through a symlink; the walk compares real paths.
+    const spelling = path.join(tempDir('jh-link-'), 'wt');
+    fs.symlinkSync(wt, spelling);
+    writeJson(reportPath(wt), { status: 'done', summary: 'Written at the worktree root.' });
+    const r = hook(t, 'stop', stopInput(deep, session), { cwd: deep, env: { ...env, JH_CWD: spelling } });
+    assert.equal(r.stdout, '');
+    const [report] = reports(root);
+    assert.equal(report.data.summary, 'Written at the worktree root.');
+    assert.equal(fs.existsSync(reportPath(wt)), false);
+  });
+
   test('a summary over 4000 characters is cut to 4000', (t) => {
     const root = makeRepo();
     const s = new TaskScript(root);
@@ -247,8 +345,57 @@ describe('stop hook', () => {
   });
 });
 
+describe('stop hook, answer and converse (the report from the answer)', () => {
+  const fence = (body) => `\`\`\`json\n${body}\n\`\`\``;
+  function answerStop(t, duty, text) {
+    const root = makeRepo();
+    const s = new TaskScript(root, { kind: 'single', duty });
+    s.started(1);
+    const { env, session } = worker(root, s);
+    env.JH_DUTY = duty;
+    const r = hook(t, 'stop', { ...stopInput(root, session), last_assistant_message: text }, { cwd: root, env });
+    assert.equal(r.stdout, '', 'these duties are never blocked');
+    const recorded = reports(root);
+    assert.equal(recorded.length, 1);
+    return recorded[0].data;
+  }
+
+  test('a valid json block that ends the answer is the report', (t) => {
+    const data = answerStop(t, 'answer', `The port is 8080.\n\n${fence('{"status": "done", "summary": "The port is 8080."}')}\n`);
+    assert.deepEqual(data, { status: 'done', summary: 'The port is 8080.', reportFile: null, fromAnswer: true });
+  });
+
+  test('an invalid trailing block is dropped from the recorded answer, and nothing before it is', (t) => {
+    const before = `Use this config:\n${fence('{"port": 8080}')}\nThen restart the server.`;
+    const data = answerStop(t, 'converse', `${before}\n\n${fence('{"status": "finished", "summary": "x"}')}\n`);
+    assert.equal(data.status, 'done');
+    assert.equal(data.synthesized, true);
+    assert.equal(data.summary, before);
+    assert.equal(data.limitations, 'report.json: status must be one of progress, done, blocked, needs-decision');
+  });
+
+  test('without a json block at the end the whole answer is kept', (t) => {
+    const text = `First:\n${fence('{"a": 1}')}\nThen a shell block:\n\`\`\`sh\nnpm test\n\`\`\``;
+    const data = answerStop(t, 'answer', text);
+    assert.equal(data.summary, text);
+    assert.equal(data.limitations, 'report.json: the report has an unknown field "a"');
+  });
+
+  test('a trailing block that is not JSON is kept with the answer', (t) => {
+    const text = `Here it is.\n${fence('{"status": "done", "summary": ')}`;
+    const data = answerStop(t, 'answer', text);
+    assert.equal(data.summary, text);
+    assert.equal(data.limitations, 'the json block at the end of the answer is not valid JSON');
+  });
+
+  test('an answer that is only an invalid block is kept whole rather than recorded empty', (t) => {
+    const text = fence('{"status": "finished", "summary": "the work"}');
+    assert.equal(answerStop(t, 'answer', text).summary, text);
+  });
+});
+
 describe('post-tool hook', () => {
-  const postInput = (cwd, tool, toolInput, extra = {}) => ({ session_id: 'worker-session-1', cwd, hook_event_name: 'PostToolUse', tool_name: tool, tool_input: toolInput, ...extra });
+  const postInput =(cwd, tool, toolInput, extra = {}) => ({ session_id: 'worker-session-1', cwd, hook_event_name: 'PostToolUse', tool_name: tool, tool_input: toolInput, ...extra });
 
   test('Bash: the summary is the command\'s first 200 characters, never the output', (t) => {
     const root = makeRepo();
@@ -324,6 +471,26 @@ describe('post-tool hook', () => {
     assert.equal(readLedger(root)[0].data.summary, `${name}:[redacted] ./run.sh`);
   });
 
+  test('a secret that crosses the 200-character cut leaves none of itself behind', (t) => {
+    const root = makeRepo();
+    const secret = `jhpt-${Date.now().toString(36)}-crossing-value`;
+    fs.mkdirSync(path.join(HARNESS_HOME, 'secrets'), { recursive: true });
+    fs.writeFileSync(path.join(HARNESS_HOME, 'secrets', 'post-tool.token'), `${secret}\n`, { mode: 0o600 });
+    // Five characters of the value fall before the cut: too few for any after-the-fact match.
+    const known = `${'x'.repeat(194)} ${secret} done`;
+    hook(t, 'post-tool', postInput(root, 'Bash', { command: known }), { cwd: root });
+    const token = `tok${Date.now().toString(36)}abcdefghijklmnopqrstuvwxyz`;
+    // Ten characters of the bearer token fall before the cut, under the sixteen the bearer rule needs.
+    const bearer = `${'y'.repeat(163)} -H "Authorization: Bearer ${token}" https://example.invalid`;
+    assert.equal(bearer.indexOf(token), 190);
+    hook(t, 'post-tool', postInput(root, 'Bash', { command: bearer }), { cwd: root });
+    const [first, second] = readLedger(root).map((e) => e.data.summary);
+    assert.equal(first, `${'x'.repeat(194)} [reda`);
+    assert.equal(first.includes(secret.slice(0, 5)), false);
+    assert.equal(second, `${'y'.repeat(163)} -H "Authorization: Bearer [redacted]`);
+    assert.equal(ledgerText(root).includes(token.slice(0, 10)), false);
+  });
+
   test('outside a git repository nothing happens', (t) => {
     const dir = tempDir('jh-nogit-');
     const r = hook(t, 'post-tool', postInput(dir, 'Bash', { command: 'ls' }), { cwd: dir, env: { JH_TASK: 'T000000', JH_STEP: 1 } });
@@ -332,8 +499,49 @@ describe('post-tool hook', () => {
   });
 });
 
+describe('the redactor on cut and encoded text', () => {
+  const value = 'zq-backstop-0123456789abcdef';
+
+  test('a string that ends inside a known value has that fragment masked', () => {
+    assert.equal(redactText(`cut here ${value.slice(0, 12)}`, [value]), 'cut here [redacted]');
+    assert.equal(redactText(`x ${value.slice(0, 8)}`, [value]), 'x [redacted]');
+    assert.equal(redactText(`whole ${value} and fragment ${value.slice(0, 9)}`, [value]), 'whole [redacted] and fragment [redacted]');
+  });
+
+  test('a string that starts inside a known value (the tail of a log) has that fragment masked', () => {
+    assert.equal(redactText(`${value.slice(-12)} and the rest of the log`, [value]), '[redacted] and the rest of the log');
+    assert.equal(redactText(`${value.slice(-7)} short`, [value]), `${value.slice(-7)} short`);
+    assert.equal(redactText(`in the middle ${value.slice(-12)} here`, [value]), `in the middle ${value.slice(-12)} here`);
+  });
+
+  test('fragments under 8 characters, and fragments that do not end the string, are left alone', () => {
+    assert.equal(redactText(`short ${value.slice(0, 7)}`, [value]), `short ${value.slice(0, 7)}`);
+    assert.equal(redactText(`${value.slice(0, 12)} in the middle`, [value]), `${value.slice(0, 12)} in the middle`);
+    assert.equal(redactText('ends with zq-backst0', [value]), 'ends with zq-backst0');
+  });
+
+  test('a text that is only such a fragment is a value of its own (a provider name its token starts with)', () => {
+    const token = 'claude-main-fixture-token-000000';
+    assert.equal(redactText('claude-main', [token]), 'claude-main');
+    assert.equal(redactText('token-000000', [token]), 'token-000000');
+    assert.equal(redactText('cut: claude-main-fixt', [token]), 'cut: [redacted]');
+  });
+
+  test('a secret-named assignment inside JSON-encoded text is masked without breaking the JSON', () => {
+    const name = ['GH', 'TOKEN'].join('_');
+    const line = JSON.stringify({ type: 'item.completed', item: { command: `${name}="ghp-quoted-value" gh api && ${name}=ghp-plain-value gh pr list` } });
+    const out = redactText(line, []);
+    assert.equal(out.includes('ghp-quoted-value'), false, out);
+    assert.equal(out.includes('ghp-plain-value'), false, out);
+    assert.equal(JSON.parse(out).item.command, `${name}:[redacted] gh api && ${name}:[redacted] gh pr list`);
+    const inner = JSON.stringify({ command: `echo "${name}=ghp-inner-value" done` });
+    assert.equal(JSON.parse(redactText(inner, [])).command, `echo "${name}:[redacted]" done`);
+  });
+
+});
+
 describe('session-start hook', () => {
-  const startInput = (cwd, source = 'startup', session = 'coord-session-1') => ({ session_id: session, cwd, hook_event_name: 'SessionStart', source, model: 'test-model' });
+  const startInput =(cwd, source = 'startup', session = 'coord-session-1') => ({ session_id: session, cwd, hook_event_name: 'SessionStart', source, model: 'test-model' });
 
   test('a worker gets "Ledger for task <T>, step <N>:" and its task\'s last 20 events', (t) => {
     const root = makeRepo();

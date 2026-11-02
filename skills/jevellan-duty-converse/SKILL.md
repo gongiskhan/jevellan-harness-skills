@@ -1,6 +1,6 @@
 ---
 name: jevellan-duty-converse
-description: "Duty converse. Use when this session is running a task step whose duty is converse. Holds one conversation turn in the coordinator's voice. End by writing the report file."
+description: "Duty converse. Use when this session is running a task step whose duty is converse: only when the runtime's instructions for this session say 'Your step is duty converse', never for a request typed by the owner. Holds one conversation turn in the coordinator's voice. End by writing the report file."
 jh-role: duty
 jh-duty: converse
 jh-needs: []

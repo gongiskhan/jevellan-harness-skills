@@ -246,6 +246,51 @@ function validateHandData(kind, data, step, info) {
   }
 }
 
+// The newest step.started of the task when its worker may still be running: its pid is alive and no step.lost was
+// recorded for it (step.lost is written only after its pid was seen gone, so a live pid now is another process).
+function liveStart(info) {
+  const newest = [...info.events].reverse().find((e) => e.kind === 'step.started');
+  if (!newest || !pidAlive(newest.data?.pid)) return null;
+  const lost = info.events.some((e) => e.kind === 'step.lost' && e.step === newest.step && e.seq > newest.seq);
+  return lost ? null : newest;
+}
+
+// step.retrying applies the workflow's onFail rule and nothing else: the step is in the recorded workflow and not
+// skipped, its onFail goes back to gotoOrdinal, it ended in a failure since it last started (step.failed,
+// step.lost, a blocked report or failing tests), and it has retries left. A failed or lost step without onFail is
+// not retried; it is placed and started again.
+function retryGuard(info, step, data, view) {
+  const created = info.created.data ?? {};
+  const line = [...info.events].reverse().find((e) => e.kind === 'task.workflow');
+  if (!line && created.kind !== 'single') throw new LedgerError(`task ${info.created.task} has no recorded workflow; there is no onFail rule to apply`);
+  const steps = line?.data?.steps ?? [{ ordinal: 1, duty: created.duty, onFail: null }];
+  const spec = steps.find((s) => s.ordinal === step);
+  if (!spec) throw new LedgerError(`step ${step} is not in the task's workflow`);
+  if ((line?.data?.skipped ?? []).includes(step)) throw new LedgerError(`step ${step} is skipped in the task's workflow`);
+  if (!spec.onFail) {
+    throw new LedgerError(`step ${step} has no onFail in the workflow, so it is not retried with step.retrying: a failed or lost step without onFail is placed and started again (the placement skill, then the runtime skill)`);
+  }
+  if (spec.onFail.goto !== data.gotoOrdinal) {
+    throw new LedgerError(`step ${step}'s onFail goes back to step ${spec.onFail.goto}, not ${data.gotoOrdinal}`);
+  }
+  if (!view.started) {
+    const reset = resetFor(resetPoints(info.events), step) > 0;
+    throw new LedgerError(`step ${step} has not run ${reset ? 'since the last retry reset it' : 'yet'}; there is nothing to retry`);
+  }
+  const end = view.end;
+  if (!end) throw new LedgerError(`step ${step} has not ended since it last started; wait for its report`);
+  const failure = end.kind === 'step.failed' || end.kind === 'step.lost'
+    || (end.kind === 'step.report' && (end.data?.status === 'blocked' || end.data?.testsRun?.passed === false));
+  if (!failure) {
+    const what = end.kind === 'step.report' ? `a ${end.data?.status ?? 'unknown'} report` : end.kind;
+    throw new LedgerError(`step ${step} ended with ${what}; step.retrying follows a failed or lost step, a blocked report or failing tests`);
+  }
+  const max = spec.onFail.maxLoops;
+  if (!Number.isInteger(max)) throw new LedgerError(`step ${step}'s onFail has no maxLoops`);
+  const used = info.events.filter((e) => e.kind === 'step.retrying' && e.step === step).length;
+  if (used >= max) throw new LedgerError(`step ${step} already retried ${used} of ${max} times; tell the owner`);
+}
+
 // Guards that need the task's current lines; run inside the ledger lock.
 function guard(kind, step, data, force) {
   return (events) => {
@@ -264,18 +309,15 @@ function guard(kind, step, data, force) {
       }
       if (view.done) throw new LedgerError(`step ${step} is already done`);
     }
-    if (kind === 'step.retrying' && !force) {
-      const workflow = [...info.events].reverse().find((e) => e.kind === 'task.workflow');
-      const spec = workflow?.data?.steps?.find((s) => s.ordinal === step);
-      const max = spec?.onFail?.maxLoops;
-      if (Number.isInteger(max)) {
-        const used = info.events.filter((e) => e.kind === 'step.retrying' && e.step === step).length;
-        if (used >= max) throw new LedgerError(`step ${step} already retried ${used} of ${max} times; tell the owner`);
-      }
-      if (spec?.onFail && spec.onFail.goto !== data.gotoOrdinal) {
-        throw new LedgerError(`step ${step}'s onFail goes back to step ${spec.onFail.goto}, not ${data.gotoOrdinal}`);
+    // Never beside a live worker, with --force or without: ending its start would let a second worker start next to
+    // it, and the next step or retry would run while it still changes the worktree.
+    if (kind === 'step.failed' || kind === 'step.retrying') {
+      const live = liveStart(info);
+      if (live) {
+        throw new LedgerError(`step ${live.step} of ${info.created.task} is still running (pid ${live.data.pid}); stop it with the runtime skill's stop script, or wait until its process has exited, then append again`);
       }
     }
+    if (kind === 'step.retrying' && !force) retryGuard(info, step, data, view);
   };
 }
 

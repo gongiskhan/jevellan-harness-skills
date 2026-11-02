@@ -15,12 +15,12 @@ export function codexHome(provider) {
   return provider.codexHome ? expandHome(provider.codexHome) : path.join(ownerHome(), '.codex');
 }
 
-export function workerEnv({ provider, task, step, duty, project, session, base = process.env }) {
+export function workerEnv({ provider, task, step, duty, project, session, cwd, base = process.env }) {
   if (!CODEX_KINDS.includes(provider.kind)) throw new RuntimeError(`provider ${provider.name} is ${provider.kind}, not a Codex provider`);
   if (provider.enabled === false) throw new RuntimeError(`provider ${provider.name} is disabled in providers.json`);
   const home = codexHome(provider);
   if (!fs.existsSync(path.join(home, 'auth.json'))) throw new RuntimeError(`provider ${provider.name}: no Codex login in ${home}; the owner runs "codex login" once`);
-  const env = baseWorkerEnv({ task, step, duty, project, session, base });
+  const env = baseWorkerEnv({ task, step, duty, project, session, cwd, base });
   env.CODEX_HOME = home;
   return env;
 }

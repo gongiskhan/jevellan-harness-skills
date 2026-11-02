@@ -6,10 +6,24 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { parseArgs } from 'node:util';
-import { MAX_CONTINUES, RuntimeError, archiveStaleReport, currentView, ledger, loadTask, logsDir, projectLib, providerFor, rootFor } from './lib/task.mjs';
+import {
+  EXIT_GRACE_MS,
+  MAX_CONTINUES,
+  RuntimeError,
+  appendStarted,
+  archiveStaleReport,
+  assertNoLiveWorker,
+  currentView,
+  ledger,
+  loadTask,
+  logsDir,
+  projectLib,
+  providerFor,
+  resumeCheck,
+  rootFor,
+} from './lib/task.mjs';
 import { resumeMessage } from './lib/prompt.mjs';
 import { codexResumeArgs, workerEnv } from './lib/env.mjs';
-import { pidAlive } from './lib/proc.mjs';
 import { isEntry, main } from './lib/cli.mjs';
 import { spawnRunner } from './start.mjs';
 
@@ -28,7 +42,8 @@ export async function resume(argv) {
   const started = view.started;
   if (!started) throw new RuntimeError(`step ${step} of ${values.task} has not started; start it with start.mjs`);
   if (started.data?.runtime !== 'codex') throw new RuntimeError(`step ${step} runs on the ${started.data?.runtime} runtime; resume it with that runtime's skill`);
-  if (!view.end && pidAlive(started.data?.pid)) throw new RuntimeError(`step ${step} of ${values.task} is running (pid ${started.data.pid}); wait for its report first`);
+  // The task's newest worker must be gone, whatever the ledger says about its turn.
+  assertNoLiveWorker(info, step, { graceMs: EXIT_GRACE_MS });
   if (view.done) throw new RuntimeError(`step ${step} of ${values.task} is done`);
   const placed = [...info.events].reverse().find((e) => e.kind === 'task.placed' && e.data?.step === step);
   const turns = info.events.filter((e) => e.kind === 'step.started' && e.step === step && e.seq > (placed?.seq ?? 0)).length;
@@ -40,16 +55,19 @@ export async function resume(argv) {
   const d = started.data;
   const provider = providerFor(d.provider, d.model, d.effort);
   if (!fs.existsSync(d.cwd)) throw new RuntimeError(`the step's folder ${d.cwd} is gone (archived?)`);
-  const env = workerEnv({ provider, task: values.task, step, duty: d.duty, project: root, session });
+  const env = workerEnv({ provider, task: values.task, step, duty: d.duty, project: root, session, cwd: d.cwd });
   archiveStaleReport(root, d.cwd, values.task, step);
-  ledger.appendEvent(root, { kind: 'step.message', task: values.task, step, session, data: { direction: from, text: message } });
+  // The guards run again inside the ledger lock, before the message and again with the new start: a concurrent
+  // resume or start is refused before it spawns, or has its runner killed after (exit 2).
+  const check = resumeCheck(values.task, step, started);
+  ledger.appendEvent(root, { kind: 'step.message', task: values.task, step, session, data: { direction: from, text: message } }, { check });
   const logs = logsDir();
   const logFile = path.join(logs, `${session}.log`);
   const pid = spawnRunner({ root, task: values.task, step, session, cwd: d.cwd, model: d.model, logFile, env, threadId, args: codexResumeArgs({ threadId, model: d.model, effort: d.effort }), message: resumeMessage(from, message) }, logs, session);
-  ledger.appendEvent(root, {
+  appendStarted(root, {
     kind: 'step.started', task: values.task, step, session,
     data: { ordinal: step, duty: d.duty, runtime: 'codex', provider: d.provider, model: d.model, effort: d.effort, cwd: d.cwd, nativeSessionId: threadId, pid, logFile, resumed: true },
-  });
+  }, check, pid);
   return { out: { task: values.task, step, session, threadId, pid, from, logFile }, text: `Resumed ${values.task} step ${step} in Codex thread ${threadId} (pid ${pid}). Use the ledger skill to wait for its report.` };
 }
 

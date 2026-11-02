@@ -26,10 +26,28 @@ process.stdin.on('end', () => {
   fs.appendFileSync(path.join(out, 'calls.jsonl'), JSON.stringify({ argv, cwd: process.cwd(), input, codexHome: process.env.CODEX_HOME, jhTask: process.env.JH_TASK }) + '\\n');
   console.log(JSON.stringify({ type: 'thread.started', thread_id: thread }));
   console.log(JSON.stringify({ type: 'turn.started' }));
+  if (input.includes('LEAKY')) {
+    // A known secret value and secret-named assignments, as a command event (JSON-encoded) and on stderr, written in
+    // pieces that split lines and characters across chunks.
+    const known = fs.readFileSync(path.join(process.env.JH_HARNESS_HOME, 'secrets', 'codex-test.token'), 'utf8').trim();
+    const name = ['DEPLOY', 'TOKEN'].join('_');
+    const line = JSON.stringify({ type: 'item.completed', item: { id: 'item_1', type: 'command_execution', command: name + '="quoted-plain-1234" ./deploy --key ' + known + ' && ' + name + '=bare-plain-5678 ./again', aggregated_output: 'ok 中文' } }) + '\\n';
+    const buffer = Buffer.from(line);
+    const cut = buffer.indexOf(Buffer.from(known)) + 5;
+    process.stdout.write(buffer.subarray(0, cut));
+    process.stdout.write(buffer.subarray(cut, buffer.length - 8));
+    process.stdout.write(buffer.subarray(buffer.length - 8));
+    process.stderr.write('warning: key ' + known.slice(0, 6));
+    process.stderr.write(known.slice(6) + ' rejected\\n');
+  }
   const finish = () => {
     if (!input.includes('NOREPORT')) {
       fs.mkdirSync('.jevellan', { recursive: true });
-      const report = input.includes('BADREPORT') ? { status: 'needs-decision', summary: 'x', question: 'Q?', options: [{ label: 'only' }] } : { status: 'done', summary: resume ? 'resumed fine' : 'all fine' };
+      let report = input.includes('BADREPORT') ? { status: 'needs-decision', summary: 'x', question: 'Q?', options: [{ label: 'only' }] } : { status: 'done', summary: resume ? 'resumed fine' : 'all fine' };
+      if (input.includes('BIGREPORT')) {
+        const wide = '中'.repeat(1000);
+        report = { status: 'done', summary: '報'.repeat(4000), changedFiles: Array.from({ length: 200 }, (_, i) => 'src/' + wide + '-' + i + '.js'), testsRun: { command: 'npm test', passed: true, summary: 'ok' }, limitations: '限'.repeat(4000) };
+      }
       fs.writeFileSync('.jevellan/report.json', JSON.stringify(report));
     }
     console.log(JSON.stringify({ type: 'item.completed', item: { id: 'item_0', type: 'agent_message', text: 'done' } }));
@@ -143,4 +161,40 @@ test('stop ends the runner and codex; a provider without a Codex login is refuse
   const refused = run('start.mjs', ['--task', other.task, '--step', '1', '--duty', 'investigate', '--cwd', other.dir, '--provider', 'codex-nologin', '--model', 'gpt-6-astra', '--effort', 'medium']);
   assert.equal(refused.status, 2);
   assert.match(JSON.parse(refused.stdout).error, /codex login/);
+});
+
+test('a report too big for one ledger line is recorded cut to fit by the runner, the archive keeps all of it', () => {
+  const { task, dir } = newTask('BIGREPORT please.');
+  assert.equal(run('start.mjs', startArgs(task, dir)).status, 0);
+  const report = waitReport(task);
+  assert.equal(report.status, 'done');
+  assert.equal(report.summary, '報'.repeat(4000));
+  assert.equal(report.trimmed, true);
+  assert.equal(report.originalCounts.changedFiles, 200);
+  assert.ok(report.changedFiles.length > 0 && report.changedFiles.length < 200);
+  assert.ok(report.limitations.includes(report.reportFile));
+  const archived = JSON.parse(fs.readFileSync(report.reportFile, 'utf8'));
+  assert.equal(archived.changedFiles.length, 200);
+  assert.equal(fs.existsSync(path.join(dir, '.jevellan', 'report.json')), false);
+  assert.ok(ledger.readEvents(project).events.some((e) => e.task === task && e.kind === 'session.ended'));
+});
+
+test('the step log carries codex output line by line with secrets masked', () => {
+  const known = `cx-known-${Date.now().toString(36)}-value`;
+  fs.mkdirSync(path.join(HARNESS_HOME, 'secrets'), { recursive: true });
+  fs.writeFileSync(path.join(HARNESS_HOME, 'secrets', 'codex-test.token'), `${known}\n`, { mode: 0o600 });
+  const { task, dir } = newTask('LEAKY please.');
+  const r = run('start.mjs', startArgs(task, dir));
+  assert.equal(r.status, 0, r.stderr);
+  const { logFile } = JSON.parse(r.stdout);
+  assert.equal(waitReport(task).status, 'done');
+  const text = fs.readFileSync(logFile, 'utf8');
+  for (const leak of [known, known.slice(0, 8), 'quoted-plain-1234', 'bare-plain-5678']) assert.equal(text.includes(leak), false, `the log carries ${leak}`);
+  const lines = text.trimEnd().split('\n');
+  const command = lines.map((l) => { try { return JSON.parse(l); } catch { return null; } }).find((j) => j?.item?.type === 'command_execution');
+  assert.ok(command, 'the command event is still one JSON line');
+  const name = ['DEPLOY', 'TOKEN'].join('_');
+  assert.equal(command.item.command, `${name}:[redacted] ./deploy --key [redacted] && ${name}:[redacted] ./again`);
+  assert.equal(command.item.aggregated_output, 'ok 中文');
+  assert.ok(lines.includes('warning: key [redacted] rejected'), text);
 });

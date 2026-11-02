@@ -436,13 +436,16 @@ export function missingExcludeLines(text, wanted = EXCLUDE_LINES) {
   return wanted.filter((line) => (line.endsWith('/') ? !loose.has(excludeKey(line)) : !exact.has(excludeKey(line, true))));
 }
 
-// What makes a fresh worktree ready to run the project's commands (H-023): the lockfile's install, or none.
+// What makes a fresh worktree ready to run the project's commands (H-023): the lockfile's install, or none. Without a
+// lockfile, npm install would write a package-lock.json into every worktree, which a worker commits and landing puts
+// on the default branch; --no-package-lock installs without writing one (the git skill fails a setup that leaves
+// files behind).
 export function setupCommandFor(project) {
   const has = (file) => fs.existsSync(path.join(project, file));
   if (has('pnpm-lock.yaml')) return 'pnpm install --frozen-lockfile';
   if (has('yarn.lock')) return 'yarn install --frozen-lockfile';
   if (has('package-lock.json')) return 'npm ci';
-  if (has('package.json')) return 'npm install';
+  if (has('package.json')) return 'npm install --no-package-lock';
   return null;
 }
 

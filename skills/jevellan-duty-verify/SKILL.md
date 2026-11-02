@@ -1,6 +1,6 @@
 ---
 name: jevellan-duty-verify
-description: "Duty verify. Use when this session is running a task step whose duty is verify. Runs the tests and browser journeys and saves evidence. End by writing the report file."
+description: "Duty verify. Use when this session is running a task step whose duty is verify: only when the runtime's instructions for this session say 'Your step is duty verify', never for a request typed by the owner. Runs the tests and browser journeys and saves evidence. End by writing the report file."
 jh-role: duty
 jh-duty: verify
 jh-needs: [repo-write, shell, browser]

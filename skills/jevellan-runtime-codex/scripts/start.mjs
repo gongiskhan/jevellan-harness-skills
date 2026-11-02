@@ -4,7 +4,8 @@
 //   node start.mjs --task T --step N --duty D --cwd <worktree> --provider P --model M --effort E [--prompt-file F] [--json]
 //
 // The same guards as the Claude runtime: a placement since the step last ran naming exactly this provider, model and
-// effort; the step not running and not done; the task's worktree as the working folder. Codex has no system prompt
+// effort; the task's newest worker gone and the step not done, checked again inside the ledger lock when step.started
+// is appended; the task's worktree as the working folder. Codex has no system prompt
 // channel, so the worker rules, the duty's instructions (inline: Codex does not load Claude skills), AGENTS.md and the
 // task block go first in the message, after "Instructions for this session:". The thread id Codex announces becomes
 // the session's native id (session.started), and the runner records the report when the turn ends.
@@ -16,9 +17,12 @@ import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 import {
+  EXIT_GRACE_MS,
   RuntimeError,
+  appendStarted,
   archiveStaleReport,
   assertDutyInstalled,
+  assertNoLiveWorker,
   buildAppend,
   buildTaskBlock,
   currentView,
@@ -28,12 +32,12 @@ import {
   providerFor,
   requirePlacement,
   rootFor,
+  startCheck,
   workflowOf,
   worktreeOf,
 } from './lib/task.mjs';
 import { START_PROMPT } from './lib/prompt.mjs';
 import { codexStartArgs, firstMessage, nodeBinary, workerEnv } from './lib/env.mjs';
-import { pidAlive } from './lib/proc.mjs';
 import { isEntry, main } from './lib/cli.mjs';
 
 export const RUNNER = path.join(path.dirname(fileURLToPath(import.meta.url)), 'runner.mjs');
@@ -75,14 +79,14 @@ export async function start(argv) {
   const spec = workflowOf(info).steps.find((s) => s.ordinal === step);
   if (!spec) throw new RuntimeError(`task ${values.task} has no step ${step}`);
   if (spec.duty !== values.duty) throw new RuntimeError(`step ${step} of ${values.task} is ${spec.duty}, not ${values.duty}`);
-  const view = currentView(info, step);
-  if (view.started && !view.end && pidAlive(view.started.data?.pid)) throw new RuntimeError(`step ${step} of ${values.task} is running (pid ${view.started.data.pid}); wait for its report or stop it`);
-  if (view.done) throw new RuntimeError(`step ${step} of ${values.task} is done`);
+  // The task's newest worker must be gone, whatever the ledger says about its turn.
+  assertNoLiveWorker(info, step, { graceMs: EXIT_GRACE_MS });
+  if (currentView(info, step).done) throw new RuntimeError(`step ${step} of ${values.task} is done`);
   const provider = providerFor(values.provider, values.model, values.effort);
-  requirePlacement(info, step, values);
+  const placed = requirePlacement(info, step, values);
 
   const session = crypto.randomUUID();
-  const env = workerEnv({ provider, task: values.task, step, duty: values.duty, project: root, session });
+  const env = workerEnv({ provider, task: values.task, step, duty: values.duty, project: root, session, cwd });
   const block = values['prompt-file'] ? fs.readFileSync(values['prompt-file'], 'utf8').trim() : buildTaskBlock(root, info, step, values.duty);
   const logs = logsDir();
   const appendFile = path.join(logs, `${session}.append.md`);
@@ -95,10 +99,11 @@ export async function start(argv) {
     args: codexStartArgs({ cwd, model: values.model, effort: values.effort }),
     message: firstMessage(fs.readFileSync(appendFile, 'utf8'), START_PROMPT),
   }, logs, session);
-  ledger.appendEvent(root, {
+  // The guards run again inside the ledger lock; a refused start kills the runner it spawned (exit 2).
+  appendStarted(root, {
     kind: 'step.started', task: values.task, step, session,
     data: { ordinal: step, duty: values.duty, runtime: 'codex', provider: provider.name, model: values.model, effort: values.effort, cwd, nativeSessionId: null, pid, logFile },
-  });
+  }, startCheck(values.task, step, placed), pid);
   const out = { task: values.task, step, duty: values.duty, session, pid, provider: provider.name, model: values.model, effort: values.effort, cwd, logFile, appendFile, staleReport: stale };
   return { out, text: `Started ${values.task} step ${step} (${values.duty}) on ${values.model} ${values.effort} via ${provider.name} (codex exec): session ${session}, pid ${pid}. Use the ledger skill to wait for its report.` };
 }

@@ -2,7 +2,11 @@
 // "report.json: ", and the lenient fixes (an over-long summary cut, a list of limitations joined).
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
-import { LIMITS, STATUSES, normalizeReport, validateReport } from '../skills/jevellan-ledger/scripts/lib/report-schema.mjs';
+// The fixture points JH_HARNESS_HOME at a temporary folder: fitReportLine redacts with the secrets it finds there, and
+// no test reads the real ~/.jevellan-harness.
+import './helpers/ledger-fixture.mjs';
+import { LIMITS, REPORT_LINE_BYTES, STATUSES, cutText, fitReportLine, normalizeReport, validateReport } from '../skills/jevellan-ledger/scripts/lib/report-schema.mjs';
+import { MAX_LINE } from '../skills/jevellan-ledger/scripts/lib/ledger.mjs';
 
 const base = { status: 'done', summary: 'Added the section.' };
 const decision = { status: 'needs-decision', summary: 'Two ways.', question: 'Blue or Green?', options: [{ label: 'Blue' }, { label: 'Green' }] };
@@ -218,5 +222,84 @@ describe('the validator itself', () => {
   test('the first problem wins', () => {
     problem({ status: 'needs-decision', summary: '', question: '', options: [] }, 'summary must be a non-empty text');
     problem({ ...decision, options: [{ label: 'A' }], testsRun: 'x' }, 'options must have 2 to 4 items');
+  });
+});
+
+describe('fitting a report to one ledger line', () => {
+  const bytes = (value) => Buffer.byteLength(JSON.stringify(value));
+  const wide = '中'.repeat(1000);
+  const big = () => ({
+    status: 'needs-decision',
+    summary: '報'.repeat(LIMITS.summary),
+    question: '問'.repeat(LIMITS.question),
+    options: [{ label: 'Blue', description: '藍'.repeat(LIMITS.description) }, { label: 'Green' }],
+    testsRun: { command: 'npm test', passed: false, summary: '試'.repeat(LIMITS.testsSummary) },
+    changedFiles: Array.from({ length: LIMITS.changedFiles }, (_, i) => `src/${wide}-${i}.js`),
+    screenshots: Array.from({ length: LIMITS.screenshots }, (_, i) => ({ path: `.jevellan/evidence/${i}.png`, caption: '图'.repeat(LIMITS.caption) })),
+    limitations: '限'.repeat(LIMITS.limitations),
+    ownerCommands: Array.from({ length: LIMITS.ownerCommands }, () => ({ command: '命'.repeat(LIMITS.command), cwd: 'home', why: 'Only you can.' })),
+    reportFile: '/p/.jevellan/reports/T1-s1-20261102T011409312Z.json',
+  });
+
+  test('the budget is the ledger line rule minus room for the envelope', () => {
+    assert.ok(REPORT_LINE_BYTES < MAX_LINE && REPORT_LINE_BYTES > MAX_LINE - 8192);
+  });
+
+  test('a report that fits is left as it is', () => {
+    const data = { ...decision, changedFiles: ['README.md'], limitations: 'none', reportFile: '/p/r.json' };
+    assert.deepEqual(fitReportLine(data), data);
+  });
+
+  test('a schema-valid report over the budget keeps its decision fields and cuts its lists, with the counts', () => {
+    const input = big();
+    assert.equal(validateReport(Object.fromEntries(Object.entries(input).filter(([k]) => k !== 'reportFile'))).ok, true);
+    assert.ok(bytes(input) > MAX_LINE);
+    const copy = structuredClone(input);
+    const out = fitReportLine(input);
+    assert.deepEqual(input, copy, 'the input is untouched');
+    assert.ok(bytes(out) <= REPORT_LINE_BYTES, `${bytes(out)} bytes`);
+    for (const key of ['status', 'summary', 'question', 'options', 'testsRun', 'reportFile']) assert.deepEqual(out[key], input[key], key);
+    assert.equal(out.trimmed, true);
+    assert.deepEqual(out.originalCounts, { changedFiles: 200, screenshots: 50, ownerCommands: 5, limitations: 4000 });
+    assert.ok(out.changedFiles.length >= 1, 'changed files stay listed');
+    assert.deepEqual(out.changedFiles, input.changedFiles.slice(0, out.changedFiles.length));
+    for (const key of ['screenshots', 'ownerCommands']) assert.deepEqual(out[key], input[key].slice(0, out[key].length), key);
+    assert.match(out.limitations, /the full report is \/p\/\.jevellan\/reports\/T1-s1-20261102T011409312Z\.json\.$/);
+  });
+
+  test('the room left is filled in order, so a short list survives whole', () => {
+    const input = { status: 'done', summary: 's', changedFiles: ['a.js', 'b.js'], screenshots: [{ path: '.jevellan/evidence/a.png', caption: 'A' }], limitations: 'l'.repeat(LIMITS.limitations), reportFile: '/r.json' };
+    const out = fitReportLine(input, { maxBytes: 1500 });
+    assert.ok(bytes(out) <= 1500, `${bytes(out)} bytes`);
+    assert.deepEqual(out.changedFiles, input.changedFiles);
+    assert.deepEqual(out.screenshots, input.screenshots);
+    assert.match(out.limitations, /^l+…\n\nThis ledger line was cut to fit/);
+    assert.deepEqual(out.originalCounts, { changedFiles: 2, screenshots: 1, limitations: 4000 });
+  });
+
+  test('even text that escapes to six bytes a character fits: the longest kept texts are halved', () => {
+    const control = '\u0001';
+    const input = {
+      status: 'needs-decision',
+      summary: control.repeat(LIMITS.summary),
+      question: control.repeat(LIMITS.question),
+      options: Array.from({ length: 4 }, () => ({ label: control.repeat(LIMITS.label), description: control.repeat(LIMITS.description) })),
+      testsRun: { command: control.repeat(LIMITS.command), passed: true, summary: control.repeat(LIMITS.testsSummary) },
+      reportFile: '/r.json',
+    };
+    assert.ok(bytes(input) > REPORT_LINE_BYTES);
+    const out = fitReportLine(input);
+    assert.ok(bytes(out) <= REPORT_LINE_BYTES, `${bytes(out)} bytes`);
+    assert.equal(out.trimmed, true);
+    assert.equal(out.status, 'needs-decision');
+    assert.ok(out.summary.length > 0 && out.testsRun.command.length > 0);
+  });
+
+  test('cutText never splits a character made of two UTF-16 units', () => {
+    assert.equal(cutText('abcdef', 10), 'abcdef');
+    assert.equal(cutText('abcdef', 4), 'abc…');
+    const cut = cutText('a😀😀😀', 3);
+    assert.equal(cut, 'a…');
+    assert.doesNotThrow(() => encodeURIComponent(cut));
   });
 });

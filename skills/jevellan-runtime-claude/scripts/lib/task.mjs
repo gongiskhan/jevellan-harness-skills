@@ -6,16 +6,24 @@ import path from 'node:path';
 import { importFromRole, skillsWithRole } from './roles.mjs';
 import { RuntimeError, harnessHome, findProvider, loadProvidersFile } from './common.mjs';
 import { NO_TOOL_DUTIES, projectInstructions, systemAppend, taskBlock, workerRules } from './prompt.mjs';
+import { killGroup, pidAlive, waitForExit } from './proc.mjs';
 
 export const ledger = await importFromRole('ledger', 'scripts/lib/ledger.mjs');
 export const projectLib = await importFromRole('ledger', 'scripts/lib/project.mjs');
 export const ids = await importFromRole('ledger', 'scripts/lib/ids.mjs');
 export const MAX_CONTINUES = 20;
+// How long a start or resume waits for a worker whose turn the ledger already shows ended (its report is in, the
+// process is still exiting) before it refuses.
+export const EXIT_GRACE_MS = 3000;
 export { RuntimeError } from './common.mjs';
 
+// Mode 700: the logs hold the workers' raw output.
 export function logsDir() {
   const dir = path.join(harnessHome(), 'logs');
   fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
+  try {
+    fs.chmodSync(dir, 0o700);
+  } catch {}
   return dir;
 }
 
@@ -34,6 +42,73 @@ export function loadTask(root, task) {
 
 export function currentView(info, step) {
   return ledger.stepView(info.events, step, ledger.resetFor(ledger.resetPoints(info.events), step));
+}
+
+// The newest step.started of the task (of one step when `step` is given), by seq, whatever came after it: no
+// retry reset and no end event hides it. Its pid is the worker that may still be running, because a report, a
+// step.failed or a step.retrying is written by others and says nothing about whether the process has gone.
+export function newestStart(info, step) {
+  let newest = null;
+  for (const event of info.events) {
+    if (event.kind !== 'step.started' || (step !== undefined && event.step !== step)) continue;
+    if (!newest || event.seq > newest.seq) newest = event;
+  }
+  return newest;
+}
+
+// The task's newest start when its pid is alive, else null. One worker per task at a time: every step of a task
+// runs in the same worktree. A worker whose turn already ended in the ledger gets `graceMs` to exit first.
+export function liveWorker(info, { graceMs = 0 } = {}) {
+  const start = newestStart(info);
+  const pid = start?.data?.pid;
+  if (!pidAlive(pid)) return null;
+  if (graceMs > 0 && ledger.stepView(info.events, start.step).end && waitForExit(pid, graceMs)) return null;
+  return start;
+}
+
+export function assertNoLiveWorker(info, step, options) {
+  const live = liveWorker(info, options);
+  if (!live) return;
+  const which = live.step === step ? `step ${step} of ${info.created.task} is running` : `step ${live.step} of ${info.created.task} is still running`;
+  throw new RuntimeError(`${which} (pid ${live.data.pid}); wait for its report or stop it`);
+}
+
+// The guards of start.mjs again, inside the ledger lock on the lines as they are then (appendEvent's check), so two
+// starts that both passed them before spawning cannot both record a start: nothing started this step since its
+// placement, the task's newest worker is gone, the step is not done.
+export function startCheck(task, step, placed) {
+  return (events) => {
+    const info = ledger.findTask(events, task);
+    if (!info) throw new RuntimeError(`no task ${task} in the ledger`, 3);
+    const other = info.events.find((e) => e.kind === 'step.started' && e.step === step && e.seq > placed.seq);
+    if (other) throw new RuntimeError(`step ${step} of ${task} was started meanwhile on the same placement (pid ${other.data?.pid}); wait for its report or stop it`);
+    assertNoLiveWorker(info, step);
+    if (currentView(info, step).done) throw new RuntimeError(`step ${step} of ${task} is done`);
+  };
+}
+
+// The guards of resume.mjs again, inside the ledger lock: the step's current start is still the one being resumed
+// (no other start, resume or retry came in between), the task's newest worker is gone, the step is not done.
+export function resumeCheck(task, step, started) {
+  return (events) => {
+    const info = ledger.findTask(events, task);
+    if (!info) throw new RuntimeError(`no task ${task} in the ledger`, 3);
+    const view = currentView(info, step);
+    if (view.started?.seq !== started.seq) throw new RuntimeError(`step ${step} of ${task} was started, resumed or reset meanwhile; look at its status first`);
+    assertNoLiveWorker(info, step);
+    if (view.done) throw new RuntimeError(`step ${step} of ${task} is done`);
+  };
+}
+
+// Appends the step.started of a process just spawned, under `check`; when the append is refused or fails, the
+// process group is killed before the error goes on, so no worker runs without its start in the ledger.
+export function appendStarted(root, input, check, pid) {
+  try {
+    return ledger.appendEvent(root, input, { check });
+  } catch (error) {
+    killGroup(pid);
+    throw error;
+  }
 }
 
 export function workflowOf(info) {

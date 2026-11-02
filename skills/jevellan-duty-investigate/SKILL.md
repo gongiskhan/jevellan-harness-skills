@@ -1,6 +1,6 @@
 ---
 name: jevellan-duty-investigate
-description: "Duty investigate. Use when this session is running a task step whose duty is investigate. Reads code or docs and answers with file and line references. End by writing the report file."
+description: "Duty investigate. Use when this session is running a task step whose duty is investigate: only when the runtime's instructions for this session say 'Your step is duty investigate', never for a request typed by the owner. Reads code or docs and answers with file and line references. End by writing the report file."
 jh-role: duty
 jh-duty: investigate
 jh-needs: [repo-read]

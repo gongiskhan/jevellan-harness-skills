@@ -5,8 +5,9 @@
 //
 // The message reaches the worker as "From the owner: <text>" or "From the coordinator: <text>" (default
 // coordinator), through `claude -p --resume <session>` with the same provider, model, effort, permissions and system
-// prompt append as the step's start. Refused (exit 2) while the step runs, before it ever started, after it is done,
-// and after 20 continues of one placement. The ledger gets step.message and a new step.started with the same
+// prompt append as the step's start. Refused (exit 2) while the task's newest worker is alive (whatever the ledger
+// says after its start), before the step ever started, after it is done, and after 20 continues of one placement;
+// the guards run again inside the ledger lock. The ledger gets step.message and a new step.started with the same
 // nativeSessionId.
 
 import fs from 'node:fs';
@@ -14,23 +15,26 @@ import path from 'node:path';
 import { spawn } from 'node:child_process';
 import { parseArgs } from 'node:util';
 import {
+  EXIT_GRACE_MS,
   MAX_CONTINUES,
   RuntimeError,
+  appendStarted,
   archiveStaleReport,
+  assertNoLiveWorker,
   claudeArgs,
   currentView,
   ledger,
   loadTask,
   logsDir,
+  projectLib,
   providerFor,
+  resumeCheck,
   rootFor,
   workerEnv,
   worktreeOf,
 } from './lib/step.mjs';
 import { resumeMessage } from './lib/prompt.mjs';
-import { pidAlive } from './lib/proc.mjs';
 import { isEntry, main } from './lib/cli.mjs';
-import { projectLib } from './lib/step.mjs';
 
 export async function resume(argv) {
   const { values } = parseArgs({
@@ -52,7 +56,8 @@ export async function resume(argv) {
   const started = view.started;
   if (!started) throw new RuntimeError(`step ${step} of ${values.task} has not started; start it with start.mjs`);
   if (started.data?.runtime !== 'claude') throw new RuntimeError(`step ${step} runs on the ${started.data?.runtime} runtime; resume it with that runtime's skill`);
-  if (!view.end && pidAlive(started.data?.pid)) throw new RuntimeError(`step ${step} of ${values.task} is running (pid ${started.data.pid}); wait for its report first`);
+  // The task's newest worker must be gone, whatever the ledger says about its turn.
+  assertNoLiveWorker(info, step, { graceMs: EXIT_GRACE_MS });
   if (view.done) throw new RuntimeError(`step ${step} of ${values.task} is done`);
   // At most 20 continues per placement: the turns since the latest placement of this step.
   const placed = [...info.events].reverse().find((e) => e.kind === 'task.placed' && e.data?.step === step);
@@ -69,10 +74,13 @@ export async function resume(argv) {
   const logs = logsDir();
   const appendFile = path.join(logs, `${session}.append.md`);
   if (!fs.existsSync(appendFile)) throw new RuntimeError(`the step's system prompt file ${appendFile} is missing`);
-  const env = workerEnv({ provider, task: values.task, step, duty: d.duty, project: root, session });
+  const env = workerEnv({ provider, task: values.task, step, duty: d.duty, project: root, session, cwd });
   archiveStaleReport(root, cwd, values.task, step);
 
-  ledger.appendEvent(root, { kind: 'step.message', task: values.task, step, session, data: { direction: from, text: message } });
+  // The guards run again inside the ledger lock, before the message and again with the new start: a concurrent
+  // resume or start is refused before it spawns, or has its process killed after (exit 2).
+  const check = resumeCheck(values.task, step, started);
+  ledger.appendEvent(root, { kind: 'step.message', task: values.task, step, session, data: { direction: from, text: message } }, { check });
   const logFile = path.join(logs, `${session}.log`);
   const log = fs.openSync(logFile, 'a', 0o600);
   const args = claudeArgs({ duty: d.duty, session, resume: true, model: d.model, effort: d.effort, appendFile, prompt: resumeMessage(from, message) });
@@ -81,13 +89,13 @@ export async function resume(argv) {
   if (!child.pid) throw new RuntimeError('claude did not start');
   child.on('error', () => {});
   child.unref();
-  ledger.appendEvent(root, {
+  appendStarted(root, {
     kind: 'step.started',
     task: values.task,
     step,
     session,
     data: { ordinal: step, duty: d.duty, runtime: 'claude', provider: d.provider, model: d.model, effort: d.effort, cwd, nativeSessionId: session, pid: child.pid, logFile, resumed: true },
-  });
+  }, check, child.pid);
   const out = { task: values.task, step, session, pid: child.pid, from, logFile };
   return { out, text: `Resumed ${values.task} step ${step} in session ${session} (pid ${child.pid}). Use the ledger skill to wait for its report.` };
 }

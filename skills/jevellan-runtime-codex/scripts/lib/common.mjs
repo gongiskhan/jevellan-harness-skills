@@ -106,8 +106,9 @@ export function joinPath(first, rest) {
 }
 
 // The environment every worker starts from: the base keys, the Node 22 folder first on PATH, the git identity and the
-// Playwright browsers, and the hooks' variables. Each runtime adds its provider's login.
-export function baseWorkerEnv({ task, step, duty, project, session, base = process.env }) {
+// Playwright browsers, and the hooks' variables (JH_CWD is the step's working folder, the task's worktree, where
+// the Stop hook looks for the report). Each runtime adds its provider's login.
+export function baseWorkerEnv({ task, step, duty, project, session, cwd, base = process.env }) {
   const env = {};
   for (const key of BASE_KEYS) if (base[key]) env[key] = base[key];
   env.HOME = env.HOME || ownerHome();
@@ -126,5 +127,6 @@ export function baseWorkerEnv({ task, step, duty, project, session, base = proce
   env.JH_DUTY = duty;
   env.JH_PROJECT = project;
   env.JH_SESSION = session;
+  if (cwd) env.JH_CWD = cwd;
   return env;
 }

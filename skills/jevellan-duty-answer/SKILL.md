@@ -1,6 +1,6 @@
 ---
 name: jevellan-duty-answer
-description: "Duty answer. Use when this session is running a task step whose duty is answer. Answers from general knowledge, with no repository access. End by writing the report file."
+description: "Duty answer. Use when this session is running a task step whose duty is answer: only when the runtime's instructions for this session say 'Your step is duty answer', never for a request typed by the owner. Answers from general knowledge, with no repository access. End by writing the report file."
 jh-role: duty
 jh-duty: answer
 jh-needs: []

@@ -1,8 +1,11 @@
 // The report contract a worker writes to .jevellan/report.json, ported from the skills repo's report.ts (where
 // zod checked it). Hand-written so nothing needs dependencies. validateReport returns the first problem as one
-// sentence, which the Stop hook hands back to the worker word for word.
+// sentence, which the Stop hook hands back to the worker word for word. fitReportLine fits a report to one ledger
+// line, for the Stop hook and the Codex runner that record it.
 
 import path from 'node:path';
+import { MAX_LINE } from './ledger.mjs';
+import { redactValue } from './redact.mjs';
 
 export const STATUSES = ['progress', 'done', 'blocked', 'needs-decision'];
 export const LIMITS = {
@@ -38,16 +41,23 @@ function unknownKey(object, allowed, where) {
 export function normalizeReport(report) {
   if (!isObject(report)) return report;
   const out = { ...report };
-  if (typeof out.summary === 'string' && out.summary.length > LIMITS.summary) {
-    out.summary = `${out.summary.slice(0, LIMITS.summary - 1)}…`;
-  }
+  if (typeof out.summary === 'string') out.summary = cutText(out.summary, LIMITS.summary);
   if (Array.isArray(out.limitations) && out.limitations.every((item) => typeof item === 'string')) {
     out.limitations = out.limitations.join('\n');
   }
-  if (typeof out.limitations === 'string' && out.limitations.length > LIMITS.limitations) {
-    out.limitations = `${out.limitations.slice(0, LIMITS.limitations - 1)}…`;
-  }
+  if (typeof out.limitations === 'string') out.limitations = cutText(out.limitations, LIMITS.limitations);
   return out;
+}
+
+// `text` cut to at most `max` UTF-16 units, ending in "…" when it was cut, never between the two halves of a
+// surrogate pair (an emoji cut in half is not a character).
+export function cutText(text, max) {
+  if (text.length <= max) return text;
+  if (max <= 0) return '';
+  let end = max - 1;
+  const last = text.charCodeAt(end - 1);
+  if (last >= 0xd800 && last <= 0xdbff) end -= 1;
+  return `${text.slice(0, end)}…`;
 }
 
 export function validateReport(input) {
@@ -144,4 +154,91 @@ function firstProblem(r) {
     }
   }
   return null;
+}
+
+// ---- one report, one ledger line ------------------------------------------------------------------------------
+
+// A step.report line must stay under the ledger's 64 KB line rule. The envelope around the data (seq, time, kind,
+// task, step, session) takes a few hundred bytes; the rest of the margin is slack.
+export const REPORT_LINE_BYTES = MAX_LINE - 4096;
+// Cut in this order when a report does not fit, and put back in this order as far as room allows. The owner's
+// commands come before the rest of the changed files; the first changed file is always kept, because the ledger's
+// projection reads a write duty's changed files as work still to land.
+const CUT_LISTS = ['changedFiles', 'ownerCommands', 'screenshots'];
+
+const bytes = (value) => Buffer.byteLength(JSON.stringify(value));
+
+// The data of a step.report line, redacted the way the ledger writes it and fitted to REPORT_LINE_BYTES. A report
+// that fits comes back as it is. One that does not (a schema-valid report can pass 64 KB: 200 long paths, 50
+// screenshots, 4000-character texts in a 3-byte script) keeps status, summary, question, options and testsRun whole,
+// cuts changedFiles, ownerCommands, screenshots and limitations to what fits, and says so: trimmed: true,
+// originalCounts (list lengths, limitations in characters), and a last paragraph of limitations naming the archived
+// file (data.reportFile) that holds the full report.
+export function fitReportLine(input, { maxBytes = REPORT_LINE_BYTES } = {}) {
+  const data = redactValue(input);
+  if (bytes(data) <= maxBytes) return data;
+  const originalCounts = {};
+  for (const key of CUT_LISTS) if (Array.isArray(data[key])) originalCounts[key] = data[key].length;
+  if (typeof data.limitations === 'string') originalCounts.limitations = data.limitations.length;
+  const note = `This ledger line was cut to fit 64 KB; the full report is ${data.reportFile || 'the archived report file'}.`;
+  const out = { ...data, trimmed: true, originalCounts };
+  for (const key of CUT_LISTS) if (key in originalCounts) out[key] = [];
+  if (data.changedFiles?.length) out.changedFiles = data.changedFiles.slice(0, 1);
+  out.limitations = note;
+  shrinkKept(out, maxBytes);
+  const fill = (key, items) => {
+    let room = maxBytes - bytes(out);
+    for (const item of items) {
+      const cost = bytes(item) + 1;
+      if (cost > room) return;
+      out[key].push(item);
+      room -= cost;
+    }
+  };
+  if (Array.isArray(data.ownerCommands)) fill('ownerCommands', data.ownerCommands);
+  if (Array.isArray(data.changedFiles)) fill('changedFiles', data.changedFiles.slice(1));
+  if (Array.isArray(data.screenshots)) fill('screenshots', data.screenshots);
+  const text = data.limitations;
+  if (text) {
+    // The longest start of the worker's limitations that still fits in front of the note.
+    const room = maxBytes - bytes(out);
+    const withNote = (n) => `${cutText(text, n)}\n\n${note}`;
+    let lo = 0;
+    let hi = text.length;
+    while (lo < hi) {
+      const mid = Math.ceil((lo + hi) / 2);
+      if (bytes(withNote(mid)) - bytes(note) <= room) lo = mid;
+      else hi = mid - 1;
+    }
+    if (lo > 0) out.limitations = withNote(lo);
+  }
+  return out;
+}
+
+// The kept fields are bounded by the schema to well under the budget for any text a worker writes; only thousands of
+// characters that JSON escapes to six bytes each can push them over. Then the longest of them is halved until the
+// line fits, so a valid report is never refused for its size.
+function shrinkKept(out, maxBytes) {
+  if (out.testsRun && typeof out.testsRun === 'object') out.testsRun = { ...out.testsRun };
+  if (Array.isArray(out.options)) out.options = out.options.map((option) => (option && typeof option === 'object' ? { ...option } : option));
+  while (bytes(out) > maxBytes) {
+    let longest = null;
+    const consider = (object, key) => {
+      const value = object?.[key];
+      if (typeof value !== 'string' || value.length < 2) return;
+      const size = bytes(value);
+      if (!longest || size > longest.size) longest = { object, key, size };
+    };
+    consider(out, 'summary');
+    consider(out, 'question');
+    consider(out.testsRun, 'command');
+    consider(out.testsRun, 'summary');
+    for (const option of out.options ?? []) {
+      consider(option, 'label');
+      consider(option, 'description');
+    }
+    if (!longest) return;
+    const value = longest.object[longest.key];
+    longest.object[longest.key] = cutText(value, Math.ceil(value.length / 2));
+  }
 }

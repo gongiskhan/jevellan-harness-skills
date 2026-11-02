@@ -1,10 +1,10 @@
 // The ledger: .jevellan/ledger.jsonl at the project root, append-only, one JSON object per line, never edited and
 // never truncated. This module is the only code that writes it. Every other script and hook appends through
-// appendEvent, which takes the lock, numbers the line, masks secrets and writes it with one writeSync.
+// appendEvent, which takes the lock, numbers the line, masks secrets and writes the whole line at the end.
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { withLock, pidAlive } from './lock.mjs';
+import { withLock, pidAlive, writeAll } from './lock.mjs';
 import { projectPaths } from './project.mjs';
 import { redactValue } from './redact.mjs';
 
@@ -46,25 +46,40 @@ export class LedgerError extends Error {
 
 const isObject = (value) => value !== null && typeof value === 'object' && !Array.isArray(value);
 
-// The last complete line of the file, read from its end (lines are at most 64 KB).
-function lastLine(fd, size) {
-  if (size === 0) return null;
-  const length = Math.min(size, MAX_LINE + 2);
-  const buffer = Buffer.alloc(length);
-  fs.readSync(fd, buffer, 0, length, size - length);
-  const text = buffer.toString('utf8').replace(/\n+$/, '');
-  const index = text.lastIndexOf('\n');
-  return index >= 0 ? text.slice(index + 1) : text;
-}
-
-function lastSeq(fd, size) {
-  const line = lastLine(fd, size);
-  if (!line) return 0;
+const seqOf = (line) => {
   try {
-    const seq = JSON.parse(line).seq;
-    if (Number.isInteger(seq)) return seq;
-  } catch {}
-  throw new LedgerError('the ledger\'s last line does not parse; run ledger.mjs verify');
+    const seq = JSON.parse(line)?.seq;
+    return Number.isInteger(seq) ? seq : null;
+  } catch {
+    return null;
+  }
+};
+
+// The seq of the last line that parses with an integer seq, read back from the end of the file one chunk at a time.
+// A line that does not parse (a hand edit, a write cut short) is passed over rather than refusing every later
+// append; verify keeps reporting it. The bytes of a chunk before its first newline belong to a line that starts in
+// an earlier chunk, so they wait in `pending` until that line's start is read. No such line at all is seq 0.
+function lastSeq(fd, size) {
+  let end = size;
+  let pending = [];
+  while (end > 0) {
+    const start = Math.max(0, end - (MAX_LINE + 2));
+    const chunk = Buffer.alloc(end - start);
+    fs.readSync(fd, chunk, 0, chunk.length, start);
+    end = start;
+    const newline = start > 0 ? chunk.indexOf(0x0a) : -1;
+    if (start > 0 && newline < 0) {
+      pending.unshift(chunk);
+      continue;
+    }
+    const lines = Buffer.concat([chunk.subarray(newline + 1), ...pending]).toString('utf8').split('\n');
+    pending = newline < 0 ? [] : [chunk.subarray(0, newline)];
+    for (let i = lines.length - 1; i >= 0; i -= 1) {
+      const seq = lines[i].trim() ? seqOf(lines[i]) : null;
+      if (seq !== null) return seq;
+    }
+  }
+  return 0;
 }
 
 export function buildLine(seq, { kind, task, step, session, data }) {
@@ -96,15 +111,20 @@ export function appendEvent(root, input, { check } = {}) {
       const event = buildLine(seq, input);
       const line = `${JSON.stringify(event)}\n`;
       if (Buffer.byteLength(line) > MAX_LINE) throw new LedgerError(`the ${input.kind} line is over 64 KB; refused`);
-      // A file whose last line lacks its newline (a crash mid-write cannot happen with one writeSync, but a hand
-      // edit can) would glue two lines together; start on a fresh line instead.
+      // A file whose last line lacks its newline (a hand edit, or a write that stopped part way) would glue two
+      // lines together; start on a fresh line instead.
       let prefix = '';
       if (size > 0) {
         const tail = Buffer.alloc(1);
         fs.readSync(fd, tail, 0, 1, size - 1);
         if (tail[0] !== 0x0a) prefix = '\n';
       }
-      fs.writeSync(fd, prefix + line);
+      try {
+        writeAll(fd, prefix + line);
+      } catch (error) {
+        if (error.code !== 'ESHORTWRITE') throw error;
+        throw new LedgerError(`the ${input.kind} line was not written whole (${error.message}); run ledger.mjs verify`, 1);
+      }
       return event;
     } finally {
       fs.closeSync(fd);
@@ -179,7 +199,9 @@ export function groupByTask(events) {
 
 // A step's view: its latest start, what ended that start, whether it is done, and how many times it ran.
 // Events at or before `resetSeq` are ignored: a step.retrying that goes back to this step or an earlier one makes
-// it pending again.
+// it pending again. A report ends the latest start only when it comes from that start's session: a worker of an
+// earlier start that reports late stays the step's lastReport but does not close a start it never ran. step.failed,
+// step.lost and step.stopped end the latest start whoever writes them.
 export function stepView(taskEvents, ordinal, resetSeq = 0) {
   let started = null;
   let end = null;
@@ -196,12 +218,12 @@ export function stepView(taskEvents, ordinal, resetSeq = 0) {
       end = null;
       done = null;
       starts += 1;
+    } else if (event.kind === 'step.report') {
+      lastReport = event;
+      if (started && event.session === started.session) end = event;
     } else if (STEP_END.has(event.kind) && started) {
       // The last end wins: a step.failed appended after a blocked report fails the step.
       end = event;
-      if (event.kind === 'step.report') lastReport = event;
-    } else if (event.kind === 'step.report') {
-      lastReport = event;
     } else if (event.kind === 'step.done') {
       done = event;
     }
