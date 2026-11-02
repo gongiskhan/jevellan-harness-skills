@@ -3,23 +3,23 @@
     "query": "Feature task T8QW2N \"CSV export on the invoices page\" is created and its worktree is ready. Use the workflow skill for feature and follow its steps in order.",
     "should_trigger": true,
     "role_phrase": true,
-    "context_skill": "jevellan-coordinator"
+    "context_role": "coordinator"
   },
   {
     "query": "Feature task T4RT6M \"Dark mode toggle on the settings page\" has its worktree and no recorded workflow yet. Use the workflow skill for feature and follow its steps in order.",
     "should_trigger": true,
     "role_phrase": true,
-    "context_skill": "jevellan-coordinator"
+    "context_role": "coordinator"
   },
   {
     "query": "land.mjs answered {\"route\":\"verify-then-land\"} with exit 6 for feature task T8QW2N. Do what the feature workflow says for that case.",
     "should_trigger": true,
-    "context_skill": "jevellan-coordinator"
+    "context_role": "coordinator"
   },
   {
     "query": "Step 3 (verify) of feature task T8QW2N reported testsRun.passed false for the first time. Apply the feature workflow's retry rule.",
     "should_trigger": true,
-    "context_skill": "jevellan-coordinator"
+    "context_role": "coordinator"
   },
   {
     "query": "What are the steps of a feature task in this project, which of them are optional, and what happens when its verify step fails?",
@@ -28,20 +28,20 @@
   {
     "query": "Feature task T6FX2H \"Bulk delete on the customers page\" is created with its worktree. Run it by the feature workflow, starting with what comes before step 1.",
     "should_trigger": true,
-    "context_skill": "jevellan-coordinator"
+    "context_role": "coordinator"
   },
   {
     "query": "Feature task T9NB5K \"Search box on the invoices page\" is created and its worktree is ready. Use the workflow skill for feature and follow its steps in order.",
     "should_trigger": true,
     "role_phrase": true,
     "held_out": true,
-    "context_skill": "jevellan-coordinator"
+    "context_role": "coordinator"
   },
   {
     "query": "For feature task T4RT6M placement answered --questions with needs_plan true and needs_docs false. Which steps of the feature workflow run, in which order, and with what retry rule?",
     "should_trigger": true,
     "held_out": true,
-    "context_skill": "jevellan-coordinator"
+    "context_role": "coordinator"
   },
   {
     "query": "Feature task T8QW2N \"CSV export on the invoices page\" is created and its worktree is ready. Use the workflow skill for feature and follow its steps in order.",
@@ -49,19 +49,19 @@
     "remove_role": "workflow",
     "expect_role_missing": "workflow",
     "role_phrase": true,
-    "context_skill": "jevellan-coordinator"
+    "context_role": "coordinator"
   },
   {
     "query": "Bug task T5HB7C \"Invoice dates shown in the wrong timezone\" is created and its worktree is ready. Use the workflow skill for bug and follow its steps in order.",
     "should_trigger": false,
     "role_phrase": true,
-    "context_skill": "jevellan-coordinator"
+    "context_role": "coordinator"
   },
   {
     "query": "Automation task T2KD8F \"Friday invoice export\" is created and its worktree is ready. Use the workflow skill for automation and follow its steps in order.",
     "should_trigger": false,
     "role_phrase": true,
-    "context_skill": "jevellan-coordinator"
+    "context_role": "coordinator"
   },
   {
     "query": "Your step is duty plan. Use the duty skill for plan now and follow it.\n\n# Your step\n\nTask T8QW2N: CSV export on the invoices page\nKind: feature. Step 1 of 4: plan.\n\nAdd an Export CSV button to the invoices page that downloads the rows currently shown, with the same filters.\n\nStep instructions:\nWrite plan.md at the worktree root: the change in one paragraph, the files to touch, the tests to add or change, open questions as needs-decision only if a choice is the owner's.\n\nStart the step now. End by writing .jevellan/report.json.",

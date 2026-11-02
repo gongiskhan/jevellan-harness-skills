@@ -11,6 +11,8 @@ export const AGENTS_MAX_BYTES = 32 * 1024;
 export const AGENTS_CUT_NOTE = '[AGENTS.md is longer than 32 KiB; the rest was cut. Read the file for the full text.]';
 export const PREVIOUS_SUMMARY_MAX = 1500;
 export const START_PROMPT = 'Start the step now. End by writing .jevellan/report.json.';
+// The duties a step may have (the ledger's list, kept here so --duty is checked before anything runs).
+export const DUTIES = ['answer', 'converse', 'investigate', 'plan', 'implement', 'document', 'verify', 'automate'];
 export const NO_TOOL_DUTIES = ['answer', 'converse'];
 export const READ_ONLY_DUTIES = ['investigate', 'plan'];
 const PROJECT_SETTING_KEYS = ['testCommand', 'devCommand', 'automationDir'];

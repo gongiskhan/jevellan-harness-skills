@@ -478,6 +478,70 @@ export function findTask(events, id) {
   return groupByTask(events).get(id) ?? null;
 }
 
+// ---- what other skills read (show --json) ------------------------------------------------------------------------
+
+// The newest seq among a task's lines: what --if-last-seq compares, so a script that read the task and checked its
+// own guards on what it read appends only when nothing of that task was written meanwhile.
+export function lastSeqOf(info) {
+  let last = 0;
+  for (const event of info.events) if (Number.isInteger(event.seq) && event.seq > last) last = event.seq;
+  return last;
+}
+
+// The exit code of an append refused because the task changed after the seq the caller read (--if-last-seq).
+export const CHANGED_EXIT = 6;
+
+// Refuses (exit 6) when the task's newest line is not `seq`; run inside the lock.
+export function unchangedSince(task, seq) {
+  return (events) => {
+    const info = findTask(events, task);
+    if (!info) throw new LedgerError(`no task ${task} in this project's ledger`, 3);
+    const now = lastSeqOf(info);
+    if (now !== seq) throw new LedgerError(`task ${task} changed after #${seq} (its newest line is #${now}); read it again`, CHANGED_EXIT);
+  };
+}
+
+// The highest ordinal stepViews fills a gap up to. A line naming step 1000000000 by mistake must not make every
+// show --json of its task build a billion views; an ordinal above this still gets its own view.
+export const MAX_FILLED_ORDINAL = 100;
+
+// The ledger's reading of every step of a task, for the scripts of other skills, so none of them carries its own copy
+// of the reset and end rules: for each ordinal from 1 to the highest the task mentions (in a workflow, a placement or
+// a step event; a single task always has step 1), the step's view since its last retry reset (`current`, what the
+// projection uses) and over all of the task's lines (`overall`, where a worker that may still be running is found),
+// each event named by its seq. An ordinal nobody mentions above MAX_FILLED_ORDINAL has no view (it would be empty).
+export function stepViews(info) {
+  const events = info.events;
+  const resets = resetPoints(events);
+  const mentioned = new Set(info.created?.data?.kind === 'single' ? [1] : []);
+  const see = (n) => {
+    if (Number.isInteger(n) && n > 0) mentioned.add(n);
+  };
+  for (const e of events) {
+    see(e.step);
+    if (e.kind === 'task.placed') see(e.data?.step);
+    if (e.kind === 'task.workflow') for (const s of e.data?.steps ?? []) see(s?.ordinal);
+  }
+  let highest = 0;
+  for (const n of mentioned) if (n > highest) highest = n;
+  for (let ordinal = 1; ordinal <= Math.min(highest, MAX_FILLED_ORDINAL); ordinal += 1) mentioned.add(ordinal);
+  const bySeq = (v) => ({
+    state: v.state,
+    starts: v.starts,
+    started: v.started?.seq ?? null,
+    end: v.end?.seq ?? null,
+    done: v.done?.seq ?? null,
+    lastReport: v.lastReport?.seq ?? null,
+    placed: v.placed?.seq ?? null,
+  });
+  const views = [];
+  for (const ordinal of [...mentioned].sort((a, b) => a - b)) {
+    const resetSeq = resetFor(resets, ordinal);
+    views.push({ ordinal, resetSeq, current: bySeq(stepView(events, ordinal, resetSeq)), overall: bySeq(stepView(events, ordinal, 0)) });
+  }
+  return views;
+}
+
 export function latestReport(events, task, step) {
   const info = findTask(events, task);
   if (!info) return null;

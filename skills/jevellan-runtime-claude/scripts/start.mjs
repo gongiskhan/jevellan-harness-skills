@@ -5,13 +5,14 @@
 //
 // Guards (exit 2 with the reason): the step must have a placement since it last ran that names exactly this
 // provider, model and effort (nothing but placement chooses where a step runs); the task's newest worker must be
-// gone (whatever its step and whatever the ledger says after its start) and the step not done, checked again inside
-// the ledger lock when step.started is appended, so two concurrent starts never both run; the provider must be a
-// Claude provider whose token or key file has a value; a step that may touch files runs in the task's worktree,
-// never in the project's main checkout. The worker gets the environment of lib/env.mjs, the system prompt append of
-// lib/prompt.mjs (written to ~/.jevellan-harness/logs/<session>.append.md) and the prompt "Start the step now. End
-// by writing .jevellan/report.json."; its stdout and stderr go to ~/.jevellan-harness/logs/<session>.log. The ledger
-// gets step.started and session.started.
+// gone (whatever its step and whatever the ledger says after its start) and the step not done, checked again on a
+// fresh reading of the task when step.started is appended (only if the task did not change since that reading), so
+// two concurrent starts never both run; the provider must be a Claude provider whose token or key file has a value;
+// a step that may touch files runs in the task's worktree, never in the project's main checkout. The worker gets the
+// environment of lib/env.mjs, the system prompt append of lib/prompt.mjs (written to
+// ~/.jevellan-harness/logs/<session>.append.md) and the prompt "Start the step now. End by writing
+// .jevellan/report.json."; its stdout and stderr go to ~/.jevellan-harness/logs/<session>.log. The ledger (the
+// ledger skill's public script) gets step.started and session.started; when either is refused the worker is killed.
 
 import crypto from 'node:crypto';
 import fs from 'node:fs';
@@ -29,7 +30,6 @@ import {
   buildTaskBlock,
   claudeArgs,
   currentView,
-  ledger,
   loadTask,
   logsDir,
   providerFor,
@@ -40,8 +40,9 @@ import {
   workflowOf,
   worktreeOf,
 } from './lib/step.mjs';
-import { NO_TOOL_DUTIES, START_PROMPT } from './lib/prompt.mjs';
+import { DUTIES, NO_TOOL_DUTIES, START_PROMPT } from './lib/prompt.mjs';
 import { killGroup } from './lib/proc.mjs';
+import { appendLine } from './lib/ledger-client.mjs';
 import { isEntry, main } from './lib/cli.mjs';
 
 export async function start(argv) {
@@ -65,7 +66,7 @@ export async function start(argv) {
   }
   const step = Number(values.step);
   if (!(Number.isInteger(step) && step > 0)) throw new RuntimeError('--step must be a positive integer');
-  if (!ledger.DUTIES.includes(values.duty)) throw new RuntimeError(`--duty must be one of ${ledger.DUTIES.join(', ')}`);
+  if (!DUTIES.includes(values.duty)) throw new RuntimeError(`--duty must be one of ${DUTIES.join(', ')}`);
   assertDutyInstalled(values.duty);
   const cwd = path.resolve(values.cwd);
   if (!fs.existsSync(cwd)) throw new RuntimeError(`--cwd ${cwd} does not exist`);
@@ -100,22 +101,20 @@ export async function start(argv) {
 
   const logFile = path.join(logs, `${session}.log`);
   const log = fs.openSync(logFile, 'a', 0o600);
-  const args = claudeArgs({ duty: values.duty, session, model: values.model, effort: values.effort, appendFile, prompt: START_PROMPT });
+  const args = claudeArgs({ duty: values.duty, session, model: values.model, effort: values.effort, appendFile, prompt: START_PROMPT, cwd });
   const child = spawn(process.env.JH_CLAUDE_BIN || 'claude', args, { cwd, env, detached: true, stdio: ['ignore', log, log] });
   fs.closeSync(log);
   if (!child.pid) throw new RuntimeError('claude did not start');
   child.on('error', () => {});
   child.unref();
-  // The guards run again inside the ledger lock; a refused start kills the process it spawned (exit 2).
-  appendStarted(root, {
-    kind: 'step.started',
-    task: values.task,
-    step,
-    session,
-    data: { ordinal: step, duty: values.duty, runtime: 'claude', provider: provider.name, model: values.model, effort: values.effort, cwd, nativeSessionId: session, pid: child.pid, logFile },
-  }, startCheck(values.task, step, placed), child.pid);
+  // The guards run again on a fresh reading of the task; a refused or failed start kills the process it spawned.
+  const data = { ordinal: step, duty: values.duty, runtime: 'claude', provider: provider.name, model: values.model, effort: values.effort, cwd, nativeSessionId: session, pid: child.pid, logFile };
+  appendStarted(root, values.task, (fresh) => {
+    startCheck(fresh, step, placed);
+    return { kind: 'step.started', step, session, data };
+  }, child.pid);
   try {
-    ledger.appendEvent(root, { kind: 'session.started', task: values.task, step, session, data: { role: 'worker', nativeSessionId: session, model: values.model } });
+    appendLine(root, 'session.started', { task: values.task, step, session, data: { role: 'worker', nativeSessionId: session, model: values.model } });
   } catch (error) {
     killGroup(child.pid);
     throw error;
@@ -124,4 +123,6 @@ export async function start(argv) {
   return { out, text: `Started ${values.task} step ${step} (${values.duty}) on ${values.model} ${values.effort} via ${provider.name}: session ${session}, pid ${child.pid}. Use the ledger skill to wait for its report.` };
 }
 
-if (isEntry(import.meta.url)) main(start);
+export const USAGE = 'usage: node start.mjs --task T --step N --duty D --cwd <worktree> --provider P --model M --effort E [--prompt-file F] [--json]';
+
+if (isEntry(import.meta.url)) main(start, USAGE);

@@ -167,7 +167,29 @@ export function writeResultsMd() {
       for (const n of r.notes) lines.push(`- ${n.replace(/\n/g, ' ')}`);
     }
   }
+  lines.push(...comparisonLines());
   fs.writeFileSync(path.join(REPO, 'acceptance', 'RESULTS.md'), `${lines.join('\n')}\n`);
+}
+
+// The before-and-after section, from acceptance/results/comparison.json (written by acceptance/compare-timings.mjs).
+function comparisonLines() {
+  const file = path.join(RESULTS_DIR, 'comparison.json');
+  if (!fs.existsSync(file)) return [];
+  const c = JSON.parse(fs.readFileSync(file, 'utf8'));
+  const out = ['', `## ${c.title}`, '', ...c.intro.map((p) => `${p}\n`), `### The scripts alone (\`acceptance/timings.mjs\`, median of ${c.scripts.runs} runs, ms)`, ''];
+  out.push(`| Command | ${c.scripts.before.label} | ${c.scripts.after.label} | Added |`, '|---|---|---|---|');
+  for (const [name, before] of Object.entries(c.scripts.before.ms)) {
+    const after = c.scripts.after.ms[name];
+    out.push(`| ${name} | ${before.median} | ${after?.median ?? '-'} | ${after ? after.median - before.median : '-'} |`);
+  }
+  out.push('', `Before: ${c.scripts.before.commit}, measured ${c.scripts.before.at}; after: ${c.scripts.after.commit}, measured ${c.scripts.after.at}; Node ${c.scripts.after.node}.`, '');
+  out.push('### The journeys (elapsed, and the timings each journey records)', '', `| Journey | ${c.journeys.beforeLabel} | ${c.journeys.afterLabel} |`, '|---|---|---|');
+  for (const j of c.journeys.rows) out.push(`| ${j.id} | ${j.before} | ${j.after} |`);
+  if (c.notes?.length) {
+    out.push('', '### What changed in the journeys for this run, and why', '');
+    for (const n of c.notes) out.push(`- ${n}`);
+  }
+  return out;
 }
 
 // ---- workers by hand (H3; later journeys use the runtime's start.mjs) ------------------------------------------

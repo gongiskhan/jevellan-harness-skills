@@ -5,10 +5,10 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
-import { HARNESS_HOME, LEDGER_SKILL, NODE, TaskScript, addWorktree, childEnv, git, ledgerFile, ledgerText, makeRepo, readLedger, runHook, tempDir, writeJson } from './helpers/ledger-fixture.mjs';
-import { oneLine } from '../skills/jevellan-ledger/scripts/lib/format.mjs';
-import { MAX_LINE } from '../skills/jevellan-ledger/scripts/lib/ledger.mjs';
-import { redactText } from '../skills/jevellan-ledger/scripts/lib/redact.mjs';
+import { HARNESS_HOME, LEDGER_SKILL, NODE, TaskScript, addWorktree, childEnv, git, ledgerFile, ledgerText, makeRepo, readLedger, runHook, tempDir, writeJson } from './helpers.mjs';
+import { oneLine } from '../scripts/lib/format.mjs';
+import { MAX_LINE } from '../scripts/lib/ledger.mjs';
+import { redactText } from '../scripts/lib/redact.mjs';
 
 const MISSING = 'End the step by writing .jevellan/report.json with status progress, done, blocked or needs-decision (see your duty skill).';
 const COORDINATOR = "This project's work runs through the coordinator skill: use it for any request to do, plan, track or report on work here.";

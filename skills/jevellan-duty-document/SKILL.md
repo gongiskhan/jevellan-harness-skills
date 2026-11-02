@@ -22,3 +22,7 @@ This step changes documentation files only: the README, the docs folder, guides,
 Status done, with a summary that names each document you changed and what a reader now learns from it. changedFiles lists every file you touched. When nothing needed documenting, say why and use status done with changedFiles empty (`[]`).
 
 Finish by writing .jevellan/report.json in your working folder, once, with: status (progress | done | blocked | needs-decision), summary (for the owner, in the owner's language, up to 4000 characters: what changed, what they can see or do, how to try it, remaining limitations), question and 2 to 4 options when status is needs-decision, testsRun {command, passed, summary} when you ran tests, changedFiles, screenshots [{path, caption}] under .jevellan/evidence/, limitations, ownerCommands [{command, cwd, why}] only when the owner must run something. Then end your turn.
+
+## Interface
+
+No scripts. Other skills read only this file: its frontmatter (`jh-duty`, `jh-needs`) when a step is placed, and its body, which a runtime that cannot load skills gives its worker inline.

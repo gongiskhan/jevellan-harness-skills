@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.2.0 - 2026-11-02
+
+Decoupling over efficiency (docs/decisions.md H-031 to H-036, AGENTS.md, docs/decoupling.md).
+
+- A skill uses another only through its public scripts, run as a process found by role (`runRole` in its own
+  `scripts/lib/roles.mjs`, which replaces `importFromRole`); nothing imports or reads another skill's `scripts/lib/`.
+  Every `SKILL.md` ends with a `## Interface` section listing its public scripts and their JSON.
+- The ledger's public interface for other skills: `show --json` with `lastSeq` and every step's views, `events`,
+  `record`, `take-report`, and `--if-last-seq` (compare-and-append, exit 6 when the task changed). The guards that ran
+  inside the ledger lock now run in the calling script on what it read. The placement skill gained `jev.mjs decide`
+  for the git skill's landing question; the Codex runner moved to `scripts/lib/`.
+- Helpers stay duplicated per skill; `check-roles.mjs` only prints a notice for copies that differ.
+- `scripts/check-decoupling.mjs` (run by `npm test`) fails on any coupling between skills; `scripts/test-skills.mjs`
+  runs each skill's own tests (`skills/<x>/test/`) with only that skill present; `test/isolation.test.mjs` checks every
+  public script of every skill installed alone.
+- Workers ignore instruction files from every folder above their worktree (H-034, generalizing H-001).
+- Trigger cases name the calling skill by role (`context_role`).
+- `acceptance/timings.mjs` and the before-and-after section of `acceptance/RESULTS.md`; every journey run again.
+
 ## 0.1.0 - 2026-11-02
 
 The first release: seventeen skills that turn a Claude Code session into a coordinator, with Jev placement, steps

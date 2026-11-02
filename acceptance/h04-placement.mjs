@@ -5,7 +5,8 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { HARNESS, Journey, NODE, REPO, SANDBOX, ledgerCli, readLedger, sh, skillScript } from './lib.mjs';
+import { pathToFileURL } from 'node:url';
+import { HARNESS, Journey, NODE, REPO, SANDBOX, ledgerCli, readLedger, sh, skillDir, skillScript } from './lib.mjs';
 
 const j = new Journey('H4', 'Placement');
 const install = sh(NODE, [path.join(REPO, 'install.mjs'), SANDBOX, '--json']);
@@ -50,12 +51,18 @@ j.check('the key file is back with mode 600', fs.existsSync(keyFile) && (fs.stat
 // 3. claude-main over its ceiling.
 const providersFile = path.join(HARNESS, 'providers.json');
 const original = fs.readFileSync(providersFile, 'utf8');
+// The usage placement sees is the current window's: a weekly figure observed before its window reset counts as
+// unknown, so the probe runs first and the ceiling goes under what is live now (the router's own reading of it).
+const probe = skillScript(SANDBOX, 'jevellan-router', 'scripts/providers.mjs', ['check', '--only', 'claude-main', '--only', 'claude-second', '--json'], { timeoutMs: 180_000 });
+j.note(`providers check before the ceiling: exit ${probe.status}`);
+const { currentUsage } = await import(pathToFileURL(path.join(skillDir(SANDBOX, 'jevellan-router'), 'scripts', 'lib', 'providers-file.mjs')).href);
 const state = JSON.parse(fs.readFileSync(path.join(HARNESS, 'providers-state.json'), 'utf8'));
-const weekly = state.providers?.['claude-main']?.weeklyPct;
+const live = currentUsage(state.providers?.['claude-main']);
+const weekly = Math.max(live.weeklyPct ?? -1, live.fiveHourPct ?? -1);
 let ceilingRun;
 let ceiling = null;
 try {
-  if (typeof weekly === 'number' && weekly >= 2) {
+  if (weekly >= 2) {
     ceiling = Math.max(1, Math.floor(weekly) - 1);
     const changed = JSON.parse(original);
     changed.providers.find((p) => p.name === 'claude-main').ceilingPct = ceiling;
@@ -68,15 +75,18 @@ try {
 j.check('providers.json is restored byte for byte', fs.readFileSync(providersFile, 'utf8') === original);
 if (ceilingRun) {
   const d = ceilingRun.json;
-  j.note(`claude-main weekly ${weekly}%, ceiling set to ${ceiling}% for the check`);
-  j.check('with claude-main over its ceiling the decision names claude-second', ceilingRun.status === 0 && d?.provider === 'claude-second', ceilingRun.stdout.trim().slice(0, 300) || ceilingRun.stderr.trim());
+  j.note(`claude-main current usage ${weekly}% (weekly ${live.weeklyPct}, five-hour ${live.fiveHourPct}), ceiling set to ${ceiling}% for the check`);
+  // Jev chooses the model first: a Claude model must then go to claude-second, any other model to its own provider;
+  // never claude-main.
+  const claudeModel = /^claude-/.test(d?.model ?? '');
+  j.check('with claude-main over its ceiling the decision avoids it (a Claude model goes to claude-second)', ceilingRun.status === 0 && d?.provider !== 'claude-main' && (!claudeModel || d?.provider === 'claude-second'), ceilingRun.stdout.trim().slice(0, 300) || ceilingRun.stderr.trim());
   const line = readLedger(SANDBOX).filter((e) => e.task === task && e.kind === 'task.placed').pop();
   const file = path.isAbsolute(line?.data?.decisionFile ?? '') ? line.data.decisionFile : path.join(SANDBOX, line?.data?.decisionFile ?? '');
   const sent = JSON.parse(JSON.parse(fs.readFileSync(file, 'utf8')).state);
   const menuProviders = (sent.menu?.providers ?? []).map((p) => p.name);
   j.check('the menu Jev saw excludes claude-main', !menuProviders.includes('claude-main') && menuProviders.includes('claude-second'), menuProviders.join(', '));
 } else {
-  j.check('claude-main has a weekly usage to set the ceiling under', false, `weekly ${weekly}`);
+  j.check('claude-main has a current usage of at least 2% to set the ceiling under', false, `weekly ${live.weeklyPct}, five-hour ${live.fiveHourPct}`);
 }
 
 // Close the journey's task: the owner discards it, the worktree is archived (never deleted).

@@ -13,7 +13,7 @@ test('heredoc bodies are dropped, the opening line is kept', () => {
 });
 
 test('read-only git is allowed, writing git is not', () => {
-  for (const [sub, rest] of [['log', ' --oneline'], ['show', ' HEAD'], ['remote', ' -v'], ['worktree', ' list'], ['branch', ''], ['branch', ' --show-current'], ['config', ' --get user.name']]) {
+  for (const [sub, rest] of [['log', ' --oneline'], ['show', ' HEAD'], ['remote', ' -v'], ['worktree', ' list'], ['branch', ''], ['branch', ' --show-current'], ['config', ' --get user.name'], ['check-ignore', ' -v .jevellan/briefs/x.md']]) {
     assert.equal(readOnlyGit(sub, rest), true, `${sub}${rest}`);
   }
   for (const [sub, rest] of [['commit', ' -m x'], ['merge', ' main'], ['push', ''], ['worktree', ' add x'], ['branch', ' -D x'], ['branch', ' newname'], ['remote', ' add o u'], ['checkout', ' main']]) {

@@ -89,7 +89,7 @@ const provider = findProvider('claude-second');
 const { providerLogin } = await runtimeEnvLib();
 const env = { PATH: process.env.PATH, HOME: process.env.HOME, USER: process.env.USER, LANG: 'C.UTF-8', TERM: 'dumb', SHELL: process.env.SHELL, TMPDIR: '/tmp', ...providerLogin(provider), CLAUDE_CONFIG_DIR: claudeConfigDir(), ENABLE_CLAUDEAI_MCP_SERVERS: 'false', CLAUDE_CODE_DISABLE_BACKGROUND_TASKS: '1' };
 const t0 = Date.now();
-const live = sh('claude', ['-p', '--model', 'claude-haiku-5-5', '--output-format', 'stream-json', '--verbose', '--include-hook-events', '--settings', workerSettings(), '--tools', '', '--', 'Reply with the word OK.'], { cwd: SANDBOX, env, timeoutMs: 180_000 });
+const live = sh('claude', ['-p', '--model', 'claude-haiku-5-5', '--output-format', 'stream-json', '--verbose', '--include-hook-events', '--settings', workerSettings(SANDBOX), '--tools', '', '--', 'Reply with the word OK.'], { cwd: SANDBOX, env, timeoutMs: 180_000 });
 j.time('one-turn session in the sandbox', Date.now() - t0);
 fs.writeFileSync(path.join(scratch, 'live.stream.jsonl'), live.stdout);
 const stream = parseStream(live.stdout);

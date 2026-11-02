@@ -1,0 +1,47 @@
+{
+  "label": "0.2.0 (process boundaries)",
+  "repo": "/home/ggomes/dev/jevellan-harness-skills",
+  "commit": "155b2d5 + uncommitted changes",
+  "node": "v22.23.2",
+  "runs": 9,
+  "at": "2026-11-02T12:31:20.970Z",
+  "host": "dev-madrid",
+  "ms": {
+    "ledger task create": {
+      "median": 59,
+      "max": 63
+    },
+    "ledger append note": {
+      "median": 60,
+      "max": 66
+    },
+    "ledger status --json": {
+      "median": 57,
+      "max": 60
+    },
+    "worktree create": {
+      "median": 268,
+      "max": 276
+    },
+    "runtime start": {
+      "median": 304,
+      "max": 340
+    },
+    "runtime status": {
+      "median": 116,
+      "max": 121
+    },
+    "runtime stop": {
+      "median": 274,
+      "max": 290
+    },
+    "ledger append step.done": {
+      "median": 59,
+      "max": 61
+    },
+    "land --force": {
+      "median": 367,
+      "max": 370
+    }
+  }
+}

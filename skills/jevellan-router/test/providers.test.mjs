@@ -7,9 +7,10 @@
 // fetch, and every Codex provider gets a temporary CODEX_HOME or owner home; command-line runs get loopback fake
 // servers through JH_ANTHROPIC_URL and JH_JEV_URL. Each test points JH_HARNESS_HOME at a fresh temporary folder.
 //
-// In-process checks use a temporary skills folder without the ledger skill, so the redactor is not loaded there and a
-// leak in the probe code itself would show; the command-line runs go through the installed skills and the redactor,
-// the way a session runs the script.
+// In-process checks look up runtime skills in temporary skills folders holding fake runtime skills, and pass the
+// identity as the redactor, so a leak in the probe code itself would show; the command-line runs go through a copy of
+// this skill next to a fake runtime skill, with the redactor, the way a session runs the script. Runs with only this
+// skill present.
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -18,18 +19,18 @@ import http from 'node:http';
 import path from 'node:path';
 import { randomBytes } from 'node:crypto';
 import { spawn } from 'node:child_process';
-import { pathToFileURL } from 'node:url';
-import { NODE, REPO, childEnv, tempDir, writeJson } from './helpers/ledger-fixture.mjs';
+import { NODE, childEnv, copySkill, fakeRuntime, tempDir, writeJson } from './helpers/fixture.mjs';
+import { checkProviders, runCheck, formatCheck, checkJson, menuFor, claudeUsage, codexUsage, cheapestModel, anthropicBase } from '../scripts/providers.mjs';
+import { readProvidersState, ProvidersError } from '../scripts/lib/providers-file.mjs';
 
-const ROUTER = path.join(REPO, 'skills', 'jevellan-router');
-const PROVIDERS_CLI = path.join(ROUTER, 'scripts', 'providers.mjs');
-const providers = await import(pathToFileURL(PROVIDERS_CLI).href);
-const { checkProviders, runCheck, formatCheck, checkJson, menuFor, claudeUsage, codexUsage, cheapestModel, anthropicBase } = providers;
-const { skillsWithRole } = await import(pathToFileURL(path.join(ROUTER, 'scripts', 'lib', 'roles.mjs')).href);
-const { readProvidersState, ProvidersError } = await import(pathToFileURL(path.join(ROUTER, 'scripts', 'lib', 'providers-file.mjs')).href);
+// What the in-process checks pass as the redactor: nothing is masked, so a value the probes wrote would show.
+const NO_REDACT = Object.freeze({ text: (t) => t, value: (v) => v });
 
-delete process.env.JH_JEV_URL;
-delete process.env.JH_ANTHROPIC_URL;
+// The command line runs a copy of this skill whose only sibling is a runtime skill for the Claude kinds.
+const CLI_SKILLS = path.join(tempDir('jh-cli-skills-'), 'skills');
+fakeRuntime(CLI_SKILLS, 'claude', ['claude-subscription', 'claude-endpoint']);
+const CLI_COPY = copySkill(CLI_SKILLS);
+const PROVIDERS_CLI = path.join(CLI_COPY, 'scripts', 'providers.mjs');
 
 const DAY = 24 * 60 * 60;
 const secondsFromNow = (seconds) => Math.floor(Date.now() / 1000) + seconds;
@@ -62,7 +63,7 @@ function harness({ providerList, jevKey = true, jevModel = 'jev-latest', jevMode
   return { home, secrets, keyFile, jevValue, stateFile: path.join(home, 'providers-state.json') };
 }
 
-// A skills folder holding runtime skills for the given kind lists, and nothing else (no ledger, so no redactor).
+// A skills folder holding fake runtime skills for the given kind lists, and nothing else.
 function skillsRoot(kindLists) {
   const root = tempDir('jh-skills-');
   kindLists.forEach((kinds, i) => {
@@ -234,7 +235,7 @@ function jevServer(goodKey) {
 // Runs providers.mjs as a session would; asynchronous, so the fake servers in this process can answer it.
 function runCli(args, env) {
   return new Promise((resolve, reject) => {
-    const child = spawn(NODE, [PROVIDERS_CLI, ...args], { cwd: REPO, env: childEnv(env), stdio: ['ignore', 'pipe', 'pipe'] });
+    const child = spawn(NODE, [PROVIDERS_CLI, ...args], { cwd: CLI_COPY, env: childEnv(env), stdio: ['ignore', 'pipe', 'pipe'] });
     let stdout = '';
     let stderr = '';
     child.stdout.on('data', (chunk) => {
@@ -311,7 +312,7 @@ test('claude-subscription: ready with usage from the headers; the token travels 
   writeSecret(tokenFile, token);
   const h = harness({ providerList: [claudeProvider('claude-main', tokenFile)] });
   const fake = fakeFetch();
-  const state = await checkProviders({ deps: { fetch: fake.fetch, skillsRoot: CLAUDE_ROOT } });
+  const state = await checkProviders({ deps: { redact: NO_REDACT, fetch: fake.fetch, skillsRoot: CLAUDE_ROOT } });
   const entry = state.providers['claude-main'];
   assert.equal(entry.auth, 'ready');
   assert.equal(entry.weeklyPct, 34.5);
@@ -347,7 +348,7 @@ test('claude-subscription: 401 and 403 need a login, 429 is ready, other statuse
   ];
   for (const [claude, auth, detail] of cases) {
     const h = harness({ providerList: [claudeProvider('claude-main', tokenFile)] });
-    const view = await runCheck({ deps: { fetch: fakeFetch({ claude }).fetch, skillsRoot: CLAUDE_ROOT } });
+    const view = await runCheck({ deps: { redact: NO_REDACT, fetch: fakeFetch({ claude }).fetch, skillsRoot: CLAUDE_ROOT } });
     const entry = view.state.providers['claude-main'];
     assert.equal(entry.auth, auth, `${detail}`);
     assert.match(entry.detail, detail);
@@ -360,7 +361,7 @@ test('claude-subscription: 401 and 403 need a login, 429 is ready, other statuse
 test('claude-subscription: no tokenFile, or a missing token file, needs a login without any request', async () => {
   harness({ providerList: [claudeProvider('no-file'), claudeProvider('gone', path.join(tempDir('jh-tok-'), 'absent.token'))] });
   const fake = fakeFetch();
-  const view = await runCheck({ deps: { fetch: fake.fetch, skillsRoot: CLAUDE_ROOT } });
+  const view = await runCheck({ deps: { redact: NO_REDACT, fetch: fake.fetch, skillsRoot: CLAUDE_ROOT } });
   assert.equal(view.state.providers['no-file'].auth, 'needs-login');
   assert.equal(view.state.providers['no-file'].detail, 'no tokenFile: write the token to a file and name it in providers.json');
   assert.equal(view.state.providers.gone.auth, 'needs-login');
@@ -378,7 +379,7 @@ test('claude-endpoint is not probed: ready with a key file, needs-login "key fil
   const endpoint = (name, keyFile) => ({ name, kind: 'claude-endpoint', baseUrl: 'https://api.z.ai/api/anthropic', keyFile, models: [{ id: 'glm-5.3', label: 'GLM', efforts: ['low', 'medium'] }] });
   const h = harness({ providerList: [endpoint('with-key', path.join(dir, 'with.key')), endpoint('without-key', path.join(dir, 'missing.key'))] });
   const fake = fakeFetch();
-  const view = await runCheck({ deps: { fetch: fake.fetch, skillsRoot: CLAUDE_ROOT } });
+  const view = await runCheck({ deps: { redact: NO_REDACT, fetch: fake.fetch, skillsRoot: CLAUDE_ROOT } });
   assert.equal(view.state.providers['with-key'].auth, 'ready');
   assert.equal(view.state.providers['with-key'].detail, 'key file present; not probed');
   assert.equal(view.state.providers['without-key'].auth, 'needs-login');
@@ -403,7 +404,7 @@ test('a disabled provider and a kind with no runtime skill are reported, not pro
   });
   const fake = fakeFetch();
   const codex = fakeCodex('ready');
-  const view = await runCheck({ deps: { fetch: fake.fetch, spawn: codex.spawner, skillsRoot: CLAUDE_ROOT } });
+  const view = await runCheck({ deps: { redact: NO_REDACT, fetch: fake.fetch, spawn: codex.spawner, skillsRoot: CLAUDE_ROOT } });
   assert.equal(view.state.providers.off.detail, 'disabled in providers.json');
   assert.equal(view.state.providers.kimi.detail, 'no runtime skill for kind openai-compatible');
   assert.equal(view.state.providers.codex.detail, 'no runtime skill for kind codex-subscription');
@@ -426,7 +427,7 @@ test('codex-subscription: app-server under CODEX_HOME, account/read without a re
   const codex = fakeCodex('ready');
   const ownerHome = tempDir('jh-owner-');
   const base = { PATH: process.env.PATH, LANG: 'C.UTF-8', JH_TASK: 'TABCDEF', SOME_TOKEN: fakeSecret('leak'), HOME: '/elsewhere' };
-  const view = await runCheck({ deps: { fetch: fakeFetch().fetch, spawn: codex.spawner, skillsRoot: CODEX_ROOT, env: base, home: ownerHome } });
+  const view = await runCheck({ deps: { redact: NO_REDACT, fetch: fakeFetch().fetch, spawn: codex.spawner, skillsRoot: CODEX_ROOT, env: base, home: ownerHome } });
   const entry = view.state.providers.codex;
   assert.equal(entry.auth, 'ready');
   assert.equal(entry.detail, 'ChatGPT plus answered account/rateLimits/read');
@@ -455,7 +456,7 @@ test('codex-subscription: 401 on account/rateLimits/read needs "codex login"; th
   fs.mkdirSync(path.join(ownerHome, '.codex'));
   harness({ providerList: [{ name: 'codex', kind: 'codex-subscription', models: GPT_MODELS }] });
   const codex = fakeCodex('unauthorized');
-  const view = await runCheck({ deps: { fetch: fakeFetch().fetch, spawn: codex.spawner, skillsRoot: CODEX_ROOT, home: ownerHome } });
+  const view = await runCheck({ deps: { redact: NO_REDACT, fetch: fakeFetch().fetch, spawn: codex.spawner, skillsRoot: CODEX_ROOT, home: ownerHome } });
   const entry = view.state.providers.codex;
   assert.equal(entry.auth, 'needs-login');
   assert.match(entry.detail, /refused the stored login/);
@@ -469,7 +470,7 @@ test('codex-subscription: no stored login, no CODEX_HOME folder, and codex not o
   const home = codexHome();
   harness({ providerList: [{ name: 'codex', kind: 'codex-subscription', codexHome: home.dir, models: GPT_MODELS }] });
   const nologin = fakeCodex('nologin');
-  let view = await runCheck({ deps: { fetch: fakeFetch().fetch, spawn: nologin.spawner, skillsRoot: CODEX_ROOT } });
+  let view = await runCheck({ deps: { redact: NO_REDACT, fetch: fakeFetch().fetch, spawn: nologin.spawner, skillsRoot: CODEX_ROOT } });
   assert.equal(view.state.providers.codex.auth, 'needs-login');
   assert.match(view.state.providers.codex.detail, /no Codex login is stored/);
   assert.equal(view.fixes.codex, `CODEX_HOME=${home.dir} codex login`);
@@ -478,14 +479,14 @@ test('codex-subscription: no stored login, no CODEX_HOME folder, and codex not o
   const absent = path.join(tempDir('jh-codexhome-'), 'never-made');
   harness({ providerList: [{ name: 'codex', kind: 'codex-subscription', codexHome: absent, models: GPT_MODELS }] });
   const unused = fakeCodex('ready');
-  view = await runCheck({ deps: { fetch: fakeFetch().fetch, spawn: unused.spawner, skillsRoot: CODEX_ROOT } });
+  view = await runCheck({ deps: { redact: NO_REDACT, fetch: fakeFetch().fetch, spawn: unused.spawner, skillsRoot: CODEX_ROOT } });
   assert.equal(view.state.providers.codex.auth, 'needs-login');
   assert.equal(view.state.providers.codex.detail, `no Codex login: ${absent} does not exist`);
   assert.equal(unused.spawns.length, 0, 'no app-server is started for a home that does not exist');
   assert.equal(fs.existsSync(absent), false);
 
   harness({ providerList: [{ name: 'codex', kind: 'codex-subscription', codexHome: home.dir, models: GPT_MODELS }] });
-  view = await runCheck({ deps: { fetch: fakeFetch().fetch, skillsRoot: CODEX_ROOT, env: { PATH: tempDir('jh-empty-path-') } } });
+  view = await runCheck({ deps: { redact: NO_REDACT, fetch: fakeFetch().fetch, skillsRoot: CODEX_ROOT, env: { PATH: tempDir('jh-empty-path-') } } });
   assert.equal(view.state.providers.codex.auth, 'unknown');
   assert.equal(view.state.providers.codex.detail, 'codex is not on PATH');
   assert.match(view.fixes.codex, /install Codex/);
@@ -506,7 +507,7 @@ test('a provider at or above its ceiling on either window is excluded with usage
     const headers = which === 'exact' ? usageHeaders({ weekly: '0.5', fiveHour: '0.9' }) : usageHeaders({ weekly: names[which], fiveHour: '0.1' });
     return new Response('{}', { status: 200, headers });
   };
-  const view = await runCheck({ deps: { fetch: fakeFetch({ claude }).fetch, skillsRoot: CLAUDE_ROOT } });
+  const view = await runCheck({ deps: { redact: NO_REDACT, fetch: fakeFetch({ claude }).fetch, skillsRoot: CLAUDE_ROOT } });
   const json = checkJson(view);
   assert.equal(json.providers.weekly.menu.excluded, 'usage-ceiling');
   assert.equal(json.providers.weekly.menu.detail, 'weekly usage 95% is at or above the 90% ceiling');
@@ -541,7 +542,7 @@ test('Jev: ok when the configured model is listed; not listed, no key, a loose k
 
   let h = harness({ providerList });
   let fake = fakeFetch();
-  let state = await checkProviders({ deps: { fetch: fake.fetch, skillsRoot: CLAUDE_ROOT } });
+  let state = await checkProviders({ deps: { redact: NO_REDACT, fetch: fake.fetch, skillsRoot: CLAUDE_ROOT } });
   assert.equal(state.jev.ok, true);
   assert.deepEqual(state.jev.models, ['jev-latest', 'jev-preview']);
   assert.equal(state.jev.configured, 'jev-latest');
@@ -550,25 +551,25 @@ test('Jev: ok when the configured model is listed; not listed, no key, a loose k
   assert.equal(fake.jevCalls()[0].headers.authorization, `Bearer ${h.jevValue}`);
 
   harness({ providerList, jevModel: 'jev-next' });
-  state = await checkProviders({ deps: { fetch: fakeFetch().fetch, skillsRoot: CLAUDE_ROOT } });
+  state = await checkProviders({ deps: { redact: NO_REDACT, fetch: fakeFetch().fetch, skillsRoot: CLAUDE_ROOT } });
   assert.equal(state.jev.ok, false);
   assert.match(state.jev.detail, /jev-next is not listed \(listed: jev-latest, jev-preview\)/);
 
   harness({ providerList, jevKey: false });
   fake = fakeFetch();
-  const view = await runCheck({ deps: { fetch: fake.fetch, skillsRoot: CLAUDE_ROOT } });
+  const view = await runCheck({ deps: { redact: NO_REDACT, fetch: fake.fetch, skillsRoot: CLAUDE_ROOT } });
   assert.equal(view.state.jev.ok, false);
   assert.equal(view.state.jev.detail, 'no key configured');
   assert.equal(fake.jevCalls().length, 0);
   assert.match(formatCheck(view), /\n\nJev: not ready \(no key configured\); fix: write the Jev key to .*jev\.key and run chmod 600 .*jev\.key\n$/);
 
   h = harness({ providerList, jevMode: 0o644 });
-  state = await checkProviders({ deps: { fetch: fakeFetch().fetch, skillsRoot: CLAUDE_ROOT } });
+  state = await checkProviders({ deps: { redact: NO_REDACT, fetch: fakeFetch().fetch, skillsRoot: CLAUDE_ROOT } });
   assert.equal(state.jev.ok, false);
   assert.equal(state.jev.detail, `the key file ${h.keyFile} has mode 644, not 600`);
 
   harness({ providerList });
-  state = await checkProviders({ deps: { fetch: fakeFetch({ jev: () => new Response('', { status: 401 }) }).fetch, skillsRoot: CLAUDE_ROOT } });
+  state = await checkProviders({ deps: { redact: NO_REDACT, fetch: fakeFetch({ jev: () => new Response('', { status: 401 }) }).fetch, skillsRoot: CLAUDE_ROOT } });
   assert.equal(state.jev.ok, false);
   assert.equal(state.jev.detail, 'authentication failed');
 });
@@ -585,7 +586,7 @@ test('--only probes the named provider and keeps every other entry of the state 
   const earlierJev = { ok: true, models: ['jev-latest'], configured: 'jev-latest', detail: 'earlier', checkedAt: '2026-11-01T00:00:00.000Z' };
   writeJson(h.stateFile, { checkedAt: '2026-11-01T00:00:00.000Z', jev: earlierJev, providers: { 'claude-second': kept, 'old-one': gone } });
   const fake = fakeFetch();
-  const state = await checkProviders({ only: ['claude-main', 'claude-main'], deps: { fetch: fake.fetch, skillsRoot: CLAUDE_ROOT }, jev: false });
+  const state = await checkProviders({ only: ['claude-main', 'claude-main'], deps: { redact: NO_REDACT, fetch: fake.fetch, skillsRoot: CLAUDE_ROOT }, jev: false });
   assert.equal(fake.messages().length, 1, 'one probe, for the named provider only');
   assert.equal(state.providers['claude-main'].auth, 'ready');
   assert.deepEqual(state.providers['claude-second'], kept);
@@ -594,7 +595,7 @@ test('--only probes the named provider and keeps every other entry of the state 
   assert.notEqual(state.checkedAt, '2026-11-01T00:00:00.000Z');
   assert.deepEqual(readProvidersState(h.stateFile), state);
 
-  await assert.rejects(checkProviders({ only: ['nobody'], deps: { fetch: fake.fetch, skillsRoot: CLAUDE_ROOT } }), (error) => error.exitCode === 3 && /no provider "nobody"/.test(error.message));
+  await assert.rejects(checkProviders({ only: ['nobody'], deps: { redact: NO_REDACT, fetch: fake.fetch, skillsRoot: CLAUDE_ROOT } }), (error) => error.exitCode === 3 && /no provider "nobody"/.test(error.message));
   assert.deepEqual(readProvidersState(h.stateFile), state, 'a refused check writes nothing');
 });
 
@@ -625,9 +626,7 @@ test('command line: text blocks, the Jev line and exit 0; no token or key in the
     assert.match(r.stdout, /^claude-main \(claude-subscription\)\n {2}login: ready \(the probe on claude-haiku-5-5 answered\)\n {2}usage: weekly 34\.5% \(resets [^)]+\), five hours 12% \(resets [^)]+\); ceiling 90%\n {2}menu: claude-opus-5-5 \(low, medium, high\), claude-haiku-5-5 \(low, medium\)\n\n/);
     assert.match(r.stdout, /claude-second \(claude-subscription\)\n {2}login: needs-login \(the provider refused this token\)\n {2}usage: weekly unknown, five hours unknown; ceiling 90%\n {2}menu: none \(excluded: needs-login\)\n {2}fix: write a token/);
     assert.match(r.stdout, /glm \(claude-endpoint\)\n {2}login: needs-login \(key file missing \(.*glm\.key\)\)/);
-    if (skillsWithRole('runtime', { kind: 'openai-compatible' }).length === 0) {
-      assert.match(r.stdout, /kimi \(openai-compatible\)\n {2}login: not probed \(no runtime skill for kind openai-compatible\)/);
-    }
+    assert.match(r.stdout, /kimi \(openai-compatible\)\n {2}login: not probed \(no runtime skill for kind openai-compatible\)/);
     assert.match(r.stdout, /off \(claude-subscription\)\n {2}login: not probed \(disabled in providers\.json\)/);
     assert.match(r.stdout, /\n\nJev: ready \(reachable, jev-latest listed; models: jev-latest, jev-preview\)\n$/);
     assert.equal(anthropic.requests.length, 2, 'one probe per enabled Claude subscription');

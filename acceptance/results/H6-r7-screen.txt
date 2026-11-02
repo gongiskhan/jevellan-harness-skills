@@ -1,0 +1,41 @@
+      15  npm ci
+      16  ```    
+      17                                                                                                                                                 
+      18 +## How to run                                                                                                                                  
+      19 +                                                                                                                                               
+      20 +Every script in `package.json`. `npm start` and `npm test` have a short form; the others need `npm run`.                                       
+      21 +                                                                                                                                               
+      22 +| Command | Runs | What it does |                                                                                                              
+      23 +| --- | --- | --- |                                                                                                                            
+      24 +| `npm start` | `tsx src/web/server.ts` | Serves the web pages on 127.0.0.1, port `PORT` (default 4173). Needs `SANDBOX_DATA_DIR`. See "Run the       
+         + web pages". |                                                                                                                                 
+      25 +| `npm test` | `vitest run` | Unit tests. CI runs them with `TZ=UTC`; needs `SANDBOX_DATA_DIR`. See "Test". |                                  
+      26 +| `npm run test:browser` | `playwright test` | Browser tests. First run needs `npx playwright install chromium`; Playwright starts the server i    
+         +tself. |                                                                                                                                            
+      27 +| `npm run lint` | `tsc --noEmit` | Type check. |                                                                                                     
+      28 +| `npm run check:changelog` | `node scripts/check-changelog.mjs` | Fails when the branch does not touch `CHANGELOG.md` versus `origin/main`. Ne       
+         +eds an `origin` remote. See "Changelog". |                                                                                                           
+      29 +                                                                                                                                                   
+      30  ## Run the web pages                                                                                                                                
+      31                                                                                                                                                       
+      32  ```sh                                                                                                                                                
+  ⎿  (files that changed while this command ran, by the command or by another process; a convenience view, not a review or audit of the command)              
+                                                                                                                                                         
+  Thought for 4s                                                                                                                                         
+
+● T87VQAV, "Add a How to run section to the README", is on main as commit 5dba95f (fast-forward). It changes only two files. The README now has a "How to run"  
+  section between Setup and "Run the web pages", with a table of all five package.json scripts: npm start, npm test, npm run test:browser, npm run lint and npm 
+  run check:changelog. Each row gives the command, what it runs, a one-line description and a pointer to the longer section where there is one. CHANGELOG.md has
+  one new bullet.             
+                                                                                                                                                              
+  I read the diff myself before landing. The landing check ran the unit tests and they passed, though they don't test documentation. Nothing was pushed and no
+  pull request was opened, because this project's landing merges locally. AGENTS.md says to publish a PR, so if you want one for this commit, that is still to 
+  do.                                                                                                      
+
+✻ Sautéed for 14s · done 11:03 AM                                                          
+                                                                                                                                                              
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯                                                                             
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  jevellan-harness-sandbox | main | 7% | Opus 5.5@xhigh | 0 files
+  ⏵⏵ bypass permissions on (shift+tab to cycle) · ← 1 agent   

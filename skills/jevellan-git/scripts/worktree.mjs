@@ -34,6 +34,12 @@
 // runs without a shell, with GIT_TERMINAL_PROMPT=0. The project's files, HEAD and index are never touched; git runs in
 // the main checkout only to change .git metadata and refs.
 //
+// The ledger is reached only through the ledger skill's public script, found by role (lib/ledger-client.mjs): the
+// task is read with show --json and each line is appended with --if-last-seq, so a guard runs on a fresh read and the
+// append happens only if nothing changed meanwhile (a change makes it read and decide again). Without an installed
+// ledger skill every command is exit 2 naming the missing role. The project's paths, ids, locks and the redactor are
+// this skill's own copies in lib/.
+//
 // This file also exports the git helpers land.mjs uses, so the two scripts share one implementation.
 //
 // Exit codes: 0 ok, 2 refused with the reason on stderr (and {error, exitCode} on stdout with --json), 3 not found.
@@ -43,7 +49,11 @@ import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { parseArgs } from 'node:util';
 import { fileURLToPath } from 'node:url';
-import { importFromRole } from './lib/roles.mjs';
+import { gitLocate, harnessHome, ownerHome, projectPaths, projectRoot } from './lib/project.mjs';
+import { compactTime, isTaskId, slugify } from './lib/ids.mjs';
+import { acquire, pidAlive } from './lib/lock.mjs';
+import { redactText } from './lib/redact.mjs';
+import { LedgerCallError, NOT_FOUND, appendChecked, readTask } from './lib/ledger-client.mjs';
 
 export const SKILL_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 export const DEFAULT_ARCHIVE_REASON = 'left by the owner';
@@ -69,26 +79,6 @@ export class GitSkillError extends Error {
   }
 }
 
-// ---- roles ---------------------------------------------------------------------------------------------------
-
-let ledgerModules = null;
-
-// The ledger skill's modules, found through its role (never by folder name). Loaded on first use, so a missing role
-// is a refusal with a reason rather than a crash at import.
-export async function ledgerRole() {
-  if (!ledgerModules) {
-    const [ledger, project, ids, lock, redact] = await Promise.all([
-      importFromRole('ledger', 'scripts/lib/ledger.mjs'),
-      importFromRole('ledger', 'scripts/lib/project.mjs'),
-      importFromRole('ledger', 'scripts/lib/ids.mjs'),
-      importFromRole('ledger', 'scripts/lib/lock.mjs'),
-      importFromRole('ledger', 'scripts/lib/redact.mjs'),
-    ]);
-    ledgerModules = { ledger, project, ids, lock, redact };
-  }
-  return ledgerModules;
-}
-
 // ---- command line --------------------------------------------------------------------------------------------
 
 export function parse(argv, options) {
@@ -109,7 +99,7 @@ export function warn(text) {
 }
 
 // Runs `main(argv)` and sets the exit code. A refusal prints its reason on stderr, and {error, exitCode} on stdout
-// with --json. Every message goes through the ledger's redactor when the ledger role is installed.
+// with --json. Every message goes through this skill's copy of the redactor.
 export async function runCli(main, argv = process.argv.slice(2)) {
   const json = argv.includes('--json');
   try {
@@ -119,7 +109,7 @@ export async function runCli(main, argv = process.argv.slice(2)) {
     const exitCode = Number.isInteger(error?.exitCode) && error.exitCode > 0 ? error.exitCode : 2;
     let message = String(error?.message ?? error);
     try {
-      message = (await ledgerRole()).redact.redactText(message);
+      message = redactText(message);
     } catch {}
     if (json) process.stdout.write(`${JSON.stringify({ error: message, exitCode })}\n`);
     process.stderr.write(`${message}\n`);
@@ -334,19 +324,29 @@ export function identityEnv(identity) {
 
 // ---- the project and its tasks -------------------------------------------------------------------------------
 
-export function requireRoot(L) {
-  const root = L.project.projectRoot();
+export function requireRoot() {
+  const root = projectRoot();
   if (!root) throw new GitSkillError('not inside a git repository: run this from the project folder or one of its worktrees');
   return root;
 }
 
-export function requireTask(L, root, id) {
+// The task as the ledger skill reads it (show --json, see lib/ledger-client.mjs): the projection's fields (state,
+// reason, steps, currentStep, workflowResolved...), created (the task.created line), events (the task's lines),
+// lastSeq and view(ordinal). Not in the ledger is exit 3.
+export function requireTask(root, id) {
   if (!id) throw new GitSkillError('--task T is required');
-  if (!L.ids.isTaskId(id)) throw new GitSkillError(`"${id}" is not a task id (T and six characters)`);
-  const { events } = L.ledger.readEvents(root);
-  const info = L.ledger.groupByTask(events).get(id);
-  if (!info) throw new GitSkillError(`no task ${id} in this project's ledger`, 3);
-  return { info, events };
+  if (!isTaskId(id)) throw new GitSkillError(`"${id}" is not a task id (T and six characters)`);
+  return readTaskOr(root, id, () => new GitSkillError(`no task ${id} in this project's ledger`, 3));
+}
+
+// readTask, with `missing()` thrown in place of the ledger's not-found.
+export function readTaskOr(root, id, missing) {
+  try {
+    return readTask(root, id);
+  } catch (error) {
+    if (error instanceof LedgerCallError && error.exitCode === NOT_FOUND) throw missing();
+    throw error;
+  }
 }
 
 export function lastOfKind(events, kind) {
@@ -354,17 +354,17 @@ export function lastOfKind(events, kind) {
   return null;
 }
 
-// The task's worktree as its last task.worktree line records it, or null.
-export function lastWorktree(info) {
-  const event = lastOfKind(info.events, 'task.worktree');
+// The task's worktree as its last task.worktree line records it, or null. `task` is anything with the task's events.
+export function lastWorktree(task) {
+  const event = lastOfKind(task.events, 'task.worktree');
   if (!event?.data?.path || !event.data.branch) return null;
   return { ...event.data, seq: event.seq };
 }
 
 // .jevellan/project.json: missing is {}; a file that does not parse, or is not an object, refuses (a landing must
 // never read a broken file as "no checks").
-export function readProjectConfig(L, root) {
-  const file = L.project.projectPaths(root).projectJson;
+export function readProjectConfig(root) {
+  const file = projectPaths(root).projectJson;
   let text;
   try {
     text = fs.readFileSync(file, 'utf8');
@@ -382,10 +382,10 @@ export function readProjectConfig(L, root) {
   return raw;
 }
 
-export function defaultBranch(L, root, config = readProjectConfig(L, root)) {
+export function defaultBranch(root, config = readProjectConfig(root)) {
   const branch = config.defaultBranch;
   if (typeof branch !== 'string' || !branch.trim()) {
-    throw new GitSkillError(`${L.project.projectPaths(root).projectJson} names no defaultBranch; install.mjs writes it, or add it by hand`);
+    throw new GitSkillError(`${projectPaths(root).projectJson} names no defaultBranch; install.mjs writes it, or add it by hand`);
   }
   return branch.trim();
 }
@@ -394,12 +394,12 @@ export function projectName(root) {
   return path.basename(root);
 }
 
-export function worktreesDir(L, root) {
-  return path.join(path.resolve(L.project.harnessHome()), 'worktrees', projectName(root));
+export function worktreesDir(root) {
+  return path.join(path.resolve(harnessHome()), 'worktrees', projectName(root));
 }
 
-export function archiveDir(L, root) {
-  return path.join(path.resolve(L.project.harnessHome()), 'archive', 'worktrees', projectName(root));
+export function archiveDir(root) {
+  return path.join(path.resolve(harnessHome()), 'archive', 'worktrees', projectName(root));
 }
 
 // ---- create --------------------------------------------------------------------------------------------------
@@ -430,19 +430,19 @@ export function ensureExclude(root, commonDir) {
 }
 
 // What a task's worktree is based on: --base, else the parent's branch for a child task, else the default branch.
-function chooseBase(L, root, info, events, explicit) {
+function chooseBase(root, info, explicit) {
   if (explicit !== undefined) return { base: explicit, from: 'option' };
+  const task = info.created.task;
   const parentId = info.created.data?.parent;
   if (parentId) {
-    const parent = L.ledger.groupByTask(events).get(parentId);
-    if (!parent) throw new GitSkillError(`task ${info.created.task} names the parent ${parentId}, which is not in this project's ledger`);
+    const parent = readTaskOr(root, parentId, () => new GitSkillError(`task ${task} names the parent ${parentId}, which is not in this project's ledger`));
     const wt = lastWorktree(parent);
     if (!wt) {
-      throw new GitSkillError(`task ${info.created.task} is a child of ${parentId}, which has no worktree yet; make the parent's worktree first, so the child starts from its branch`);
+      throw new GitSkillError(`task ${task} is a child of ${parentId}, which has no worktree yet; make the parent's worktree first, so the child starts from its branch`);
     }
     return { base: wt.branch, from: 'parent' };
   }
-  return { base: defaultBranch(L, root), from: 'default' };
+  return { base: defaultBranch(root), from: 'default' };
 }
 
 function baseRefOf(root, base) {
@@ -491,13 +491,13 @@ function readList(file) {
 // and land, or make landing refuse the tree. git status before and after the command tells; such a setup fails,
 // naming the files, and they are listed in .jevellan/setup.changed so a later run still counts them as the setup's
 // (they show before that run too). Nothing is removed.
-export function runSetup(L, root, wtPath, config) {
+export function runSetup(root, wtPath, config) {
   const command = typeof config.setupCommand === 'string' ? config.setupCommand.trim() : '';
   if (!command) return { ran: false };
   const dir = path.join(wtPath, '.jevellan');
   const done = path.join(dir, 'setup.done');
   if (fs.existsSync(done)) return { ran: false, already: true };
-  const owner = L.project.ownerHome();
+  const owner = ownerHome();
   const env = { HOME: owner };
   for (const key of ['PATH', 'USER', 'LANG', 'TERM', 'SHELL', 'TMPDIR']) if (process.env[key]) env[key] = process.env[key];
   Object.assign(env, identityEnv(gitIdentity(root, owner)));
@@ -514,7 +514,7 @@ export function runSetup(L, root, wtPath, config) {
   if (r.status !== 0) {
     fs.writeFileSync(logFile, `$ ${command}\n${output}`);
     const problem = r.status === null ? `ended by ${r.signal ?? r.error?.code ?? 'an error'}` : `exit ${r.status}`;
-    return { ran: true, ok: false, command, exitCode: r.status, problem, logFile, tail: L.redact.redactText(output.slice(-1500)) };
+    return { ran: true, ok: false, command, exitCode: r.status, problem, logFile, tail: redactText(output.slice(-1500)) };
   }
   const after = workStatus(wtPath);
   const changed = [...after].filter(([file, code]) => before.get(file) !== code || earlier.includes(file)).map(([file]) => file);
@@ -524,7 +524,7 @@ export function runSetup(L, root, wtPath, config) {
     const note = `[the setupCommand left changes a landing would carry: ${list}. A setup must leave the worktree clean: ignore what it writes in .gitignore, or, for npm without a lockfile, use npm install --no-package-lock]`;
     fs.writeFileSync(changedFile, `${JSON.stringify(changed)}\n`);
     fs.writeFileSync(logFile, `$ ${command}\n${output}${output && !output.endsWith('\n') ? '\n' : ''}${note}\n`);
-    return { ran: true, ok: false, command, exitCode: 0, problem, changed, logFile, tail: L.redact.redactText(`${output.slice(-1500)}${output && !output.endsWith('\n') ? '\n' : ''}${note}`) };
+    return { ran: true, ok: false, command, exitCode: 0, problem, changed, logFile, tail: redactText(`${output.slice(-1500)}${output && !output.endsWith('\n') ? '\n' : ''}${note}`) };
   }
   fs.writeFileSync(logFile, `$ ${command}\n${output}`);
   fs.writeFileSync(done, `${new Date().toISOString()} ${command} (${Date.now() - t0} ms)\n`);
@@ -538,9 +538,8 @@ function setupOutcome(setup, wtPath) {
 
 async function create(argv) {
   const { values } = parse(argv, { task: { type: 'string' }, base: { type: 'string' }, json: { type: 'boolean' } });
-  const L = await ledgerRole();
-  const root = requireRoot(L);
-  const { info, events } = requireTask(L, root, values.task);
+  const root = requireRoot();
+  const info = requireTask(root, values.task);
   const task = info.created.task;
 
   const existing = lastWorktree(info);
@@ -548,7 +547,7 @@ async function create(argv) {
     if (!present(existing.path)) {
       throw new GitSkillError(`task ${task}'s worktree ${existing.path} no longer exists (archived or moved); its branch ${existing.branch} stays. Nothing was created`);
     }
-    const setup = runSetup(L, root, existing.path, readProjectConfig(L, root));
+    const setup = runSetup(root, existing.path, readProjectConfig(root));
     const failed = setupOutcome(setup, existing.path);
     if (failed) throw failed;
     const out = { path: existing.path, branch: existing.branch, base: existing.base ?? null, baseCommit: existing.baseCommit ?? null, ...(setup.ran ? { setup: setup.command } : {}) };
@@ -556,12 +555,12 @@ async function create(argv) {
     return 0;
   }
 
-  const { base } = chooseBase(L, root, info, events, values.base);
+  const { base } = chooseBase(root, info, values.base);
   checkBranchName(root, base, 'the base');
-  const name = `${L.ids.slugify(info.created.data?.title)}-${task}`;
+  const name = `${slugify(info.created.data?.title)}-${task}`;
   const branch = `${BRANCH_PREFIX}${name}`;
   checkBranchName(root, branch, 'the task branch');
-  const wtPath = path.join(worktreesDir(L, root), name);
+  const wtPath = path.join(worktreesDir(root), name);
   const warnings = [];
 
   const registered = findWorktree(root, wtPath);
@@ -583,14 +582,14 @@ async function create(argv) {
     }
     if (present(wtPath)) throw new GitSkillError(`${wtPath} exists and is not a worktree of ${root}; move it away (nothing here deletes it)`);
     if (remotes(root).length) {
-      const r = git(root, ['fetch', '--quiet', '--no-prune'], { permitted: [0, 1, 128], timeoutMs: 60000, env: gitEnv({ HOME: L.project.ownerHome() }) });
+      const r = git(root, ['fetch', '--quiet', '--no-prune'], { permitted: [0, 1, 128], timeoutMs: 60000, env: gitEnv({ HOME: ownerHome() }) });
       if (r.code !== 0) warnings.push(`git fetch failed (${firstLine(r.stderr) || `exit ${r.code}`}); the worktree starts from the local ${base}`);
     }
     const baseRef = baseRefOf(root, base);
     if (!baseRef) throw new GitSkillError(`the base branch ${base} does not exist in ${root} (neither locally nor as origin/${base})`);
     baseCommit = resolveRef(root, baseRef);
     fs.mkdirSync(path.dirname(wtPath), { recursive: true });
-    const release = L.lock.acquire(path.join(L.project.projectPaths(root).locks, 'worktree.lock'), { timeoutMs: 120000, retryMs: 50, staleMs: 600000 });
+    const release = acquire(path.join(projectPaths(root).locks, 'worktree.lock'), { timeoutMs: 120000, retryMs: 50, staleMs: 600000 });
     try {
       if (branchExists(root, branch) || present(wtPath)) throw new GitSkillError(`another create made ${branch} meanwhile; run the command again`);
       git(root, ['worktree', 'add', '--quiet', '--no-track', '-b', branch, wtPath, baseCommit]);
@@ -601,19 +600,20 @@ async function create(argv) {
 
   const finalPath = realish(wtPath);
   setUpWorktree(root, finalPath, warnings);
-  const located = L.project.gitLocate(root);
+  const located = gitLocate(root);
   ensureExclude(root, located?.commonDir ?? path.join(root, '.git'));
 
   const data = { branch, path: finalPath, base, baseCommit };
-  L.ledger.appendEvent(root, { kind: 'task.worktree', task, session: process.env.JH_SESSION, data }, {
-    check: (now) => {
-      const fresh = L.ledger.groupByTask(now).get(task);
-      const other = fresh && lastWorktree(fresh);
-      if (other && !samePath(other.path, finalPath)) throw new GitSkillError(`task ${task} got the worktree ${other.path} meanwhile`);
-    },
+  // Decided on a fresh read and appended only if the task did not change since: another worktree recorded meanwhile
+  // refuses, the same one recorded meanwhile (a concurrent create of this task) is not written twice.
+  appendChecked(root, task, (fresh) => {
+    const other = lastWorktree(fresh);
+    if (other && !samePath(other.path, finalPath)) throw new GitSkillError(`task ${task} got the worktree ${other.path} meanwhile`);
+    if (other) return null;
+    return { kind: 'task.worktree', session: process.env.JH_SESSION, data };
   });
   for (const w of warnings) warn(`warning: ${w}`);
-  const setup = runSetup(L, root, finalPath, readProjectConfig(L, root));
+  const setup = runSetup(root, finalPath, readProjectConfig(root));
   const failed = setupOutcome(setup, finalPath);
   if (failed) throw failed;
   print(values.json, setup.ran ? { ...data, setup: { command: setup.command, ms: setup.ms } } : data, finalPath);
@@ -624,42 +624,28 @@ async function create(argv) {
 
 async function archive(argv) {
   const { values } = parse(argv, { task: { type: 'string' }, reason: { type: 'string' }, json: { type: 'boolean' } });
-  const L = await ledgerRole();
-  const root = requireRoot(L);
-  const { info } = requireTask(L, root, values.task);
+  const root = requireRoot();
+  const info = requireTask(root, values.task);
   const task = info.created.task;
   const reason = (values.reason ?? '').replace(/\s+/g, ' ').trim() || DEFAULT_ARCHIVE_REASON;
   const wt = lastWorktree(info);
   if (!wt) throw new GitSkillError(`task ${task} has no worktree`, 3);
 
-  const view = L.ledger.projectTask(info);
-  const running = view.steps.filter((s) => s.state === 'running' && L.lock.pidAlive(s.pid));
+  const running = info.steps.filter((s) => s.state === 'running' && pidAlive(s.pid));
   if (running.length) {
     const s = running[running.length - 1];
     throw new GitSkillError(`step ${s.ordinal} (${s.duty}) of ${task} is running (pid ${s.pid}); stop it first, then archive the worktree`);
   }
-  const landed = info.events.some((e) => e.kind === 'task.landed');
 
-  // Stops the task unless it landed or is stopped already; returns the event or null.
-  const stop = () => {
-    if (landed) return null;
-    return L.ledger.appendEvent(root, { kind: 'step.stopped', task, step: view.currentStep ?? 1, session: process.env.JH_SESSION, data: { ordinal: view.currentStep ?? 1, reason } }, {
-      check: (now) => {
-        const fresh = L.ledger.groupByTask(now).get(task);
-        if (fresh && L.ledger.projectTask(fresh).state === 'stopped') throw new GitSkillError('already stopped', 0);
-      },
-    });
-  };
-  const stopOnce = () => {
-    try {
-      return stop();
-    } catch (error) {
-      if (error instanceof GitSkillError && error.exitCode === 0) return null;
-      throw error;
-    }
-  };
+  // Stops the task unless it landed or is stopped already, judged on a fresh read; returns the event or null.
+  const stopOnce = () =>
+    appendChecked(root, task, (fresh) => {
+      if (fresh.events.some((e) => e.kind === 'task.landed') || fresh.state === 'stopped') return null;
+      const ordinal = fresh.currentStep ?? 1;
+      return { kind: 'step.stopped', step: ordinal, session: process.env.JH_SESSION, data: { ordinal, reason } };
+    }).event;
 
-  const archiveRoot = archiveDir(L, root);
+  const archiveRoot = archiveDir(root);
   if (!present(wt.path)) {
     const moved = listWorktrees(root).find((e) => e.branch === `refs/heads/${wt.branch}` && isUnder(e.path, archiveRoot));
     if (!moved) throw new GitSkillError(`the worktree ${wt.path} of ${task} is gone and no archived copy of ${wt.branch} is registered`, 3);
@@ -672,7 +658,7 @@ async function archive(argv) {
   if (!entry) throw new GitSkillError(`${wt.path} is not a registered worktree of ${root}; nothing was moved`);
   if (entry.locked) throw new GitSkillError(`the worktree ${wt.path} is locked (git worktree unlock it first); nothing was moved`);
 
-  const dest = path.join(archiveRoot, `${path.basename(wt.path)}-${L.ids.compactTime()}`);
+  const dest = path.join(archiveRoot, `${path.basename(wt.path)}-${compactTime()}`);
   if (present(dest)) throw new GitSkillError(`${dest} already exists; nothing was moved`);
   fs.mkdirSync(path.dirname(dest), { recursive: true });
   git(root, ['worktree', 'move', wt.path, dest]);

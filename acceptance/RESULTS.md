@@ -5,24 +5,24 @@ Times are UTC.
 
 | Journey | Status | Checks | Elapsed | Finished |
 |---|---|---|---|---|
-| H1 Install | passed | 23/23 | 3 s | 2026-11-02T02:23:39.591Z |
-| H2 Ledger | passed | 24/24 | 7 s | 2026-11-02T02:38:52.182Z |
-| H3 Hooks | passed | 14/14 | 25 s | 2026-11-02T02:39:17.275Z |
-| H4 Placement | passed | 17/17 | 3 s | 2026-11-02T02:39:20.084Z |
-| H5 Worker | passed | 26/26 | 323 s | 2026-11-02T02:44:42.747Z |
-| H6 The chain | passed | 13/13 | 175 s | 2026-11-02T02:47:43.586Z |
-| H7 Three in parallel | passed | 10/10 | 672 s | 2026-11-02T01:10:59.474Z |
-| H8 Needs-decision | passed | 8/8 | 155 s | 2026-11-02T01:18:05.665Z |
-| H9 Restart | passed | 8/8 | 164 s | 2026-11-02T01:21:03.523Z |
-| H10 Codex | passed | 9/9 | 63 s | 2026-11-02T02:48:46.683Z |
-| H11 Trigger evals | blocked: jevellan-coordinator (positives 21/24 below 90%), jevellan-router (role-phrase runs 22/27 below 98%) after the improvement rounds section 10 allows; the router's failing runs have the router removed, so only the calling body (the coordinator's, three rounds used) could change them; see docs/decisions.md H-030 | 19/21 | 0 s | 2026-11-02T02:47:29.324Z |
-| H12 No leaks, no runtime | passed | 13/13 | 2 s | 2026-11-02T02:48:56.594Z |
+| H1 Install | passed | 23/23 | 3 s | 2026-11-02T10:49:50.353Z |
+| H2 Ledger | passed | 24/24 | 7 s | 2026-11-02T10:49:57.059Z |
+| H3 Hooks | passed | 14/14 | 49 s | 2026-11-02T10:50:45.647Z |
+| H4 Placement | passed | 17/17 | 5 s | 2026-11-02T10:58:14.829Z |
+| H5 Worker | passed | 26/26 | 389 s | 2026-11-02T10:57:18.881Z |
+| H6 The chain | passed | 13/13 | 115 s | 2026-11-02T11:03:47.189Z |
+| H7 Three in parallel | passed | 10/10 | 522 s | 2026-11-02T11:44:01.266Z |
+| H8 Needs-decision | passed | 8/8 | 149 s | 2026-11-02T11:30:13.336Z |
+| H9 Restart | passed | 8/8 | 135 s | 2026-11-02T11:32:28.599Z |
+| H10 Codex | passed | 9/9 | 37 s | 2026-11-02T11:33:05.685Z |
+| H11 Trigger evals | blocked: jevellan-coordinator (positives 21/24 below 90%), jevellan-router (role-phrase runs 22/27 below 98%) after the improvement rounds section 10 allows; the router's failing runs have the router removed, so only the calling body (the coordinator's, three rounds used) could change them; see docs/decisions.md H-030 | 19/21 | 0 s | 2026-11-02T11:36:26.374Z |
+| H12 No leaks, no runtime | passed | 13/13 | 1 s | 2026-11-02T11:36:28.403Z |
 
 ## H1 Install
 
-Status: passed. Started 2026-11-02T02:23:36.111Z, 3 s.
+Status: passed. Started 2026-11-02T10:49:47.116Z, 3 s.
 
-Timings: one-turn session in the sandbox 2897 ms.
+Timings: one-turn session in the sandbox 2513 ms.
 
 - PASS install on a fresh clone exits 0
 - PASS project.json detects testCommand npm test: npm test
@@ -50,9 +50,9 @@ Timings: one-turn session in the sandbox 2897 ms.
 
 ## H2 Ledger
 
-Status: passed. Started 2026-11-02T02:38:45.057Z, 7 s.
+Status: passed. Started 2026-11-02T10:49:50.397Z, 7 s.
 
-Timings: 10 x 50 appends through ledger.mjs 5086 ms; wait after the report line 256 ms.
+Timings: 10 x 50 appends through ledger.mjs 4649 ms; wait after the report line 257 ms.
 
 - PASS skills installed on the clone
 - PASS every writer exited 0: 0,0,0,0,0,0,0,0,0,0
@@ -76,92 +76,93 @@ Timings: 10 x 50 appends through ledger.mjs 5086 ms; wait after the report line 
 - PASS status marked the dead pid's step lost
 - PASS status --brief prints at most five lines: 5 lines
 - PASS waiting-owner tasks come first: Waiting on the owner:
-- PASS wait returns within 600 ms of the report line with exit 0: 256 ms, exit 0
+- PASS wait returns within 600 ms of the report line with exit 0: 257 ms, exit 0
 - PASS wait prints the report
 
 ## H3 Hooks
 
-Status: passed. Started 2026-11-02T02:38:52.229Z, 25 s.
+Status: passed. Started 2026-11-02T10:49:57.106Z, 49 s.
 
-Timings: worker without a report 5845 ms; worker with a valid report 5888 ms; worker with an invalid report 10059 ms.
+Timings: worker without a report 26462 ms; worker with a valid report 6206 ms; worker with an invalid report 12309 ms.
 
 - PASS the worker without a report was blocked twice: 2 blocks logged, 3 Stop calls
 - PASS then recorded blocked, synthesized: {"status":"blocked","summary":"No report was written.","synthesized":true}
-- PASS SessionStart printed the task ledger to the worker: Ledger for task TT58VVM, step 1: | #250 02:38:52 task.created TT58VVM single investigate: end without a report
-- PASS the valid report is in the ledger as step.report: {"status":"done","summary":"H3 valid report test: nothing changed.","changedFiles":[],"reportFile":"/home/ggomes/jevellan-projects/jevellan-harness-sandbox/.jevellan/reports/TFQHD03-s1-20261102T023903287Z.json"}
-- PASS the report file was archived under the project reports folder: /home/ggomes/jevellan-projects/jevellan-harness-sandbox/.jevellan/reports/TFQHD03-s1-20261102T023903287Z.json
+- PASS SessionStart printed the task ledger to the worker: Ledger for task TNQJYEX, step 1: | #302 10:49:57 task.created TNQJYEX single investigate: end without a report
+- PASS the valid report is in the ledger as step.report: {"status":"done","summary":"H3 valid report test: nothing changed.","changedFiles":[],"reportFile":"/home/ggomes/jevellan-projects/jevellan-harness-sandbox/.jevellan/reports/TMYQM45-s1-20261102T105029413Z.json"}
+- PASS the report file was archived under the project reports folder: /home/ggomes/jevellan-projects/jevellan-harness-sandbox/.jevellan/reports/TMYQM45-s1-20261102T105029413Z.json
 - PASS the worktree no longer has report.json
-- PASS PostToolUse recorded the Write with the file path: [{"tool":"Write","summary":"/home/ggomes/.jevellan-harness/worktrees/jevellan-harness-sandbox/h3-TFQHD03/.jevellan/report.json"}]
+- PASS PostToolUse recorded the Write with the file path: [{"tool":"Write","summary":"/home/ggomes/.jevellan-harness/worktrees/jevellan-harness-sandbox/h3-TMYQM45/.jevellan/report.json"}]
 - PASS PostToolUse lines carry no file contents
-- PASS the invalid report was blocked with the first problem: 2026-11-02T02:39:10.146Z stop TZA4VXW s1: invalid report, blocked: report.json: options must have 2 to 4 items
-- PASS the corrected report was then recorded: {"status":"needs-decision","summary":"H3 invalid report test.","question":"Blue or Green?","options":[{"label":"Blue"},{"label":"Green"}],"reportFile":"/home/ggomes/jevellan-projects/jevellan-harness-sandbox/.jevellan/reports/TZA4VXW-s1-20261102T023913804Z.json"}
-- PASS SessionStart printed the open work to a coordinator session: This project's work runs through the coordinator skill: use it for any request to do, plan, track or report on work here. | Open work in this project's ledger: | TT58VVM waiting-owner: end without a report - step 1 investigate on claude-sonnet-5-5 low via claude-second (next: answer the step or ask 
-- PASS the sandbox ledger verifies: {   "ok": true,   "lines": 271,   "issues": [] }
+- PASS the invalid report was blocked with the first problem: 2026-11-02T10:50:36.099Z stop TJYR1F5 s1: invalid report, blocked: report.json: options must have 2 to 4 items
+- PASS the corrected report was then recorded: {"status":"needs-decision","summary":"H3 invalid report test.","question":"Blue or Green?","options":[{"label":"Blue"},{"label":"Green"}],"reportFile":"/home/ggomes/jevellan-projects/jevellan-harness-sandbox/.jevellan/reports/TJYR1F5-s1-20261102T105041928Z.json"}
+- PASS SessionStart printed the open work to a coordinator session: This project's work runs through the coordinator skill: use it for any request to do, plan, track or report on work here. | Open work in this project's ledger: | TNQJYEX waiting-owner: end without a report - step 1 investigate on claude-sonnet-5-5 low via claude-second (next: answer the step or ask 
+- PASS the sandbox ledger verifies: {   "ok": true,   "lines": 323,   "issues": [] }
 - PASS no H3 task is left open
 - PASS the sandbox checkout stays clean
 
 Notes:
-- H3 worktrees: h3-TT58VVM, h3-TFQHD03, h3-TZA4VXW under /home/ggomes/.jevellan-harness/worktrees/jevellan-harness-sandbox
+- H3 worktrees: h3-TNQJYEX, h3-TMYQM45, h3-TJYR1F5 under /home/ggomes/.jevellan-harness/worktrees/jevellan-harness-sandbox
 
 ## H4 Placement
 
-Status: passed. Started 2026-11-02T02:39:17.315Z, 3 s.
+Status: passed. Started 2026-11-02T10:58:09.995Z, 5 s.
 
-Timings: placement 512 ms.
+Timings: placement 544 ms.
 
 - PASS the current skills are installed in the sandbox: changed 0 paths
 - PASS task created
-- PASS worktree created through the git skill: {   "branch": "jh/h4-which-port-does-the-web-server-listen-TTYA1EC",   "path": "/home/ggomes/.jevellan-harness/worktrees/jevellan-harness-sandbox/h4-which-port-does-the-web-server-listen-TTYA1EC",   "base": "main",   "baseCommit": "11b29d57f3199c35cb5d2b87e1972c1b569e3186",   "setup": {     "command": "npm ci",     "ms": 1479   } }
+- PASS worktree created through the git skill: {   "branch": "jh/h4-which-port-does-the-web-server-listen-TAJ4VGZ",   "path": "/home/ggomes/.jevellan-harness/worktrees/jevellan-harness-sandbox/h4-which-port-does-the-web-server-listen-TAJ4VGZ",   "base": "main",   "baseCommit": "11b29d57f3199c35cb5d2b87e1972c1b569e3186",   "setup": {     "command": "npm ci",     "ms": 1419   } }
 - PASS the worktree has the .claude link and an evidence folder
 - PASS the worktree is clean in git
-- PASS route.mjs exits 0 with provider, model, effort, kind, probabilities, latencyMs, policyHash: {"provider":"claude-second","model":"claude-opus-5-5","effort":"medium","kind":"claude-subscription","probabilities":{"model":{"gpt-6-astra":0.36,"claude-opus-5-5":0.43,"claude-fable-5-1":0.06,"claude-sonnet-5-5":0.02,"claude-haiku-5-5":0.13},"effort":{"low":0.26,"medium":0.35,"high":0.1,"xhigh":0.01,"max":0.28},"provider":{"claude-second":0.98,"claude-main":0.02}},"latencyMs":375,"policyHash":"ec
-- PASS the decision carries probabilities for the model question: {"model":{"gpt-6-astra":0.36,"claude-opus-5-5":0.43,"claude-fable-5-1":0.06,"claude-sonnet-5-5":0.02,"claude-haiku-5-5":0.13},"effort":{"low":0.26,"medium":0.35,"high":0.1,"xhigh":0.01,"max":0.28},"provider":{"claude-second":0.98,"claude-main":0.02}}
-- PASS task.placed is in the ledger with source jev and a decision file: {"step":1,"duty":"investigate","provider":"claude-second","model":"claude-opus-5-5","effort":"medium","kind":"claude-subscription","probabilities":{"model":{"gpt-6-astra":0.36,"claude-opus-5-5":0.43,"claude-fable-5-1":0.06,"claude-sonnet-5-5":0.02,"claude-haiku-5-5":0.13},"effort":{"low":0.26,"mediu
+- PASS route.mjs exits 0 with provider, model, effort, kind, probabilities, latencyMs, policyHash: {"provider":"codex","model":"gpt-6-astra","effort":"medium","kind":"codex-subscription","probabilities":{"model":{"gpt-6-astra":0.58,"claude-opus-5-5":0.17,"claude-fable-5-1":0.02,"claude-sonnet-5-5":0.05,"claude-haiku-5-5":0.18},"effort":{"low":0.22,"medium":0.44,"high":0.06,"xhigh":0.03,"max":0.25}},"latencyMs":218,"policyHash":"ec73b4a67a6b0225e95f97a49c359b4c3678aa6c05f57f89c95e56479a33fafe","
+- PASS the decision carries probabilities for the model question: {"model":{"gpt-6-astra":0.58,"claude-opus-5-5":0.17,"claude-fable-5-1":0.02,"claude-sonnet-5-5":0.05,"claude-haiku-5-5":0.18},"effort":{"low":0.22,"medium":0.44,"high":0.06,"xhigh":0.03,"max":0.25}}
+- PASS task.placed is in the ledger with source jev and a decision file: {"step":1,"duty":"investigate","provider":"codex","model":"gpt-6-astra","effort":"medium","kind":"codex-subscription","probabilities":{"model":{"gpt-6-astra":0.58,"claude-opus-5-5":0.17,"claude-fable-5-1":0.02,"claude-sonnet-5-5":0.05,"claude-haiku-5-5":0.18},"effort":{"low":0.22,"medium":0.44,"high
 - PASS with the key file renamed, route.mjs exits 2 "Jev: no key configured": Jev: no key configured
 - PASS nothing was appended for the refused placement
 - PASS the key file is back with mode 600
 - PASS providers.json is restored byte for byte
-- PASS with claude-main over its ceiling the decision names claude-second: {"provider":"claude-second","model":"claude-opus-5-5","effort":"medium","kind":"claude-subscription","probabilities":{"model":{"gpt-6-astra":0.39,"claude-opus-5-5":0.46,"claude-fable-5-1":0.01,"claude-sonnet-5-5":0.02,"claude-haiku-5-5":0.12},"effort":{"low":0.34,"medium":0.64,"high":0.02,"xhigh":0,
+- PASS with claude-main over its ceiling the decision avoids it (a Claude model goes to claude-second): {"provider":"claude-second","model":"claude-opus-5-5","effort":"medium","kind":"claude-subscription","probabilities":{"model":{"gpt-6-astra":0.29,"claude-opus-5-5":0.45,"claude-fable-5-1":0.01,"claude-sonnet-5-5":0.05,"claude-haiku-5-5":0.2},"effort":{"low":0.22,"medium":0.41,"high":0.09,"xhigh":0.0
 - PASS the menu Jev saw excludes claude-main: codex, claude-second
-- PASS worktree archived through the git skill: {   "archived": true,   "already": false,   "from": "/home/ggomes/.jevellan-harness/worktrees/jevellan-harness-sandbox/h4-which-port-does-the-web-server-listen-TTYA1EC",   "to": "/home/ggomes/.jevellan-harness/archive/worktrees/jevellan-harness-sandbox/h4-which-port-does-the-web-server-listen-TTYA1E
+- PASS worktree archived through the git skill: {   "archived": true,   "already": false,   "from": "/home/ggomes/.jevellan-harness/worktrees/jevellan-harness-sandbox/h4-which-port-does-the-web-server-listen-TAJ4VGZ",   "to": "/home/ggomes/.jevellan-harness/archive/worktrees/jevellan-harness-sandbox/h4-which-port-does-the-web-server-listen-TAJ4VG
 - PASS the H4 task is no longer open
 - PASS the sandbox checkout stays clean
 
 Notes:
-- Jev placed the investigate step on claude-opus-5-5 medium via claude-second (model p 0.43), 375 ms
-- claude-main weekly 79%, ceiling set to 78% for the check
+- Jev placed the investigate step on gpt-6-astra medium via codex (model p 0.58), 218 ms
+- providers check before the ceiling: exit 0
+- claude-main current usage 4% (weekly 4, five-hour null), ceiling set to 3% for the check
 
 ## H5 Worker
 
-Status: passed. Started 2026-11-02T02:39:20.127Z, 323 s.
+Status: passed. Started 2026-11-02T10:50:49.857Z, 389 s.
 
-Timings: placement 462 ms; start to report 278464 ms; resume to report 31191 ms; stop 661 ms.
+Timings: placement 637 ms; start to report 252210 ms; resume to report 119224 ms; stop 682 ms.
 
 - PASS task created
 - PASS worktree created
-- PASS placed by Jev: {"provider":"claude-second","model":"claude-opus-5-5","effort":"max","kind":"claude-subscription","probabilities":{"model":{"gpt-6-astra":0.12,"claude-opus-5-5":0.76,"claude-fable-5-1":0.1,"claude-sonnet-5-5":0.01,"claude-haiku-5-5":0.01},"effort":{"low":0,"medium":0.28,"high":0.16,"xhigh":0.09,"max
-- PASS start.mjs returns at once with a session and a pid: 82 ms 
+- PASS placed by Jev: {"provider":"claude-second","model":"claude-opus-5-5","effort":"max","kind":"claude-subscription","probabilities":{"model":{"gpt-6-astra":0.27,"claude-opus-5-5":0.6,"claude-fable-5-1":0.11,"claude-sonnet-5-5":0.01,"claude-haiku-5-5":0.01},"effort":{"low":0.01,"medium":0.2,"high":0.1,"xhigh":0.06,"ma
+- PASS start.mjs returns at once with a session and a pid: 312 ms 
 - PASS step.started has the model, effort, pid and native session id
-- PASS wait returns the report with exit 0: 0 {   "kind": "step.report",   "task": "TW2KPV5",   "step": 1,   "seq": 283,   "status": "done",   "summary": "Short answer: in the current code there is no \"new customer\" form on the customers page, so nothing produces an empty-field error. This branch is identical to main (11b29d5). The form and i
-- PASS the report says done and answers the question: Short answer: in the current code there is no "new customer" form on the customers page, so nothing produces an empty-field error. This branch is identical to main (11b29d5). The form and its error existed until main was reset to the sandbox-baseline tag (61fc71a) on 2026-11-02 at 00:39 UTC. In that
+- PASS wait returns the report with exit 0: 0 {   "kind": "step.report",   "task": "TWJDR1K",   "step": 1,   "seq": 335,   "status": "done",   "summary": "Short answer: in the current code, nothing produces that error. The customers page has no new-customer form, so no file or line checks for an empty field and there is no message text to quote
+- PASS the report says done and answers the question: Short answer: in the current code, nothing produces that error. The customers page has no new-customer form, so no file or line checks for an empty field and there is no message text to quote. This worktree is identical to main (commit 11b29d5).  What the customers page does today (read from the cod
 - PASS the report came from the file, archived by the hook
 - PASS the transcript shows the Skill tool invoking the investigate duty: ["jevellan-duty-investigate"]
-- PASS the native transcript is named by the session id: /home/ggomes/.jevellan-harness/claude-config/projects/-home-ggomes--jevellan-harness-worktrees-jevellan-harness-sandbox-h5-where-does-the-customers-page-produce-TW2KPV5/633f3b12-48a2-4ecb-b32d-be84a2fe4f88.jsonl
-- PASS the read-only worker wrote only its report file: ["/home/ggomes/.jevellan-harness/worktrees/jevellan-harness-sandbox/h5-where-does-the-customers-page-produce-TW2KPV5/.jevellan/report.json"]
+- PASS the native transcript is named by the session id: /home/ggomes/.jevellan-harness/claude-config/projects/-home-ggomes--jevellan-harness-worktrees-jevellan-harness-sandbox-h5-where-does-the-customers-page-produce-TWJDR1K/32c992ea-7426-47af-8222-95405afda60b.jsonl
+- PASS the read-only worker wrote only its report file: ["/home/ggomes/.jevellan-harness/worktrees/jevellan-harness-sandbox/h5-where-does-the-customers-page-produce-TWJDR1K/.jevellan/report.json"]
 - PASS the worktree has no change
 - PASS the system prompt append was accepted (the worker followed the duty line)
-- PASS resume.mjs continues the same session id: {   "task": "TW2KPV5",   "step": 1,   "session": "633f3b12-48a2-4ecb-b32d-be84a2fe4f88",   "pid": 1217972,   "from": "coordinator",   "logFile": "/home/ggomes/.jevellan-harness/logs/633f3b12-48a2-4ecb
-- PASS the resumed turn reported through the hook: 0 Short answer: in the current code there is no "new customer" form on the customers page, so nothing produces an empty-field error. This branch is identical to main (11b29d5). The form and its error ex
+- PASS resume.mjs continues the same session id: {   "task": "TWJDR1K",   "step": 1,   "session": "32c992ea-7426-47af-8222-95405afda60b",   "pid": 2306396,   "from": "coordinator",   "logFile": "/home/ggomes/.jevellan-harness/logs/32c992ea-7426-47af
+- PASS the resumed turn reported through the hook: 0 Short answer: today's customers page has no new-customer form, so nothing on main produces that error. The error lived in form code that was later removed from main. In that code, the decision is at s
 - PASS two step.started lines share the native session id
 - PASS the message was recorded as step.message from the coordinator
-- PASS the resumed turn ran in the same conversation: 633f3b12-48a2-4ecb-b32d-be84a2fe4f88
-- PASS status.mjs says alive while the turn runs: {"task":"TW2KPV5","step":1,"state":"alive","pid":1218920,"session":"633f3b12-48a2-4ecb-b32d-be84a2fe4f88","startedAt":"2026-11-02T02:44:32.033Z","model":"claude-opus-5-5","effort":"max","provider":"claude-second","ended":null,"lastLine":"result: success This step was already done. I checked again and nothing has changed, so the answer stands: - **Current code:** the customers page has no new-customer form. This branch and `main` are both at 11b29d5,"}
-- PASS stop.mjs ends the turn and marks step.stopped: {   "task": "TW2KPV5",   "step": 1,   "pid": 1218920,   "how": "SIGTERM",   "seq": 292 } 
+- PASS the resumed turn ran in the same conversation: 32c992ea-7426-47af-8222-95405afda60b
+- PASS status.mjs says alive while the turn runs: {"task":"TWJDR1K","step":1,"state":"alive","pid":2309826,"session":"32c992ea-7426-47af-8222-95405afda60b","startedAt":"2026-11-02T10:57:04.056Z","model":"claude-opus-5-5","effort":"max","provider":"claude-second","ended":null,"lastLine":"result: success I found the error my first report couldn't pin down. The empty-field check is at `src/web/app.ts:19`, and the exact message is **\"Enter both a name and a VAT number.\"** That code is no longer on main."}
+- PASS stop.mjs ends the turn and marks step.stopped: {   "task": "TWJDR1K",   "step": 1,   "pid": 2309826,   "how": "SIGTERM",   "seq": 344 } 
 - PASS the worker process is gone
 - PASS status.mjs says exited after the stop
 - PASS the task is stopped in the projection
 - PASS read-only tools: notes.txt was refused
-- PASS read-only tools: .jevellan/report.json was allowed: Only the second write worked.  - **`notes.txt`:** This failed. Claude Code is running in "don't ask" mode, and the Write call was denied. I didn't try another route to create it. - **`.jevellan/report
+- PASS read-only tools: .jevellan/report.json was allowed: Only the second write worked.  - **`notes.txt`:** This write was denied. The permission check said Write isn't allowed in don't-ask mode, so the file wasn't created. I didn't try another way around th
 - PASS worktree archived
 
 Notes:
@@ -169,14 +170,14 @@ Notes:
 
 ## H6 The chain
 
-Status: passed. Started 2026-11-02T02:44:48.746Z, 175 s.
+Status: passed. Started 2026-11-02T11:01:52.375Z, 115 s.
 
-Timings: request to landing 154784 ms.
+Timings: request to landing 94743 ms.
 
 - PASS the skills are installed in the project
-- PASS the coordinator created one task for the request: THVA599 (single document): Add How to run section to README
+- PASS the coordinator created one task for the request: T87VQAV (single document): Add a How to run section to the README
 - PASS task.worktree
-- PASS every started step was placed first: steps 1, 2
+- PASS every started step was placed first: steps 1
 - PASS step.started carries model and effort
 - PASS every started step has a report and a step.done
 - PASS landing.decided
@@ -188,56 +189,55 @@ Timings: request to landing 154784 ms.
 - PASS passed three times in a row: true,true,true
 
 Notes:
-- run 4 on a fresh clone of the sandbox baseline
-- coordinator session b07a50e3-e69d-4941-8c7a-5319ced25026
+- run 7 on a fresh clone of the sandbox baseline
+- coordinator session a96ef15e-3768-4e2c-aa49-23a69c40e886
 - the coordinator chose a single task, which has no workflow line
 - Skill invocations: jevellan-coordinator, jevellan-ledger, jevellan-git, jevellan-router, jevellan-runtime-claude
-- placements: s1 document claude-sonnet-5-5 medium via claude-second; s2 verify claude-sonnet-5-5 high via claude-second
-- landing: verify-then-land {"land":0.46,"verify-then-land":0.53,"ask-owner":0.01}
-- coordinator's last reply: The README change (THVA599) is now on your local main, a fast-forward to commit 07bc742. After `## Setup` there's a "How to run" table of all five `package.json` scripts. Each row shows the command to type, what it runs, the env it needs and a link to the existing section with the details. `CHANGELOG.md` has a matching line. The extra verify run passed: the unit tests ran 9 of 9 green, and the tab
-- runs so far: 1:pass 2:pass 3:pass 4:pass
+- placements: s1 document claude-sonnet-5-5 medium via claude-main
+- landing: land {"land":0.5,"verify-then-land":0.5,"ask-owner":0}
+- coordinator's last reply: T87VQAV, "Add a How to run section to the README", is on main as commit 5dba95f (fast-forward). It changes only two files. The README now has a "How to run" section between Setup and "Run the web pages", with a table of all five package.json scripts: `npm start`, `npm test`, `npm run test:browser`, `npm run lint` and `npm run check:changelog`. Each row gives the command, what it runs, a one-line d
+- runs so far: 1:pass 2:pass 3:pass 4:pass 5:pass 6:pass 7:pass
 
 ## H7 Three in parallel
 
-Status: passed. Started 2026-11-02T01:10:59.358Z, 672 s.
+Status: passed. Started 2026-11-02T11:35:19.598Z, 522 s.
 
-Timings: wall time, request to the last landing 377162 ms; task T67AEHV (README: how to run) 66479 ms; task TJTX078 (Unit test for the HTML escape helper) 96439 ms; task TKZD411 (Customers page: empty-state message) 371386 ms.
+Timings: wall time, request to the last landing 501726 ms; task TYJMZ7Y (README: how to run) 87031 ms; task TW3G0NB (Unit test for an untested pure function ) 101356 ms; task TYDWRBY (Customers page empty-state message with ) 407268 ms.
 
 - PASS the skills are installed
-- PASS three tasks created: T67AEHV single document: README: how to run | TJTX078 single implement: Unit test for the HTML escape helper | TKZD411 feature: Customers page: empty-state message
+- PASS three tasks created: TYJMZ7Y single document: README: how to run | TW3G0NB single implement: Unit test for an untested pure function (escape) | TYDWRBY feature: Customers page empty-state message with test
 - PASS three worktrees
 - PASS every started step was placed by Jev with probabilities first: 5 steps
 - PASS the tasks ran in parallel (their steps overlapped in time)
-- PASS three landings or asks: T67AEHV: task.landed, TJTX078: task.landed, TKZD411: task.landed
-- PASS screenshots for the customers task under its evidence folder: 6 image files, 10 in reports: .jevellan/evidence/customers-empty-desktop.png, .jevellan/evidence/customers-empty-phone.png, .jevellan/evidence/customers-with-customers-desktop.png, .jevellan/evidence/customers-with-customers-phone.png, .jevellan/evidence/customers-empty-desktop.png, .jevellan/evidence/customers-empty-phone.png, .jevellan/evidence/customers-with-customers-desktop.png, .jevellan/evidence/customers-with-customers-phone.png, .jevellan/evidence/invoices-desktop.png, .jevellan/evidence/invoices-phone.png
+- PASS three landings or asks: TYJMZ7Y: task.landed, TW3G0NB: task.landed, TYDWRBY: task.landed
+- PASS screenshots for the customers task under its evidence folder: 10 image files, 12 in reports: .jevellan/evidence/customers-empty-desktop.png, .jevellan/evidence/customers-empty-phone.png, .jevellan/evidence/customers-populated-desktop.png, .jevellan/evidence/customers-populated-phone.png, .jevellan/evidence/customers-empty-missing-file-desktop.png, .jevellan/evidence/customers-empty-missing-file-phone.png, .jevellan/evidence/customers-empty-list-desktop.png, .jevellan/evidence/customers-empty-list-phone.png, .jevellan/evidence/customers-populated-desktop.png, .jevellan/evidence/customers-populated-phone.png, .jevellan/evidence/customers-empty-after-removal-desktop.png, .jevellan/evidence/customers-empty-after-removal-phone.png
 - PASS zero slips
 - PASS main moved by the landings
 - PASS the project checkout is clean
 
 Notes:
-- re-check of the run of coordinator session f22e5ea0-346b-4ab0-8363-b8b3c181f339: the first evaluation picked the README task as the customers task (its brief mentions customers) and counted the read-only git remote -v as a slip; both checks were fixed
-- (1) README: how to run: Jev document claude-sonnet-5-5 medium via claude-second (p 0.71); Jevellan on 31 October: Opus medium
-- (2) Unit test for the HTML escape helper: Jev implement gpt-6-astra high via codex (p 0.51); Jevellan on 31 October: GPT medium
-- (3) Customers page: empty-state message: Jev plan claude-opus-5-5 high via claude-second (p 0.87); implement claude-opus-5-5 high via claude-second (p 0.73); verify claude-opus-5-5 high via claude-second (p 0.89); Jevellan on 31 October: GPT high
-- Skill invocations: jevellan-coordinator, jevellan-ledger, jevellan-git, jevellan-router, jevellan-runtime-claude, jevellan-runtime-codex, jevellan-workflow-feature
-- landing of T67AEHV: land {"land":0.98,"verify-then-land":0.01,"ask-owner":0.01}
-- landing of TJTX078: land {"land":0.98,"verify-then-land":0.02,"ask-owner":0}
-- landing of TKZD411: land {"land":0.98,"verify-then-land":0.02,"ask-owner":0}
-- coordinator's last reply: All three tasks are landed on main: - **README: how to run (T67AEHV)** - `aa08466`. Setup, run and test commands now work when copy-pasted, including the required `SANDBOX_DATA_DIR`, `TZ=UTC` for unit tests, and the Playwright browser install. - **Unit test for the HTML escape helper (TJTX078)** - `5e757bd`. `escape` moved unchanged into `src/web/html.ts`, with 4 tests in `src/web/html.test.ts`. - **Customers page: empty-state message (TKZD411)** - `b3bba11`. The table keeps its headers and show
-- elapsed: the run itself took 672 s (acceptance/out/h7.log, started 00:58:48Z); the re-check that rewrote this record took under a second
+- coordinator session 311871fa-13fe-4b87-8095-c1fdbccd8a04 in /home/ggomes/jevellan-projects/jevellan-harness-runs/h07-v020b-1793619319335/jevellan-harness-sandbox
+- (1) README: how to run: Jev document claude-sonnet-5-5 high via claude-main (p 0.70); Jevellan on 31 October: Opus medium
+- (2) Unit test for an untested pure function (escape): Jev implement gpt-6-astra high via codex (p 0.60); Jevellan on 31 October: GPT medium
+- (3) Customers page empty-state message with test: Jev plan claude-opus-5-5 high via claude-main (p 0.80); implement gpt-6-astra high via codex (p 0.53); verify claude-opus-5-5 high via claude-main (p 0.79); Jevellan on 31 October: GPT high
+- Skill invocations: jevellan-coordinator, jevellan-ledger, jevellan-git, jevellan-workflow-feature, jevellan-router, jevellan-runtime-claude, jevellan-runtime-codex
+- landing of TYJMZ7Y: land {"land":0.98,"verify-then-land":0.01,"ask-owner":0.01}
+- landing of TW3G0NB: land {"land":0.98,"verify-then-land":0.02,"ask-owner":0}
+- landing of TYDWRBY: land {"land":0.74,"verify-then-land":0.25,"ask-owner":0.01}
+- coordinator's last reply: All three tasks are on local main, and the ledger shows nothing left open. - **TYJMZ7Y "README: how to run"** landed as `5b3db2b`. The README commands now include the environment variables they need. - **TW3G0NB "Unit test for an untested pure function (escape)"** landed as `702bfa0`. `escape` is now in `src/web/html.ts` with 7 tests. - **TYDWRBY "Customers page empty-state message with test"** landed as `871b89e`. `/customers` shows "No customers yet." when empty and the same table as before ot
 
 ## H8 Needs-decision
 
-Status: passed. Started 2026-11-02T01:15:30.849Z, 155 s.
+Status: passed. Started 2026-11-02T11:27:43.926Z, 149 s.
 
-Timings: request to done report 110129 ms.
+Timings: request to done report 115168 ms.
 
 - PASS the skills are installed
-- PASS the step reported needs-decision: TSQ65Q9: Blue or Green? [Blue, Green]
+- PASS the step reported needs-decision: T1KES8Q: Blue or Green? [Blue, Green]
 - PASS the question is "Blue or Green?" with two options
-- PASS the coordinator surfaced the question with numbered options: The worker stopped as the brief asked: it reported needs-decision, changed no files and didn't pick a colour. The colour is your call, so I need your answer before I resume the step. 1. TSQ65Q9 Blue or Green? 1) Blue 2) Green
-- PASS the coordinator resumed the step through the runtime with the answer: owner: Blue
-- PASS the step then reports done: done: The sandbox colour is now recorded in README.md. The owner chose Blue, and a new line under the existing setup paragraph reads: "The colour of this sandbox is Blue." Nothing else in the README changed
+- PASS the coordinator surfaced the question with numbered options: The needs-decision path now works for T1KES8Q, though not on the first attempt. The ledger shows the task waiting on you with the question exactly "Blue or Green?" and the options Blue and Green. The worker has changed nothing and made no commits. The first report was rejected because each option ca
+- PASS the coordinator resumed the step through the runtime with the answer: coordinator: Your needs-decision report was rejected as invalid: options[0] has an unknown field "value". Each option may only have "label" (and optionally "description"). Make no file changes and no commits. Write .jevellan/report.json again with status needs-decision, question exactly "Blue or Green?", and options exactly [{"label":"Blue"},{"label":"Green"}], keep your summary, then end your turn.
+- PASS the step then reports done: done: The owner chose Blue, so README.md now has one new line after the existing paragraph: "The colour of this sandbox is Blue." The rest of the README is unchanged. The change is committed as 6e54b01 on j
 - PASS zero slips
 - PASS the README on main names Blue
 
@@ -247,46 +247,43 @@ Notes:
 
 ## H9 Restart
 
-Status: passed. Started 2026-11-02T01:18:19.324Z, 164 s.
+Status: passed. Started 2026-11-02T11:30:13.614Z, 135 s.
 
-Timings: request to landing, across the restart 144244 ms.
+Timings: request to landing, across the restart 115121 ms.
 
 - PASS the skills are installed
-- PASS a step started: TKFVN6M step 1 implement on claude-sonnet-5-5
+- PASS a step started: TF2YDNK step 1 implement on claude-sonnet-5-5
 - PASS the coordinator was killed while its task waited for a report
-- PASS the new session started (session.started in the ledger): 8cb8a537-ed13-49a9-88ea-6aaa892bd637
-- PASS its first reply names the open task: I landed "Customers module: header comment and changelog line" (TKFVN6M) on `main` as `11b29d5`, a fast-forward merge. Nothing else is open in the ledger. The change is two added lines, nothing else touched: - **`src/customers/index.ts`:** line 1 is now `// Stores customer records (id, name, VAT, cr
+- PASS the new session started (session.started in the ledger): 8ef0e616-fe5b-4cbf-9e1a-2df187186e9b
+- PASS its first reply names the open task: TF2YDNK "Document what src/customers stores" is landed on `main` as commit 1d1d25f. Sonnet 5.5 at medium effort ran step 1 and reported done. I checked the diff myself. It adds one comment line at the top of `src/customers/index.ts` ("Stores customer records (id, name, VAT number, creation time) as 
 - PASS and continues waiting for it (a ledger wait for the task)
 - PASS the task lands: task.landed
 - PASS zero slips in both sessions
 
-Notes:
-- re-checked at 2026-11-02T01:21:38.399Z: the analyser read the > of a quoted git show --format string as a redirect; quoted strings are now ignored (acceptance/coord.mjs unquoted); the first analysis said: Bash "git show --stat --format='%H%n%an <%ae>%n%s%n%b' jh/customers-module-header-comment-and-chan-TKFVN6M": wrote /home/ggomes/jevellan-projects/jevellan-harness-sandbox/%n%s%n%b outside .jevellan
-
 ## H10 Codex
 
-Status: passed. Started 2026-11-02T02:47:43.637Z, 63 s.
+Status: passed. Started 2026-11-02T11:32:28.647Z, 37 s.
 
-Timings: task to report 62699 ms.
+Timings: task to report 36736 ms.
 
 - PASS codex login status says logged in: Logged in using ChatGPT
 - PASS the skills are installed
 - PASS the installed policy was edited for the journey
 - PASS the policy is restored byte for byte
-- PASS Jev placed the step on GPT via codex: gpt-6-astra via codex (p 0.98)
+- PASS Jev placed the step on GPT via codex: gpt-6-astra via codex (p 1)
 - PASS the step ran on codex exec: codex
-- PASS the Codex thread id is the native session id: 01a19a27-dd07-71c0-828f-3d886cc7f8ca
-- PASS its report was recorded by the runtime parent: The invoice total is computed by invoiceTotalCents in src/invoices/index.ts:3. Line rounding is implemented by lineTotalCents in src/invoices/index.ts:2.  invoiceTotalCents reduces the lines from an i
+- PASS the Codex thread id is the native session id: 01a19c08-4a93-7102-a7c0-efc8b8765549
+- PASS its report was recorded by the runtime parent: The invoice total is computed by invoiceTotalCents in src/invoices/index.ts:3. It reduces the lines starting from 0, adding lineTotalCents(line) for each line.  Line rounding is in lineTotalCents at s
 - PASS the single investigate task is done
 
 Notes:
-- worktree /home/ggomes/.jevellan-harness/worktrees/jevellan-harness-sandbox/h10-where-is-the-invoice-total-computed-T1GZQZ1
-- step 1 investigate: gpt-6-astra xhigh via codex
--   report: done - The invoice total is computed by invoiceTotalCents in src/invoices/index.ts:3. Line rounding is implemented by lineTotalCents in src/invoices/index.ts:2. invoic
+- worktree /home/ggomes/.jevellan-harness/worktrees/jevellan-harness-sandbox/h10-where-is-the-invoice-total-computed-TS1B9KV
+- step 1 investigate: gpt-6-astra medium via codex
+-   report: done - The invoice total is computed by invoiceTotalCents in src/invoices/index.ts:3. It reduces the lines starting from 0, adding lineTotalCents(line) for each line. 
 
 ## H11 Trigger evals
 
-Status: blocked: jevellan-coordinator (positives 21/24 below 90%), jevellan-router (role-phrase runs 22/27 below 98%) after the improvement rounds section 10 allows; the router's failing runs have the router removed, so only the calling body (the coordinator's, three rounds used) could change them; see docs/decisions.md H-030. Started 2026-11-02T02:47:29.178Z, 0 s.
+Status: blocked: jevellan-coordinator (positives 21/24 below 90%), jevellan-router (role-phrase runs 22/27 below 98%) after the improvement rounds section 10 allows; the router's failing runs have the router removed, so only the calling body (the coordinator's, three rounds used) could change them; see docs/decisions.md H-030. Started 2026-11-02T11:36:26.161Z, 0 s.
 
 - PASS the run covered every skill: 17 skills in the run, 17 in the package
 - PASS every skill has at least five positive and five negative cases
@@ -307,7 +304,7 @@ Status: blocked: jevellan-coordinator (positives 21/24 below 90%), jevellan-rout
 - PASS jevellan-workflow-automation meets the thresholds: positives 24/24, negatives fired 0/18, role phrase 21/21, role missing 3/3
 - PASS jevellan-workflow-bug meets the thresholds: positives 24/24, negatives fired 0/18, role phrase 21/21, role missing 3/3
 - PASS jevellan-workflow-feature meets the thresholds: positives 24/24, negatives fired 0/18, role phrase 21/21, role missing 3/3
-- PASS the role lint passes: check-roles: 17 skills, 20 event kinds, clean
+- PASS the role lint passes: notice: scripts/lib/cli.mjs differs between the 3 skills that keep a copy: version 1 in jevellan-ledger; version 2 in jevellan-runtime-claude, jevellan-runtime-codex notice: scripts/lib/env.mjs differs between the 2 skills that keep a copy: version 1 in jevellan-runtime-claude; version 2 in jevellan-runtime-codex check-roles: 17 skills, 20 event kinds, clean
 - PASS evals/RESULTS.md is committed and matches the run: tracked: evals/RESULTS.md, evals/results.json; uncommitted: none
 
 Notes:
@@ -324,11 +321,11 @@ Notes:
 
 ## H12 No leaks, no runtime
 
-Status: passed. Started 2026-11-02T02:48:54.624Z, 2 s.
+Status: passed. Started 2026-11-02T11:36:27.424Z, 1 s.
 
 - PASS secret values loaded for the search: 3 values from 3 files
 - PASS no secret value in the ledgers, logs, evidence, reports, decisions, worktrees, acceptance outputs or the repository
-- PASS no "CLAUDE_CODE_OAUTH_TOKEN=" anywhere in those
+- PASS no assignment of the OAuth token variable anywhere in those
 - PASS no secret value in the workers' native transcripts
 - PASS grep -rn "jv \|~/.jv\|jevellan-hub" skills/ finds nothing
 - PASS the sandbox tracks no .claude or .jevellan file
@@ -341,6 +338,53 @@ Status: passed. Started 2026-11-02T02:48:54.624Z, 2 s.
 - PASS no script of this repository names the jv-build session
 
 Notes:
-- run start 2026-11-01T22:44:47.092Z
-- the live sandbox's .git folder mtime moved at 22:46:14Z when this run's first read-only git status created and removed index.lock (docs/findings.md); no file in it changed
+- run start 2026-11-02T09:22:51.000Z
 - no script of this run targets jv-build: the only tmux session the journeys type into is jh-coord (acceptance/coord.mjs)
+
+## Before and after the move to process boundaries (v0.1.0 and 0.2.0)
+
+From 0.2.0 a skill reaches another only by running its public script as a process (docs/decisions.md H-031, H-032). The cost is a Node process per call into another skill. The table below times the deterministic scripts on the same machine, the same way, on v0.1.0 and on 0.2.0; the journeys below it were all run again after the change.
+
+Most of what a journey spends is model time (a worker turn takes minutes), so the journeys' times vary from run to run far more than the added process time; they are listed to show that nothing slowed down by an order of magnitude, not as a benchmark.
+
+### The scripts alone (`acceptance/timings.mjs`, median of 9 runs, ms)
+
+| Command | v0.1.0 (in-process imports) | 0.2.0 (process boundaries) | Added |
+|---|---|---|---|
+| ledger task create | 58 | 59 | 1 |
+| ledger append note | 57 | 60 | 3 |
+| ledger status --json | 55 | 57 | 2 |
+| worktree create | 105 | 268 | 163 |
+| runtime start | 77 | 304 | 227 |
+| runtime status | 59 | 116 | 57 |
+| runtime stop | 162 | 274 | 112 |
+| ledger append step.done | 60 | 59 | -1 |
+| land --force | 140 | 367 | 227 |
+
+Before: 155b2d5, measured 2026-11-02T09:30:34.790Z; after: 155b2d5 + uncommitted changes, measured 2026-11-02T12:31:20.970Z; Node v22.23.2.
+
+### The journeys (elapsed, and the timings each journey records)
+
+| Journey | v0.1.0 (records at that tag) | 0.2.0 (this run) |
+|---|---|---|
+| H1 Install | passed, 23/23, 3 s (one-turn session in the sandbox 3 s) | passed, 23/23, 3 s (one-turn session in the sandbox 3 s) |
+| H2 Ledger | passed, 24/24, 7 s (10 x 50 appends through ledger.mjs 5 s; wait after the report line 0 s) | passed, 24/24, 7 s (10 x 50 appends through ledger.mjs 5 s; wait after the report line 0 s) |
+| H3 Hooks | passed, 14/14, 25 s (worker without a report 6 s; worker with a valid report 6 s; worker with an invalid report 10 s) | passed, 14/14, 49 s (worker without a report 26 s; worker with a valid report 6 s; worker with an invalid report 12 s) |
+| H4 Placement | passed, 17/17, 3 s (placement 1 s) | passed, 17/17, 5 s (placement 1 s) |
+| H5 Worker | passed, 26/26, 323 s (placement 0 s; start to report 278 s; resume to report 31 s; stop 1 s) | passed, 26/26, 389 s (placement 1 s; start to report 252 s; resume to report 119 s; stop 1 s) |
+| H6 The chain | passed, 13/13, 175 s (request to landing 155 s) | passed, 13/13, 115 s (request to landing 95 s) |
+| H7 Three in parallel | passed, 10/10, 672 s (wall time, request to the last landing 377 s; task T67AEHV (README: how to run) 66 s; task TJTX078 (Unit test for the HTML escape helper) 96 s; task TKZD411 (Customers page: empty-state message) 371 s) | passed, 10/10, 522 s (wall time, request to the last landing 502 s; task TYJMZ7Y (README: how to run) 87 s; task TW3G0NB (Unit test for an untested pure function ) 101 s; task TYDWRBY (Customers page empty-state message with ) 407 s) |
+| H8 Needs-decision | passed, 8/8, 155 s (request to done report 110 s) | passed, 8/8, 149 s (request to done report 115 s) |
+| H9 Restart | passed, 8/8, 164 s (request to landing, across the restart 144 s) | passed, 8/8, 135 s (request to landing, across the restart 115 s) |
+| H10 Codex | passed, 9/9, 63 s (task to report 63 s) | passed, 9/9, 37 s (task to report 37 s) |
+| H11 Trigger evals | blocked, 19/21, 0 s | blocked, 19/21, 0 s |
+| H12 No leaks, no runtime | passed, 13/13, 2 s | passed, 13/13, 1 s |
+
+### What changed in the journeys for this run, and why
+
+- H1, H2, H3, H5, H8, H9, H10: unchanged journeys, run again on the 0.2.0 skills; all passed at the first attempt. H8 and H9 ran on fresh baseline clones (their work is already on the sandbox's main).
+- H4: the ceiling check read claude-main's weekly usage from providers-state.json as recorded hours earlier (79%), but that window had reset at 05:00Z, so placement rightly treated the usage as unknown and kept claude-main in the menu: the journey, not placement, was wrong. It now runs the providers probe first and sets the ceiling under the usage placement reads (the router's own currentUsage). Jev then chose GPT (via codex) rather than a Claude model, so the check now asks that the decision avoids claude-main and that a Claude model goes to claude-second, instead of naming claude-second outright. Passed 17/17 after the change.
+- H6: three runs in a row on fresh baseline clones (runs 5, 6 and 7 of H6-runs.json), each a single document task landed with zero slips, 95 to 115 s from request to landing.
+- H7: the first run (kept as results/H7-0.2.0-run1.json) failed 8/10. Two tasks landed; the README task's extra verify step ran the project's whole check set, including npm run check:changelog, which diffs against origin/main, and the clones have no remote (clone-sandbox.mjs removes it, the sandbox never had one), so the check could not pass; the ledger refused step.done for the failing check and the coordinator asked the owner with numbered options, which the journey (counting only task.landed and task.asked lines) waited on until its deadline. One slip was a read-only git check-ignore that the slip analyser did not know. Changes: clones get refs/remotes/origin/main as a symbolic ref to their own main (what CI compares a branch with), and check-ignore joined the analyser's read-only git commands. The second run, on a fresh clone, passed 10/10.
+- H11: the trigger evals were not run again (docs/decisions.md H-035: no description changed; the Interface sections are appended last and left out of the placement and landing policies). The journey reads the recorded measurement and stays blocked by section 10's round limit, with the reason recorded for the first run (JH_H11_BLOCK_REASON).
+- H12: the check for the OAuth variable's assignment was named after the very string it searches for, so its own record (H12.json, RESULTS.md) matched it on any second run; it now has a name without the literal, and the first run after the rename still saw the old record, the second passed 13/13. JH_RUN_START (09:22:51Z, the time of this task's message) dates the checks on the other run's folders, which the other run may legitimately have changed since the first build run.

@@ -8,8 +8,8 @@ export * from './task.mjs';
 export { RuntimeError, workerEnv, nodeBinary } from './env.mjs';
 export { dutyMode };
 
-// The claude command line for a turn. The prompt always follows "--" (H-005).
-export function claudeArgs({ duty, session, resume = false, model, effort, appendFile, prompt }) {
+// The claude command line for a turn in the step's worktree `cwd`. The prompt always follows "--" (H-005).
+export function claudeArgs({ duty, session, resume = false, model, effort, appendFile, prompt, cwd }) {
   const mode = dutyMode(duty);
   const args = ['-p', resume ? '--resume' : '--session-id', session, '--model', model, '--effort', effort];
   if (mode === 'write') {
@@ -25,7 +25,7 @@ export function claudeArgs({ duty, session, resume = false, model, effort, appen
       ...writes.flatMap((file) => [`Write(${file})`, `Edit(${file})`]),
     );
   }
-  args.push('--append-system-prompt-file', appendFile, '--settings', workerSettings(), '--output-format', 'stream-json', '--verbose', '--', prompt);
+  args.push('--append-system-prompt-file', appendFile, '--settings', workerSettings(cwd), '--output-format', 'stream-json', '--verbose', '--', prompt);
   return args;
 }
 

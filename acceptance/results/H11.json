@@ -2,9 +2,9 @@
   "id": "H11",
   "title": "Trigger evals",
   "status": "blocked: jevellan-coordinator (positives 21/24 below 90%), jevellan-router (role-phrase runs 22/27 below 98%) after the improvement rounds section 10 allows; the router's failing runs have the router removed, so only the calling body (the coordinator's, three rounds used) could change them; see docs/decisions.md H-030",
-  "startedAt": "2026-11-02T02:47:29.178Z",
-  "finishedAt": "2026-11-02T02:47:29.324Z",
-  "elapsedMs": 146,
+  "startedAt": "2026-11-02T11:36:26.161Z",
+  "finishedAt": "2026-11-02T11:36:26.374Z",
+  "elapsedMs": 212,
   "passed": 19,
   "total": 21,
   "timings": {},
@@ -25,127 +25,127 @@
       "name": "the run covered every skill",
       "ok": true,
       "detail": "17 skills in the run, 17 in the package",
-      "at": "2026-11-02T02:47:29.187Z"
+      "at": "2026-11-02T11:36:26.170Z"
     },
     {
       "name": "every skill has at least five positive and five negative cases",
       "ok": true,
       "detail": "",
-      "at": "2026-11-02T02:47:29.190Z"
+      "at": "2026-11-02T11:36:26.173Z"
     },
     {
       "name": "jevellan-coordinator meets the thresholds",
       "ok": false,
       "detail": "positives 21/24, negatives fired 0/21, role phrase 18/18; positives 21/24 below 90%",
-      "at": "2026-11-02T02:47:29.190Z"
+      "at": "2026-11-02T11:36:26.173Z"
     },
     {
       "name": "jevellan-duty-answer meets the thresholds",
       "ok": true,
       "detail": "positives 21/21, negatives fired 0/21, role phrase 27/27",
-      "at": "2026-11-02T02:47:29.190Z"
+      "at": "2026-11-02T11:36:26.173Z"
     },
     {
       "name": "jevellan-duty-automate meets the thresholds",
       "ok": true,
       "detail": "positives 21/21, negatives fired 0/21, role phrase 27/27",
-      "at": "2026-11-02T02:47:29.190Z"
+      "at": "2026-11-02T11:36:26.173Z"
     },
     {
       "name": "jevellan-duty-converse meets the thresholds",
       "ok": true,
       "detail": "positives 21/21, negatives fired 0/21, role phrase 27/27",
-      "at": "2026-11-02T02:47:29.190Z"
+      "at": "2026-11-02T11:36:26.173Z"
     },
     {
       "name": "jevellan-duty-document meets the thresholds",
       "ok": true,
       "detail": "positives 20/21, negatives fired 0/21, role phrase 27/27",
-      "at": "2026-11-02T02:47:29.190Z"
+      "at": "2026-11-02T11:36:26.173Z"
     },
     {
       "name": "jevellan-duty-implement meets the thresholds",
       "ok": true,
       "detail": "positives 21/21, negatives fired 0/21, role phrase 27/27",
-      "at": "2026-11-02T02:47:29.190Z"
+      "at": "2026-11-02T11:36:26.173Z"
     },
     {
       "name": "jevellan-duty-investigate meets the thresholds",
       "ok": true,
       "detail": "positives 19/21, negatives fired 0/21, role phrase 27/27",
-      "at": "2026-11-02T02:47:29.191Z"
+      "at": "2026-11-02T11:36:26.174Z"
     },
     {
       "name": "jevellan-duty-plan meets the thresholds",
       "ok": true,
       "detail": "positives 21/21, negatives fired 0/21, role phrase 27/27",
-      "at": "2026-11-02T02:47:29.191Z"
+      "at": "2026-11-02T11:36:26.174Z"
     },
     {
       "name": "jevellan-duty-verify meets the thresholds",
       "ok": true,
       "detail": "positives 21/21, negatives fired 0/21, role phrase 27/27",
-      "at": "2026-11-02T02:47:29.191Z"
+      "at": "2026-11-02T11:36:26.174Z"
     },
     {
       "name": "jevellan-git meets the thresholds",
       "ok": true,
       "detail": "positives 24/24, negatives fired 0/18, role phrase 18/18, role missing 3/3",
-      "at": "2026-11-02T02:47:29.191Z"
+      "at": "2026-11-02T11:36:26.174Z"
     },
     {
       "name": "jevellan-ledger meets the thresholds",
       "ok": true,
       "detail": "positives 24/24, negatives fired 0/18, role phrase 18/18, role missing 3/3",
-      "at": "2026-11-02T02:47:29.191Z"
+      "at": "2026-11-02T11:36:26.174Z"
     },
     {
       "name": "jevellan-router meets the thresholds",
       "ok": false,
       "detail": "positives 23/24, negatives fired 0/18, role phrase 22/27, role missing 1/6; role-phrase runs 22/27 below 98%",
-      "at": "2026-11-02T02:47:29.191Z"
+      "at": "2026-11-02T11:36:26.174Z"
     },
     {
       "name": "jevellan-runtime-claude meets the thresholds",
       "ok": true,
       "detail": "positives 24/24, negatives fired 0/18, role phrase 27/27, role missing 3/3",
-      "at": "2026-11-02T02:47:29.191Z"
+      "at": "2026-11-02T11:36:26.174Z"
     },
     {
       "name": "jevellan-runtime-codex meets the thresholds",
       "ok": true,
       "detail": "positives 24/24, negatives fired 0/18, role phrase 24/24, role missing 3/3",
-      "at": "2026-11-02T02:47:29.191Z"
+      "at": "2026-11-02T11:36:26.174Z"
     },
     {
       "name": "jevellan-workflow-automation meets the thresholds",
       "ok": true,
       "detail": "positives 24/24, negatives fired 0/18, role phrase 21/21, role missing 3/3",
-      "at": "2026-11-02T02:47:29.191Z"
+      "at": "2026-11-02T11:36:26.174Z"
     },
     {
       "name": "jevellan-workflow-bug meets the thresholds",
       "ok": true,
       "detail": "positives 24/24, negatives fired 0/18, role phrase 21/21, role missing 3/3",
-      "at": "2026-11-02T02:47:29.191Z"
+      "at": "2026-11-02T11:36:26.174Z"
     },
     {
       "name": "jevellan-workflow-feature meets the thresholds",
       "ok": true,
       "detail": "positives 24/24, negatives fired 0/18, role phrase 21/21, role missing 3/3",
-      "at": "2026-11-02T02:47:29.191Z"
+      "at": "2026-11-02T11:36:26.174Z"
     },
     {
       "name": "the role lint passes",
       "ok": true,
-      "detail": "check-roles: 17 skills, 20 event kinds, clean",
-      "at": "2026-11-02T02:47:29.315Z"
+      "detail": "notice: scripts/lib/cli.mjs differs between the 3 skills that keep a copy: version 1 in jevellan-ledger; version 2 in jevellan-runtime-claude, jevellan-runtime-codex\nnotice: scripts/lib/env.mjs differs between the 2 skills that keep a copy: version 1 in jevellan-runtime-claude; version 2 in jevellan-runtime-codex\ncheck-roles: 17 skills, 20 event kinds, clean",
+      "at": "2026-11-02T11:36:26.363Z"
     },
     {
       "name": "evals/RESULTS.md is committed and matches the run",
       "ok": true,
       "detail": "tracked: evals/RESULTS.md, evals/results.json; uncommitted: none",
-      "at": "2026-11-02T02:47:29.323Z"
+      "at": "2026-11-02T11:36:26.372Z"
     }
   ]
 }

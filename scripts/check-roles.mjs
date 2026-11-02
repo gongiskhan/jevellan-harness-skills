@@ -6,9 +6,15 @@
 // Every skills/<folder>/SKILL.md must carry name, description and jh-role in its frontmatter, with the description
 // starting with the role word. No body may name another skill, every role phrase a body uses must have a skill with
 // that role, and a body that uses role phrases must say what to do when the role is missing. The ledger's KINDS has
-// exactly twenty entries and no script under skills/ uses a twenty-first. docs/roles.md is generated from the
-// frontmatter: --write regenerates it, --check fails when it differs from what would be generated. With neither flag
-// the lint runs alone. Exit 0 when clean, 1 with every problem on its own line, 2 on a usage error.
+// exactly twenty entries and no code file under skills/ (.mjs, .cjs, .js: CODE_FILE) uses a twenty-first; the kinds a
+// file uses are kindsUsed's, below. docs/roles.md is generated from the frontmatter: --write regenerates it, --check
+// fails when it differs from what would be generated. With neither flag the lint runs alone. Exit 0 when clean, 1 with
+// every problem on its own line, 2 on a usage error.
+//
+// Helper files that several skills keep their own copies of (scripts/lib/<name> in more than one skill) may drift
+// apart: the price of portability. Copies that differ are listed as "notice: ..." lines on stdout, and a notice never
+// changes the exit code. The coupling between skills (imports, paths, names, runRole targets) is the decoupling lint's
+// job, scripts/check-decoupling.mjs.
 
 import fs from 'node:fs';
 import path from 'node:path';
@@ -35,6 +41,11 @@ export const KINDS_MODULE = 'skills/jevellan-ledger/scripts/lib/ledger.mjs';
 export const ROLES_DOC = 'docs/roles.md';
 const PREFIX = 'jevellan-';
 const DOTTED_KIND = /^(task|step|session|landing)\.[a-z]+$/;
+// The code files under skills/, the ones the kind scan reads (scripts/check-decoupling.mjs reads the same set).
+export const CODE_FILE = /\.(mjs|cjs|js)$/;
+// After 'append' or 'record' in an argument list, every string literal is a kind except a flag ('--task') and another
+// ledger command word (['record', 'append'].includes(...) lists commands, not a kind).
+const LEDGER_COMMANDS = ['append', 'record', 'task', 'create', 'status', 'show', 'report', 'wait', 'tail', 'verify', 'events', 'take-report'];
 // A dotted literal that names a file (task.json, session.log) is a path, not an event kind.
 const FILE_SUFFIX = /\.(json|jsonl|md|mjs|cjs|js|log|txt|lock|yaml|yml|toml|html|csv|sh|png|jpg)$/;
 
@@ -179,7 +190,9 @@ function cook(raw) {
 }
 
 // Returns tokens {type: 'string' | 'template' | 'ident' | 'number' | 'regex' | 'punct', value, line}. A template
-// literal without substitutions is a 'string'; one with substitutions is a 'template' whose value is null.
+// literal without substitutions is a 'string'; one with substitutions is a 'template' whose value is null and whose
+// parts are its cooked text pieces. The template token comes after the tokens of its substitutions; its `from` is the
+// index of the first of them, where the template begins in the token list.
 export function tokenize(source) {
   const tokens = [];
   const n = source.length;
@@ -199,7 +212,7 @@ export function tokenize(source) {
     return false;
   };
   // Reads template text from i (just after "`" or after the "}" closing a substitution).
-  const readTemplate = (startLine, chunks) => {
+  const readTemplate = (startLine, chunks, parts = [], from = -1) => {
     let raw = '';
     while (i < n) {
       const ch = source[i];
@@ -212,12 +225,12 @@ export function tokenize(source) {
       if (ch === '`') {
         i += 1;
         if (chunks === 0) push({ type: 'string', value: cook(raw), line: startLine });
-        else push({ type: 'template', value: null, line: startLine });
+        else push({ type: 'template', value: null, parts: [...parts, cook(raw)], line: startLine, from });
         return;
       }
       if (ch === '$' && source[i + 1] === '{') {
         i += 2;
-        templateStack.push({ braces, startLine, chunks: chunks + 1 });
+        templateStack.push({ braces, startLine, chunks: chunks + 1, parts: [...parts, cook(raw)], from: from >= 0 ? from : tokens.length });
         braces = 0;
         prev = { type: 'punct', value: '${' };
         return;
@@ -319,7 +332,7 @@ export function tokenize(source) {
         const frame = templateStack.pop();
         braces = frame.braces;
         i += 1;
-        readTemplate(frame.startLine, frame.chunks);
+        readTemplate(frame.startLine, frame.chunks, frame.parts, frame.from);
         continue;
       }
       braces -= 1;
@@ -330,35 +343,98 @@ export function tokenize(source) {
   return tokens;
 }
 
-// Event kinds a script uses: every dotted literal (task.x, step.x, session.x, landing.x), the kind: literal of an
-// appendEvent(...) call, and the literal after 'append' in a ledger.mjs argument list. Returns [{kind, line}].
+// The index of the token closing the bracket opened at `open` ("(", "[" or "{"), or tokens.length when it is not
+// closed.
+export function closingIndex(tokens, open) {
+  let depth = 0;
+  for (let j = open; j < tokens.length; j += 1) {
+    const t = tokens[j];
+    if (t.type !== 'punct') continue;
+    if (['(', '[', '{'].includes(t.value)) depth += 1;
+    else if ([')', ']', '}'].includes(t.value)) {
+      depth -= 1;
+      if (depth === 0) return j;
+    }
+  }
+  return tokens.length;
+}
+
+// The `kind: '<literal>'` properties at the top level of the object literal opened at `open`.
+function objectKinds(tokens, open) {
+  const out = [];
+  const end = closingIndex(tokens, open);
+  let depth = 0;
+  for (let j = open; j < end; j += 1) {
+    const t = tokens[j];
+    if (t.type === 'punct' && ['(', '[', '{'].includes(t.value)) depth += 1;
+    else if (t.type === 'punct' && [')', ']', '}'].includes(t.value)) depth -= 1;
+    else if (depth === 1 && (t.type === 'ident' || t.type === 'string') && t.value === 'kind' && tokens[j + 1]?.value === ':' &&
+             tokens[j + 2]?.type === 'string' && [',', '}'].includes(tokens[j + 3]?.value)) {
+      out.push(tokens[j + 2]);
+    }
+  }
+  return out;
+}
+
+// Event kinds a script uses: every dotted literal (task.x, step.x, session.x, landing.x); the kind: literal of an
+// appendEvent(...) call; the string literal after 'append' or 'record' in a ledger.mjs argument list, unless it is a
+// flag (starts with "-") or another ledger command word; the second argument of
+// appendLine(root, '<kind>', ...); and the kind: literal of an object an appendChecked(...) decide function returns
+// (`return {kind: ...}` or `=> ({kind: ...})`). Returns [{kind, line}].
 export function kindsUsed(source) {
   const tokens = tokenize(source);
   const found = new Map();
   const add = (token) => {
     if (!found.has(token)) found.set(token, { kind: token.value, line: token.line });
   };
+  const isCall = (index, name) => tokens[index].type === 'ident' && tokens[index].value === name && tokens[index + 1]?.value === '(' &&
+    tokens[index - 1]?.value !== 'function';
   tokens.forEach((token, index) => {
     if (token.type === 'string' && DOTTED_KIND.test(token.value) && !FILE_SUFFIX.test(token.value)) add(token);
-    if (token.type === 'string' && token.value === 'append') {
+    if (token.type === 'string' && (token.value === 'append' || token.value === 'record')) {
       const comma = tokens[index + 1];
       const next = tokens[index + 2];
-      if (comma?.type === 'punct' && comma.value === ',' && next?.type === 'string') add(next);
+      if (comma?.type === 'punct' && comma.value === ',' && next?.type === 'string' && !next.value.startsWith('-') && !LEDGER_COMMANDS.includes(next.value)) add(next);
     }
-    if (token.type === 'ident' && token.value === 'appendEvent' && tokens[index + 1]?.value === '(' &&
-        tokens[index - 1]?.value !== 'function') {
-      const stack = [];
-      for (let j = index + 2; j < tokens.length; j += 1) {
-        const t = tokens[j];
-        if (t.type === 'punct' && ['(', '[', '{'].includes(t.value)) stack.push(t.value);
-        else if (t.type === 'punct' && [')', ']', '}'].includes(t.value)) {
-          if (stack.length === 0) break;
-          stack.pop();
-        } else if (stack.length === 1 && stack[0] === '{' && (t.type === 'ident' || t.type === 'string') &&
-                   t.value === 'kind' && tokens[j + 1]?.value === ':' && tokens[j + 2]?.type === 'string' &&
-                   [',', '}'].includes(tokens[j + 3]?.value)) {
-          add(tokens[j + 2]);
+    if (isCall(index, 'appendEvent')) {
+      const open = index + 2;
+      if (tokens[open]?.value === '{') objectKinds(tokens, open).forEach(add);
+      else {
+        // appendEvent(root, {kind: ...}): the object is a later argument.
+        const end = closingIndex(tokens, index + 1);
+        let depth = 0;
+        for (let j = index + 1; j < end; j += 1) {
+          const t = tokens[j];
+          if (t.type === 'punct' && ['(', '[', '{'].includes(t.value)) {
+            depth += 1;
+            if (t.value === '{' && depth === 2) objectKinds(tokens, j).forEach(add);
+          } else if (t.type === 'punct' && [')', ']', '}'].includes(t.value)) depth -= 1;
         }
+      }
+    }
+    if (isCall(index, 'appendLine')) {
+      // The second top-level argument.
+      const end = closingIndex(tokens, index + 1);
+      let depth = 0;
+      for (let j = index + 1; j < end; j += 1) {
+        const t = tokens[j];
+        if (t.type === 'punct' && ['(', '[', '{'].includes(t.value)) depth += 1;
+        else if (t.type === 'punct' && [')', ']', '}'].includes(t.value)) depth -= 1;
+        else if (depth === 1 && t.type === 'punct' && t.value === ',') {
+          const next = tokens[j + 1];
+          if (next?.type === 'string' && [',', ')'].includes(tokens[j + 2]?.value)) add(next);
+          break;
+        }
+      }
+    }
+    if (isCall(index, 'appendChecked')) {
+      const end = closingIndex(tokens, index + 1);
+      for (let j = index + 2; j < end; j += 1) {
+        const t = tokens[j];
+        if (t.type !== 'punct' || t.value !== '{') continue;
+        const returned = tokens[j - 1]?.value === 'return' && tokens[j - 1]?.type === 'ident';
+        const arrowed = tokens[j - 1]?.value === '(' && tokens[j - 2]?.value === '>' && tokens[j - 3]?.value === '=';
+        if (returned || arrowed) objectKinds(tokens, j).forEach(add);
       }
     }
   });
@@ -560,7 +636,7 @@ export function lintKinds(root, kinds) {
   for (const kind of kinds) {
     if (kind !== 'note' && !DOTTED_KIND.test(kind)) problems.push(`${KINDS_MODULE}: KINDS entry "${kind}" is not task.x, step.x, session.x, landing.x or note`);
   }
-  for (const file of listFiles(path.join(root, 'skills'), (name) => name.endsWith('.mjs'))) {
+  for (const file of listFiles(path.join(root, 'skills'), (name) => CODE_FILE.test(name))) {
     const rel = path.relative(root, file).split(path.sep).join('/');
     let source;
     try {
@@ -626,39 +702,48 @@ export function renderRolesDoc(skills) {
 
 // ---- shared library copies -----------------------------------------------------------------------------------------
 
-// Files every skill that has them carries as identical copies, because a skill may not import another skill by name.
-export const SHARED_LIBS = ['roles.mjs', 'common.mjs', 'task.mjs', 'prompt.mjs', 'proc.mjs', 'cli.mjs'];
-
+// A skill may not use another skill's files, so small helpers are duplicated on purpose: each skill keeps its own copy
+// under scripts/lib/, and the copies may drift. This lists every helper file name present in more than one skill whose
+// copies differ, with the skills holding each version (in order of first appearance), as notice lines. It never
+// fails the lint.
 export function lintSharedLibs(root) {
-  const problems = [];
+  const notices = [];
   const skillsDir = path.join(root, 'skills');
   let folders = [];
   try {
-    folders = fs.readdirSync(skillsDir).sort();
+    folders = fs.readdirSync(skillsDir, { withFileTypes: true }).filter((e) => e.isDirectory()).map((e) => e.name).sort();
   } catch {
-    return problems;
+    return notices;
   }
-  for (const name of SHARED_LIBS) {
-    const copies = folders
-      .map((folder) => path.join(skillsDir, folder, 'scripts', 'lib', name))
-      .filter((file) => fs.existsSync(file))
-      .map((file) => ({ file: path.relative(root, file), text: fs.readFileSync(file, 'utf8') }));
-    // roles.mjs and cli.mjs exist under the same name in skills that keep their own (the ledger's cli.mjs); only
-    // copies whose first line matches the first copy's are compared.
-    const groups = new Map();
-    for (const copy of copies) {
-      const key = copy.text.split('\n')[0];
-      if (!groups.has(key)) groups.set(key, []);
-      groups.get(key).push(copy);
-    }
-    for (const group of groups.values()) {
-      const first = group[0];
-      for (const other of group.slice(1)) {
-        if (other.text !== first.text) problems.push(`${other.file}: differs from ${first.file}; shared library copies must be identical`);
+  const byName = new Map();
+  for (const folder of folders) {
+    const lib = path.join(skillsDir, folder, 'scripts', 'lib');
+    for (const file of listFiles(lib, () => true)) {
+      const name = path.relative(lib, file).split(path.sep).join('/');
+      let text;
+      try {
+        text = fs.readFileSync(file, 'utf8');
+      } catch {
+        continue;
       }
+      if (!byName.has(name)) byName.set(name, []);
+      byName.get(name).push({ folder, text });
     }
   }
-  return problems;
+  for (const name of [...byName.keys()].sort()) {
+    const copies = byName.get(name);
+    if (copies.length < 2) continue;
+    const versions = [];
+    for (const copy of copies) {
+      const same = versions.find((v) => v.text === copy.text);
+      if (same) same.folders.push(copy.folder);
+      else versions.push({ text: copy.text, folders: [copy.folder] });
+    }
+    if (versions.length < 2) continue;
+    const listed = versions.map((v, i) => `version ${i + 1} in ${v.folders.join(', ')}`).join('; ');
+    notices.push(`notice: scripts/lib/${name} differs between the ${copies.length} skills that keep a copy: ${listed}`);
+  }
+  return notices;
 }
 
 // ---- the command ---------------------------------------------------------------------------------------------------
@@ -673,7 +758,7 @@ export async function checkRoles(root, { mode = 'lint' } = {}) {
     }
     : null;
   problems.push(...lintSkills(skills, vocab));
-  problems.push(...lintSharedLibs(root));
+  const notices = lintSharedLibs(root);
   if (ledger.problem) problems.push(ledger.problem);
   else problems.push(...lintKinds(root, ledger.module.KINDS).problems);
   const doc = renderRolesDoc(skills);
@@ -689,7 +774,7 @@ export async function checkRoles(root, { mode = 'lint' } = {}) {
     if (current === null) problems.push(`${ROLES_DOC}: missing; run node scripts/check-roles.mjs --write and commit it`);
     else if (current !== doc) problems.push(`${ROLES_DOC}: stale, it differs from the skills' frontmatter; run node scripts/check-roles.mjs --write and commit it`);
   }
-  return { skills, problems, doc };
+  return { skills, problems, doc, notices };
 }
 
 function parseArgs(argv) {
@@ -731,7 +816,8 @@ async function main() {
     return 0;
   }
   const root = options.root ?? path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-  const { skills, problems } = await checkRoles(root, { mode: options.mode });
+  const { skills, problems, notices } = await checkRoles(root, { mode: options.mode });
+  if (notices.length) process.stdout.write(`${notices.join('\n')}\n`);
   if (options.mode === 'write') process.stdout.write(`check-roles: wrote ${ROLES_DOC} (${plural(skills.length, 'skill')})\n`);
   if (problems.length) {
     process.stderr.write(`${problems.join('\n')}\n`);

@@ -64,3 +64,28 @@ Checks. A check counts as coverage only when it passed on this branch and exerci
 Corrections. A task that needed retries (a verification failed and was fixed) leans one route more cautious, unless the final checks plainly cover what failed.
 
 Documentation-only and test-only changes outside the risky areas whose checks passed land.
+
+## Interface
+
+Not policy: this section is neither sent to Jev nor part of the policy hash.
+
+The scripts take arguments only (nothing on stdin). With `--json` they print the JSON shown; a refusal prints
+`{"error", "exitCode"}` on stdout and the reason on stderr. Every command needs an installed skill with the ledger
+role; `land.mjs` asking Jev also needs one with the placement role (`--force` and the verify-then-land continuation do
+not). A missing role is exit 2: "no installed skill has the role <role>; tell the owner which role is missing and do
+not improvise it".
+
+- `worktree.mjs create --task T [--base <branch>] [--json]` -> `{path, branch, base, baseCommit, setup?}`, without
+  `--json` the path alone. `setup` is `{command, ms}` when the project setupCommand ran in a new worktree, and the
+  command when it ran in an existing one. Exit 0 made, or already there; 2 refused (a parent without a worktree, a
+  branch or folder in the way, a failed setupCommand); 3 no such task.
+- `worktree.mjs archive --task T [--reason "..."] [--json]` ->
+  `{archived: true, already, from, to, branch, stopped}`. Exit 0 archived, or archived before; 2 refused (a step is
+  running, the worktree is locked or not registered); 3 no such task, or the task has no worktree.
+- `land.mjs --task T [--force] [--json]` -> by exit code:
+  0 landed, `{task, route: "land", landed: true, commit, target, method, forced, reason, checks, push}` with
+  `checks` as `[{name, command, passed, exitCode, timedOut, durationMs, round}]`, or
+  `{task, landed: true, already: true, commit, target}` for a task that landed before;
+  2 refused; 3 no such task;
+  6 verify-then-land, `{"route":"verify-then-land"}` (with `--json` also `task, reason, instructions, again`);
+  7 ask-owner, `{task, route: "ask-owner", question, options, reason}`.

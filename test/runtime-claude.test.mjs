@@ -145,7 +145,12 @@ describe('start', () => {
     assert.ok(!argv.includes('Write(./plan.md)'));
     assert.ok(argv.includes('--append-system-prompt-file'));
     const settings = JSON.parse(argv[argv.indexOf('--settings') + 1]);
-    assert.ok(settings.claudeMdExcludes.some((p) => p.endsWith('/.claude/**')));
+    // The instruction files of every folder above the worktree stay out (the owner's home among them on a real
+    // machine); the worktree's own are the project's.
+    for (const at of [path.dirname(wt), path.dirname(path.dirname(wt)), '/']) {
+      for (const file of ['CLAUDE.md', 'CLAUDE.local.md', path.join('.claude', '**')]) assert.ok(settings.claudeMdExcludes.includes(path.join(at, file)), path.join(at, file));
+    }
+    assert.ok(!settings.claudeMdExcludes.some((p) => p.startsWith(`${wt}/`)));
     assert.deepEqual(settings.attribution, { commit: '', pr: '', sessionUrl: false });
     assert.ok(!argv.join(' ').includes(FAKE_TOKEN), 'the token is never on the command line');
     assert.equal(rec.hasToken, true);

@@ -3,28 +3,28 @@
     "query": "Task T3K9QZ \"README: how to run\" is created (kind single, duty document) and has no worktree yet. Use the git skill to make the worktree.",
     "should_trigger": true,
     "role_phrase": true,
-    "context_skill": "jevellan-coordinator"
+    "context_role": "coordinator"
   },
   {
     "query": "Bug task T5HB7C \"Invoice dates shown in the wrong timezone\" is created and has no worktree yet. Use the git skill to make the worktree.",
     "should_trigger": true,
     "role_phrase": true,
-    "context_skill": "jevellan-coordinator"
+    "context_role": "coordinator"
   },
   {
     "query": "Every step of T8QW2N is done: plan skipped, implement done, verify done with its tests passing, document done. Use the git skill to land the task.",
     "should_trigger": true,
-    "context_skill": "jevellan-coordinator"
+    "context_role": "coordinator"
   },
   {
     "query": "The ask-owner landing of T5HB7C got its answer: the owner said \"Land now\". Use the git skill accordingly.",
     "should_trigger": true,
-    "context_skill": "jevellan-coordinator"
+    "context_role": "coordinator"
   },
   {
     "query": "The owner said \"Leave it\" for T5HB7C. Use the git skill to archive its worktree.",
     "should_trigger": true,
-    "context_skill": "jevellan-coordinator"
+    "context_role": "coordinator"
   },
   {
     "query": "Make a worktree for task T6NP3X on its own branch based on main, with the project's .claude linked in.",
@@ -40,7 +40,7 @@
     "should_trigger": true,
     "role_phrase": true,
     "held_out": true,
-    "context_skill": "jevellan-coordinator"
+    "context_role": "coordinator"
   },
   {
     "query": "Task T3K9QZ \"README: how to run\" is created (kind single, duty document) and has no worktree yet. Use the git skill to make the worktree.",
@@ -48,19 +48,19 @@
     "remove_role": "git",
     "expect_role_missing": "git",
     "role_phrase": true,
-    "context_skill": "jevellan-coordinator"
+    "context_role": "coordinator"
   },
   {
     "query": "The owner asked: \"Add a How to run section to the README listing the commands in package.json.\" Status shows no open task for it, and the brief is written to .jevellan/briefs/readme-how-to-run.md. Use the ledger skill to create the task.",
     "should_trigger": false,
     "role_phrase": true,
-    "context_skill": "jevellan-coordinator"
+    "context_role": "coordinator"
   },
   {
     "query": "Placement printed {\"provider\":\"claude-second\",\"model\":\"claude-sonnet-5-5\",\"effort\":\"medium\",\"kind\":\"claude-subscription\"} for step 1 (document) of T3K9QZ, whose worktree is ~/.jevellan-harness/worktrees/sandbox/readme-how-to-run-T3K9QZ. Use the runtime skill for provider kind claude-subscription to start the step.",
     "should_trigger": false,
     "role_phrase": true,
-    "context_skill": "jevellan-coordinator"
+    "context_role": "coordinator"
   },
   {
     "query": "How do I undo my last commit but keep its changes staged? Plain git.",

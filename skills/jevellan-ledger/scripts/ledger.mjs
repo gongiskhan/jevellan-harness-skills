@@ -4,6 +4,7 @@
 // 2 refused with a reason, 3 not found; wait also uses 4 (failed, lost or stopped) and 5 (timeout).
 
 import fs from 'node:fs';
+import path from 'node:path';
 import {
   DUTIES,
   KINDS,
@@ -12,6 +13,7 @@ import {
   appendEvent,
   findTask,
   groupByTask,
+  lastSeqOf,
   latestReport,
   projectAll,
   projectTask,
@@ -19,8 +21,11 @@ import {
   resetFor,
   resetPoints,
   stepView,
+  stepViews,
+  unchangedSince,
   verifyLedger,
 } from './lib/ledger.mjs';
+import { readReportFile, recordReport } from './lib/report-file.mjs';
 import { isTaskId, newTaskId } from './lib/ids.mjs';
 import { projectPaths, projectRoot } from './lib/project.mjs';
 import { oneLine, renderReport } from './lib/format.mjs';
@@ -30,17 +35,25 @@ import { pidAlive, sleepMs } from './lib/lock.mjs';
 import { HEADINGS, OPEN_STATES, ORDER, briefLines, describe, statusView } from './lib/status.mjs';
 
 const USAGE = `ledger.mjs task create --kind feature|bug|automation|single [--duty D] --title "..." (--text "..." | --text-file F) [--parent T] [--after T] [--origin owner|coordinator]
-ledger.mjs append <kind> [--task T] [--step N] [--session S] --data '<json>' [--force]
+ledger.mjs append <kind> [--task T] [--step N] [--session S] --data '<json>' [--force] [--if-last-seq N]
 ledger.mjs status [--brief]
 ledger.mjs show T
 ledger.mjs report T [--step N]
 ledger.mjs wait --task T [--step N] [--timeout S]
 ledger.mjs tail [--follow] [--task T]
 ledger.mjs verify
+For the scripts of other skills:
+ledger.mjs record <kind> --task T [--step N] [--session S] (--data '<json>' | --data-file F) [--if-last-seq N]
+ledger.mjs events [--task T]... [--kind K]... [--since SEQ]
+ledger.mjs take-report --task T --step N --session S --cwd DIR [--native-session ID] [--ended "..."]
 Every command accepts --json.`;
 
 // What a session may append by hand. Everything else belongs to a script or a hook that guards it.
 const HAND_KINDS = ['note', 'step.message', 'task.workflow', 'step.done', 'step.failed', 'step.retrying'];
+// What `record` appends for the scripts of other skills (placement, worktrees, starts, landings, sessions). task.created
+// has its own command; step.lost is written by this skill alone, when it sees a worker's process gone; step.report
+// only through the Stop hook or take-report, which check the report against its schema and fit it to one line.
+const RECORD_KINDS = KINDS.filter((kind) => !HAND_KINDS.includes(kind) && !['task.created', 'step.lost', 'step.report'].includes(kind));
 
 function root() {
   const found = projectRoot();
@@ -331,6 +344,7 @@ function append(argv) {
     'from-workflow': { type: 'string' },
     answers: { type: 'string' },
     'add-step': { type: 'string' },
+    'if-last-seq': { type: 'string' },
     force: { type: 'boolean' },
     json: { type: 'boolean' },
   });
@@ -339,6 +353,7 @@ function append(argv) {
   if (!HAND_KINDS.includes(kind)) {
     throw new LedgerError(`${kind} is written by the skills' scripts and hooks, not by hand; a session appends only ${HAND_KINDS.join(', ')}`);
   }
+  const ifLastSeq = lastSeqOption(values['if-last-seq'], values.task);
   const given = ['data', 'data-file', 'from-workflow', 'add-step'].filter((k) => values[k] !== undefined);
   if (given.length > 1) throw new LedgerError(`give one of --${given.join(', --')}`);
   if ((values['from-workflow'] !== undefined || values['add-step'] !== undefined) && kind !== 'task.workflow') {
@@ -366,14 +381,136 @@ function append(argv) {
   if (['step.done', 'step.failed'].includes(kind) && data.ordinal === undefined) data.ordinal = step;
   if (kind === 'step.retrying' && data.ordinal === undefined) data.ordinal = step;
   if (kind === 'step.done' && values.force) data.forced = true;
+  const checks = [unchangedOption(values.task, ifLastSeq), guard(kind, step, { ...data, __task: values.task }, values.force)].filter(Boolean);
   const event = appendEvent(at, {
     kind,
     task: values.task,
     step,
     session: values.session ?? process.env.JH_SESSION,
     data,
-  }, { check: guard(kind, step, { ...data, __task: values.task }, values.force) });
+  }, { check: (events) => checks.forEach((check) => check(events)) });
   print(values.json, event, oneLine(event));
+  return 0;
+}
+
+// --if-last-seq N: the append happens only when the task's newest line is still #N, the one the caller read before it
+// checked its own guards; otherwise exit 6 and nothing is written. The task must be named.
+function lastSeqOption(text, task) {
+  if (text === undefined) return null;
+  const seq = Number(text);
+  if (!(Number.isInteger(seq) && seq > 0)) throw new LedgerError('--if-last-seq must be a positive integer (the lastSeq that show --json printed)');
+  if (task === undefined) throw new LedgerError('--if-last-seq needs --task');
+  return seq;
+}
+
+function unchangedOption(task, seq) {
+  return seq === null ? null : unchangedSince(task, seq);
+}
+
+// ---- record (the scripts of other skills) -----------------------------------------------------------------------
+
+// Appends one of the kinds the skills' scripts own, for a script that reaches this skill as a process. What the line
+// means is the calling script's business and its guards are its own: it reads the task (show --json), decides, and
+// appends with --if-last-seq, so a line written by anyone else in between refuses the append (exit 6) and the script
+// reads again. This command checks only the shape: a known kind, an existing task, a step for the step kinds.
+function record(argv) {
+  const { values, positionals } = parse(argv, {
+    task: { type: 'string' },
+    step: { type: 'string' },
+    session: { type: 'string' },
+    data: { type: 'string' },
+    'data-file': { type: 'string' },
+    'if-last-seq': { type: 'string' },
+    json: { type: 'boolean' },
+  });
+  const kind = positionals[0];
+  if (positionals.length !== 1) throw new LedgerError('record takes one event kind');
+  if (!KINDS.includes(kind)) throw new LedgerError(`unknown event kind "${kind}"; the kinds are ${KINDS.join(', ')}`);
+  if (!RECORD_KINDS.includes(kind)) {
+    throw new LedgerError(kind === 'task.created' ? 'task.created is written by task create' : `${kind} is ${HAND_KINDS.includes(kind) ? 'appended with append, which checks it' : 'written by this skill alone'}; record takes ${RECORD_KINDS.join(', ')}`);
+  }
+  if (values.task === undefined) throw new LedgerError(`${kind} needs --task`);
+  if (values.data !== undefined && values['data-file'] !== undefined) throw new LedgerError('give --data or --data-file, not both');
+  let data = {};
+  if (values.data !== undefined) data = parseJsonArg(values.data, '--data');
+  if (values['data-file'] !== undefined) data = parseJsonArg(readArgFile(values['data-file'], '--data-file'), '--data-file');
+  if (!data || typeof data !== 'object' || Array.isArray(data)) throw new LedgerError('--data must be a JSON object');
+  const step = values.step === undefined ? undefined : Number(values.step);
+  if (step !== undefined && !(Number.isInteger(step) && step > 0)) throw new LedgerError('--step must be a positive integer');
+  if (kind.startsWith('step.') && step === undefined) throw new LedgerError(`${kind} needs --step`);
+  const ifLastSeq = lastSeqOption(values['if-last-seq'], values.task);
+  const at = root();
+  requireTask(readEvents(at).events, values.task);
+  const event = appendEvent(at, { kind, task: values.task, step, session: values.session ?? process.env.JH_SESSION, data }, {
+    check: (events) => {
+      if (!findTask(events, values.task)) throw new LedgerError(`no task ${values.task} in this project's ledger`, 3);
+      unchangedOption(values.task, ifLastSeq)?.(events);
+    },
+  });
+  print(values.json, event, oneLine(event));
+  return 0;
+}
+
+// ---- events (the scripts of other skills) -----------------------------------------------------------------------
+
+// The ledger's lines as data, optionally only some tasks' or some kinds', after a seq: {lastSeq, events}. lastSeq is
+// the newest seq of the whole ledger.
+function events(argv) {
+  const { values } = parse(argv, { task: { type: 'string', multiple: true }, kind: { type: 'string', multiple: true }, since: { type: 'string' }, json: { type: 'boolean' } }, { allowPositionals: false });
+  for (const kind of values.kind ?? []) if (!KINDS.includes(kind)) throw new LedgerError(`unknown event kind "${kind}"`);
+  for (const id of values.task ?? []) if (!isTaskId(id)) throw new LedgerError(`"${id}" is not a task id (T and six characters)`);
+  const since = values.since === undefined ? 0 : Number(values.since);
+  if (!(Number.isInteger(since) && since >= 0)) throw new LedgerError('--since must be a seq (0 or more)');
+  const all = readEvents(root()).events;
+  const lastSeq = all.reduce((m, e) => (Number.isInteger(e.seq) && e.seq > m ? e.seq : m), 0);
+  const chosen = all.filter((e) => (!values.task || values.task.includes(e.task)) && (!values.kind || values.kind.includes(e.kind)) && (e.seq ?? 0) > since);
+  print(values.json, { lastSeq, events: chosen }, chosen.map(oneLine).join('\n') || '(no lines)');
+  return 0;
+}
+
+// ---- take-report (runtimes without a Stop hook) --------------------------------------------------------------------
+
+// What the Stop hook does for a Claude worker, for a runtime whose agent has no hook (Codex), called once its turn's
+// process has ended: <cwd>/.jevellan/report.json becomes step.report and moves to .jevellan/reports/; an invalid one
+// becomes a blocked report with the problem in limitations; none becomes a blocked report marked synthesized. Then
+// session.ended. The line is appended before the file moves, so a refused line leaves the report where it was.
+function takeReport(argv) {
+  const { values } = parse(argv, {
+    task: { type: 'string' },
+    step: { type: 'string' },
+    session: { type: 'string' },
+    cwd: { type: 'string' },
+    'native-session': { type: 'string' },
+    ended: { type: 'string' },
+    json: { type: 'boolean' },
+  }, { allowPositionals: false });
+  if (values.task === undefined) throw new LedgerError('--task is required');
+  const step = Number(values.step);
+  if (!(Number.isInteger(step) && step > 0)) throw new LedgerError('--step must be a positive integer');
+  if (!values.session) throw new LedgerError('--session is required');
+  if (!values.cwd || !path.isAbsolute(values.cwd)) throw new LedgerError('--cwd must be the step\'s folder, an absolute path');
+  const at = root();
+  requireTask(readEvents(at).events, values.task);
+  const ended = (values.ended ?? '').replace(/\s+/g, ' ').trim() || 'the session ended';
+  const file = path.join(values.cwd, '.jevellan', 'report.json');
+  const read = readReportFile(file);
+  const data = read ? read.data : { status: 'blocked', summary: 'No report was written.', synthesized: true, limitations: `${ended} and no .jevellan/report.json` };
+  const ctx = { task: values.task, step, session: values.session };
+  let moveError = null;
+  const event = recordReport(at, ctx, data, { file: read ? file : null, suffix: read?.suffix ?? '', onMoveError: (error, from, to) => { moveError = `${from} could not be moved to ${to}: ${error?.message ?? error}`; } });
+  // What went wrong after the line was written is told in the output (warnings) as well as on stderr, so a caller that
+  // reads only the JSON still has it for its own log.
+  const warnings = [];
+  if (moveError) warnings.push(`report recorded, but ${moveError}`);
+  let endedEvent = null;
+  try {
+    endedEvent = appendEvent(at, { kind: 'session.ended', task: values.task, step, session: values.session, data: { nativeSessionId: values['native-session'] ?? null, reason: `${ended} with a ${data.status} report` } });
+  } catch (error) {
+    warnings.push(`session.ended not recorded: ${error?.message ?? error}`);
+  }
+  for (const warning of warnings) process.stderr.write(`${values.task} s${step}: ${warning}\n`);
+  const out = { task: values.task, step, seq: event.seq, status: event.data.status, synthesized: Boolean(event.data.synthesized), reportFile: event.data.reportFile ?? null, sessionEndedSeq: endedEvent?.seq ?? null, warnings };
+  print(values.json, out, `${values.task} step ${step}: ${out.status} report recorded (#${event.seq})${out.synthesized ? ', synthesized' : ''}.`);
   return 0;
 }
 
@@ -418,7 +555,7 @@ function show(argv) {
   const info = requireTask(events, positionals[0]);
   const view = projectTask(info);
   if (values.json) {
-    print(true, { ...view, text: info.created.data?.text, events: info.events });
+    print(true, { ...view, text: info.created.data?.text, lastSeq: lastSeqOf(info), views: stepViews(info), events: info.events });
     return 0;
   }
   const out = [`${view.task} ${view.title}`, `kind ${view.kind}${view.duty ? ` ${view.duty}` : ''}, state ${view.state}${view.reason ? ` (${view.reason})` : ''}`];
@@ -590,6 +727,12 @@ async function main(argv) {
       return tail(rest);
     case 'verify':
       return verify(rest);
+    case 'record':
+      return record(rest);
+    case 'events':
+      return events(rest);
+    case 'take-report':
+      return takeReport(rest);
     case undefined:
     case '--help':
     case '-h':

@@ -30,3 +30,9 @@ append task.workflow --task T --force --add-step '{"duty":"verify","instructions
 ```
 
 Then place it, start it and wait for its report like any other step, record step.done, and use the git skill to land the task again. The extra step has no onFail: when it fails, tell the owner.
+
+## Interface
+
+No scripts. The interface is `workflow.json` next to this file, which a session reads and hands to the ledger skill with `append task.workflow --task T --from-workflow <this skill>/workflow.json --answers <file>`:
+
+- `workflow.json` -> `{"name": "bug", "steps": [{"duty": "<duty>", "when": "jev:<question id>", "instructions": "<text>", "onFail": {"goto": <earlier ordinal>, "maxLoops": <N>}}]}`, where `when` and `onFail` are optional. Steps are numbered from 1 in file order, and `duty` is one of the eight duties. A step with `when` runs only when placement answers that question true; `onFail` sends a failed step back to an earlier step at most `maxLoops` times.

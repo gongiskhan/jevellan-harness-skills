@@ -13,6 +13,10 @@ export function cloneSandbox(name, base = '61fc71a') {
   sh('git', ['clone', '--quiet', '--local', SANDBOX, dir]);
   sh('git', ['-C', dir, 'remote', 'remove', 'origin']);
   sh('git', ['-C', dir, 'reset', '--quiet', '--hard', base]);
+  // The sandbox's own CI check (npm run check:changelog) diffs against origin/main, which only CI has. A clone has no
+  // remote (nothing may be pushed), so origin/main is made a symbolic ref to the local main: what CI compares a
+  // branch against, and it moves with every landing.
+  sh('git', ['-C', dir, 'symbolic-ref', 'refs/remotes/origin/main', 'refs/heads/main']);
   const inst = sh(NODE, [path.join(REPO, 'install.mjs'), dir, '--json']);
   if (inst.status !== 0) throw new Error(inst.stderr);
   const pj = path.join(dir, '.jevellan', 'project.json');

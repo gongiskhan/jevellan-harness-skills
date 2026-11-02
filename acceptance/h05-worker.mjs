@@ -93,7 +93,7 @@ sh('git', ['init', '-q', probe]);
 fs.mkdirSync(path.join(probe, '.jevellan'));
 const appendFile = path.join(probe, 'append.md');
 fs.writeFileSync(appendFile, 'This is a permission probe.\n');
-const args = claudeArgs({ duty: 'investigate', session: crypto.randomUUID(), model: 'claude-sonnet-5-5', effort: 'low', appendFile, prompt: 'Do two things with the Write tool: first create notes.txt containing "hi"; then create .jevellan/report.json containing {"status":"done","summary":"probe"}. Then say which of the two worked.' });
+const args = claudeArgs({ duty: 'investigate', session: crypto.randomUUID(), model: 'claude-sonnet-5-5', effort: 'low', appendFile, cwd: probe, prompt: 'Do two things with the Write tool: first create notes.txt containing "hi"; then create .jevellan/report.json containing {"status":"done","summary":"probe"}. Then say which of the two worked.' });
 const env = E.workerEnv({ provider: E.findProvider('claude-second'), task: 'TPROBE1', step: 1, duty: 'investigate', project: probe, session: 'probe' });
 for (const k of ['JH_TASK', 'JH_STEP', 'JH_DUTY', 'JH_PROJECT', 'JH_SESSION']) delete env[k];
 const r = sh('claude', args, { cwd: probe, env, timeoutMs: 240_000 });

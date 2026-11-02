@@ -5,19 +5,22 @@
 // - PATH, HOME, USER, LANG, TERM, SHELL, TMPDIR from the process, PATH prefixed with the Node 22 binary's folder;
 // - the provider's login: CLAUDE_CODE_OAUTH_TOKEN from tokenFile for a claude-subscription provider that has one,
 //   or ANTHROPIC_BASE_URL, ANTHROPIC_AUTH_TOKEN (keyFile) and the ANTHROPIC_DEFAULT_*_MODEL ids for claude-endpoint;
-// - CLAUDE_CONFIG_DIR, the harness's own Claude config folder (H-001), so the owner's ~/.claude settings, hooks,
-//   plugins, memory and transcripts are neither used nor written by workers;
+// - CLAUDE_CONFIG_DIR, the harness's own Claude config folder (H-001), so the owner's personal Claude settings,
+//   hooks, plugins, memory and transcripts are neither used nor written by workers;
 // - ENABLE_CLAUDEAI_MCP_SERVERS=false and CLAUDE_CODE_DISABLE_BACKGROUND_TASKS=1;
 // - GIT_AUTHOR_* and GIT_COMMITTER_* from the machine's git config;
 // - PLAYWRIGHT_BROWSERS_PATH when ~/.cache/ms-playwright exists;
 // - JH_TASK, JH_STEP, JH_DUTY, JH_PROJECT, JH_SESSION and JH_CWD (the step's worktree) for the hooks.
+//
+// The --settings of every worker (workerSettings) keep out the instruction files of every folder above the step's
+// worktree, so nothing from outside the project tells a worker what to do.
 //
 // Values may be secrets: the result only ever goes into a child process environment, never onto a command line,
 // into a log or into a file.
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { RuntimeError, baseWorkerEnv, harnessHome, ownerHome, readSecret } from './common.mjs';
+import { RuntimeError, baseWorkerEnv, harnessHome, readSecret } from './common.mjs';
 
 export * from './common.mjs';
 export const CLAUDE_KINDS = ['claude-subscription', 'claude-endpoint'];
@@ -78,19 +81,45 @@ export function secretsDirs() {
   return dirs;
 }
 
-// The --settings JSON every worker gets (H-001, H-014): the owner's personal instruction files stay out, no commit
-// or pull request of a worker carries attribution, and the Read and Edit tools (and the tools built on them: Grep,
-// Glob, Write) may not touch the harness's secrets folder. A permission path that starts with "//" is absolute from
-// the filesystem root ("/x" would be relative to a settings file); deny rules hold under bypassPermissions too
-// ("auto-approves every tool call (except explicit deny rules)", Claude Code 2.1.316). The rules do not reach a
-// Bash command that reads the folder; nothing short of a sandbox does. The worker's raw output goes to
+// The folders above `cwd`, nearest first, under each of its spellings (as given and as it resolves, since a
+// symlinked folder has two). `cwd` itself is not one of them.
+export function foldersAbove(cwd) {
+  const starts = [path.resolve(cwd)];
+  try {
+    const real = fs.realpathSync(cwd);
+    if (!starts.includes(real)) starts.push(real);
+  } catch {}
+  const out = [];
+  for (const start of starts) {
+    for (let dir = start, parent = path.dirname(dir); parent !== dir; dir = parent, parent = path.dirname(dir)) {
+      if (!out.includes(parent)) out.push(parent);
+    }
+  }
+  return out;
+}
+
+// The instruction files Claude Code would load from the folders above `cwd` (CLAUDE.md, CLAUDE.local.md, and
+// everything under .claude, where .claude/CLAUDE.md and .claude/rules/ live), as claudeMdExcludes patterns. The step's worktree lives under
+// the harness folder, so the owner's home is one of those folders and the owner's personal instructions stay out;
+// the worktree itself and what is below it are the project's, which keeps no CLAUDE.md either (AGENTS.md is what the
+// worker is given).
+export function instructionExcludes(cwd) {
+  return foldersAbove(cwd).flatMap((dir) => [path.join(dir, 'CLAUDE.md'), path.join(dir, 'CLAUDE.local.md'), path.join(dir, '.claude', '**')]);
+}
+
+// The --settings JSON every worker gets (H-001, H-014): no instruction file from a folder above the step's worktree
+// `cwd` is loaded, no commit or pull request of a worker carries attribution, and the Read and Edit tools (and the
+// tools built on them: Grep, Glob, Write) may not touch the harness's secrets folder. A permission path that starts
+// with "//" is absolute from the filesystem root ("/x" would be relative to a settings file); deny rules hold under
+// bypassPermissions too ("auto-approves every tool call (except explicit deny rules)", Claude Code 2.1.316). The rules
+// do not reach a Bash command that reads the folder; nothing short of a sandbox does. The worker's raw output goes to
 // ~/.jevellan-harness/logs/<session>.log and its native transcript to the harness's claude-config folder, both
 // mode 600 in mode 700 folders under the harness folder, never into the project (status.mjs redacts what it shows).
-export function workerSettings() {
-  const home = ownerHome();
+// Without `cwd` the folders above this process's working folder are used.
+export function workerSettings(cwd = process.cwd()) {
   const secrets = secretsDirs().map((dir) => `/${dir}/**`);
   return JSON.stringify({
-    claudeMdExcludes: [`${home}/.claude/**`, `${home}/CLAUDE.md`, `${home}/CLAUDE.local.md`],
+    claudeMdExcludes: instructionExcludes(cwd),
     attribution: { commit: '', pr: '', sessionUrl: false },
     permissions: { deny: [...secrets.map((p) => `Read(${p})`), ...secrets.map((p) => `Edit(${p})`)] },
   });

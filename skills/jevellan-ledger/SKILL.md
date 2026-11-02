@@ -48,3 +48,67 @@ step.message.
 - Every command accepts `--json`. Exit codes: 0 ok, 2 refused with the reason on stderr, 3 not found.
 - Tasks, worktrees, workflows, placements, starts, reports and landings are written by the scripts and hooks of the
   skills that own them; `append` refuses those kinds.
+- The scripts of other skills run this skill's `ledger.mjs` as a process with `--json` (see Interface): they read with
+  `show T --json` and `events`, write their own kinds with `record` and a worker's report with `take-report`, and pass
+  `--if-last-seq` with the `lastSeq` they read, so a line written meanwhile refuses the append (exit 6).
+
+## Interface
+
+What a session or another skill's script runs: `node <this skill>/scripts/ledger.mjs <command>`, in the project or a
+folder inside it (the project root is found through git, or `JH_PROJECT`). Input is arguments, and stdin where a
+`-` file is given. With `--json` every command but `tail` prints one JSON object, and a refusal prints
+`{"error", "exitCode"}` on stdout and the reason on stderr. A line "as written" is
+`{seq, t, kind, task?, step?, session?, data}`.
+
+- `ledger.mjs task create --kind feature|bug|automation|single [--duty D] --title "..." (--text "..." | --text-file F|-)
+  [--parent T] [--after T] [--origin owner|coordinator] --json` -> `{task, kind, title, seq, existing: false}`, or
+  `{task, kind, title, state, existing: true}` when the same task is still open.
+- `ledger.mjs append <kind> [--task T] [--step N] [--session S] (--data JSON | --data-file F|-) [--force]
+  [--if-last-seq N] --json` -> the line as written. Only the hand kinds note, step.message, task.workflow (also
+  `--from-workflow F --answers F|JSON` or `--add-step JSON`), step.done, step.failed and step.retrying, each checked
+  against the task's lines (exit 2 with the reason).
+- `ledger.mjs record <kind> --task T [--step N] [--session S] (--data JSON | --data-file F|-) [--if-last-seq N] --json`
+  -> the line as written. The kinds the skills' scripts own: task.worktree, task.placed, step.started (`--step`),
+  step.stopped (`--step`), session.event, session.started, session.ended, landing.decided, landing.checked,
+  task.landed, task.asked. Only the shape is checked; what the line means is the caller's guard. A worker's report
+  goes through `take-report` (or the Stop hook), which checks it against the report schema.
+- `ledger.mjs show T --json` -> the task's projection `{task, kind, duty, title, parent, after, origin, createdAt,
+  updatedAt, worktree, workflowResolved, steps: [{ordinal, duty, state, starts, model, effort, provider, pid,
+  nativeSessionId, startedAt}], currentStep, state, reason, waiting?, landing?, runningStep?, alive?, landedCommit?}`
+  plus `text` (the brief), `lastSeq` (the task's newest seq), `views` and `events` (the task's lines). `views` is
+  `[{ordinal, resetSeq, current, overall}]` for each ordinal from 1 to the highest a workflow, a placement or a step
+  event names (step 1 for a single task; gaps are filled up to ordinal 100, and a higher ordinal that is named still
+  gets its own view); `current` reads the step since its last retry reset, `overall` all its lines, each
+  `{state, starts, started, end, done, lastReport, placed}` with the seq of each event, or null. An ordinal without a
+  view has nothing: pending, no starts, every event null.
+- `ledger.mjs events [--task T]... [--kind K]... [--since SEQ] --json` -> `{lastSeq, events}`: the lines, narrowed;
+  `lastSeq` is the newest seq of the whole ledger (0 when it is empty).
+- `ledger.mjs status [--brief] --json` -> `{tasks, recent, lost}`: the open tasks' projections with `next`, the tasks
+  finished in the last 24 hours, and the steps this call marked lost (it appends step.lost for a worker whose process
+  is gone without a report).
+- `ledger.mjs report T [--step N] --json` -> `{task, step, seq, t, session, status, summary, ...}`, the newest report
+  (exit 3 when there is none yet).
+- `ledger.mjs wait --task T [--step N] [--timeout S] --json` -> `{kind, task, step, seq, ...data}` of what ended the
+  step: exit 0 a report, 4 step.failed, step.lost or step.stopped; exit 5 `{timeout: true, task, step}`.
+- `ledger.mjs take-report --task T --step N --session S --cwd DIR [--native-session ID] [--ended "text"] --json` ->
+  `{task, step, seq, status, synthesized, reportFile, sessionEndedSeq}`: what the Stop hook does, for a runtime whose
+  agent has none, once the turn's process has ended. `<cwd>/.jevellan/report.json` (DIR absolute) becomes step.report
+  and moves to `.jevellan/reports/`; an invalid one is recorded blocked and synthesized with the problem in limitations
+  and archived with `-invalid`; none is recorded blocked and synthesized with limitations "<ended> and no
+  .jevellan/report.json". Then session.ended `{nativeSessionId, reason: "<ended> with a <status> report"}`. When the
+  report line cannot be written nothing is, and the file stays.
+- `ledger.mjs tail [--follow] [--task T] [--lines N] [--json]` -> the newest lines (40 by default), one per output
+  line, JSON lines with `--json`; `--follow` keeps printing new ones.
+- `ledger.mjs verify --json` -> `{ok, lines, issues}`: seq contiguous, every line parses with a known kind, a time and
+  object data (exit 2 when not ok).
+
+`--if-last-seq N` (append, record): the line is written only when the task's newest line is still #N, the `lastSeq`
+of `show T --json`; lines of other tasks do not count. Otherwise exit 6 and nothing is written: read the task again
+and decide again.
+
+Exit codes: 0 ok; 2 refused, with the reason; 3 not found; 4 `wait`: the step failed, was lost or was stopped; 5
+`wait`: timeout; 6 the task changed after `--if-last-seq`; 1 an unexpected error (a file that cannot be written), with
+the message on stderr.
+
+The hooks (`hooks/stop.mjs`, `hooks/post-tool.mjs`, `hooks/session-start.mjs`) are registered by the installer or the
+plugin and are not called by other skills.

@@ -11,9 +11,14 @@
 //
 //   role_phrase: true              the query carries one of the explicit role phrases (or the SessionStart line, or the
 //                                  runtime's duty line); these cases have the stricter threshold
-//   context_skill: "<skill name>"  the calling skill: its SKILL.md body goes into the system prompt with
-//                                  --append-system-prompt, introduced as "The skill <name> is loaded; follow its
-//                                  instructions:", as if that skill had been invoked earlier in the session
+//   context_role: "<role>"         the calling skill, named by its role (a case never names another skill): the one
+//   context_for: "<value>"         skill with that jh-role, narrowed by context_for when several hold it (a runtime's
+//                                  provider kind in jh-kinds, a duty's jh-duty, a workflow's jh-kind). Its SKILL.md
+//                                  body goes into the system prompt with --append-system-prompt, introduced as "The
+//                                  skill <name> is loaded; follow its instructions:", as if that skill had been invoked
+//                                  earlier in the session. The resolved name is kept as context_skill in the results.
+//   context_skill: "<skill name>"  the older form, still read from results files; in a case file it may name only
+//                                  the case file's own skill
 //   remove_role: "<role>"          the skills whose jh-role is <role> are left out of the install; the case needs
 //   expect_role_missing: "<role>"  should_trigger false, expect_role_missing equal to remove_role, role_phrase true,
 //                                  and must live in the case file of a skill with that role
@@ -78,7 +83,9 @@ const DEFAULTS = Object.freeze({
 });
 const EFFORTS = ['low', 'medium', 'high', 'xhigh', 'max'];
 const SPLITS = ['all', 'tuning', 'held-out'];
-const CASE_KEYS = new Set(['query', 'should_trigger', 'held_out', 'role_phrase', 'context_skill', 'remove_role', 'expect_role_missing']);
+const CASE_KEYS = new Set(['query', 'should_trigger', 'held_out', 'role_phrase', 'context_role', 'context_for', 'context_skill', 'remove_role', 'expect_role_missing']);
+// The frontmatter field context_for narrows a role by, for the roles held by several skills.
+const CONTEXT_FOR = Object.freeze({ runtime: 'jh-kinds', duty: 'jh-duty', workflow: 'jh-kind' });
 const SESSION_START_LINE = "This project's work runs through the coordinator skill";
 const DUTY_LINE = /Your step is duty [a-z]+\. Use the duty skill for [a-z]+ now/;
 const TEXT_KEEP = 600;
@@ -154,10 +161,32 @@ export function roleMembers(skills) {
   return members;
 }
 
-function validateCase(raw, { file, index, skill, byName }) {
+// The one skill holding `role`, narrowed by `forValue` (see CONTEXT_FOR). Returns {skill} or {problem}.
+export function contextSkill(skills, role, forValue) {
+  if (!ROLES.includes(role)) return { problem: `context_role "${role}" is not one of ${ROLES.join(', ')}` };
+  let holders = skills.filter((s) => roleOf(s) === role);
+  if (forValue !== undefined && forValue !== null) {
+    const field = CONTEXT_FOR[role];
+    if (!field) return { problem: `context_for applies only to the roles ${Object.keys(CONTEXT_FOR).join(', ')}, not ${role}` };
+    if (typeof forValue !== 'string' || !forValue) return { problem: 'context_for must be a non-empty string' };
+    holders = holders.filter((s) => {
+      const value = s.data?.[field];
+      return Array.isArray(value) ? value.includes(forValue) : value === forValue;
+    });
+  }
+  const label = `context_role ${role}${forValue ? ` for ${forValue}` : ''}`;
+  if (holders.length === 0) return { problem: `${label}: no skill under skills/ has it` };
+  if (holders.length > 1) {
+    return { problem: `${label}: ${holders.length} skills hold it (${holders.map((s) => s.folder).join(', ')}); add context_for (their ${CONTEXT_FOR[role] ?? 'role'})` };
+  }
+  return { skill: holders[0].folder };
+}
+
+function validateCase(raw, { file, index, skill, byName, skills }) {
   const where = `${file} case ${index}`;
-  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return [`${where}: not an object`];
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return { problems: [`${where}: not an object`] };
   const problems = [];
+  let context = null;
   for (const key of Object.keys(raw)) if (!CASE_KEYS.has(key)) problems.push(`${where}: unknown field "${key}"`);
   if (typeof raw.query !== 'string' || !raw.query.trim()) problems.push(`${where}: query must be a non-empty string`);
   else if (raw.query.includes(EM_DASH)) problems.push(`${where}: query holds an em dash; use a plain dash`);
@@ -165,12 +194,24 @@ function validateCase(raw, { file, index, skill, byName }) {
   for (const key of ['held_out', 'role_phrase']) {
     if (raw[key] !== undefined && typeof raw[key] !== 'boolean') problems.push(`${where}: ${key} must be true or false`);
   }
-  if (raw.context_skill !== undefined) {
+  if (raw.context_skill !== undefined && raw.context_role !== undefined) {
+    problems.push(`${where}: give context_role, not context_skill as well`);
+  } else if (raw.context_skill !== undefined) {
     if (typeof raw.context_skill !== 'string' || !byName.has(raw.context_skill)) {
       problems.push(`${where}: context_skill "${raw.context_skill}" is not a skill under skills/`);
-    } else if (raw.remove_role && roleOf(byName.get(raw.context_skill)) === raw.remove_role) {
-      problems.push(`${where}: context_skill ${raw.context_skill} has the removed role ${raw.remove_role}`);
+    } else if (raw.context_skill !== skill.folder) {
+      problems.push(`${where}: context_skill names another skill, ${raw.context_skill}; name the calling skill by its role with context_role (and context_for)`);
+    } else {
+      context = raw.context_skill;
     }
+  } else if (raw.context_role !== undefined) {
+    const found = contextSkill(skills, raw.context_role, raw.context_for);
+    if (found.problem) problems.push(`${where}: ${found.problem}`);
+    else context = found.skill;
+  }
+  if (raw.context_for !== undefined && raw.context_role === undefined) problems.push(`${where}: context_for needs context_role`);
+  if (context && raw.remove_role && roleOf(byName.get(context)) === raw.remove_role) {
+    problems.push(`${where}: the calling skill ${context} has the removed role ${raw.remove_role}`);
   }
   if (raw.remove_role !== undefined) {
     if (!ROLES.includes(raw.remove_role)) problems.push(`${where}: remove_role "${raw.remove_role}" is not one of ${ROLES.join(', ')}`);
@@ -181,7 +222,7 @@ function validateCase(raw, { file, index, skill, byName }) {
   } else if (raw.expect_role_missing !== undefined) {
     problems.push(`${where}: expect_role_missing needs remove_role`);
   }
-  return problems;
+  return { problems, context };
 }
 
 // Reads the case files of the selected skills. Returns {cases, problems}; each case carries its skill and its
@@ -209,9 +250,9 @@ export function loadCases(root, skills, selected) {
       continue;
     }
     list.forEach((raw, i) => {
-      const found = validateCase(raw, { file, index: i + 1, skill, byName });
-      if (found.length) {
-        problems.push(...found);
+      const found = validateCase(raw, { file, index: i + 1, skill, byName, skills });
+      if (found.problems.length) {
+        problems.push(...found.problems);
         return;
       }
       cases.push({
@@ -221,7 +262,9 @@ export function loadCases(root, skills, selected) {
         should_trigger: raw.should_trigger,
         held_out: raw.held_out === true,
         role_phrase: raw.role_phrase === true,
-        context_skill: raw.context_skill ?? null,
+        context_role: raw.context_role ?? (found.context ? roleOf(byName.get(found.context)) : null),
+        context_for: raw.context_for ?? null,
+        context_skill: found.context,
         remove_role: raw.remove_role ?? null,
         expect_role_missing: raw.expect_role_missing ?? null,
       });
@@ -349,12 +392,12 @@ export function scoreRun(c, outcome, members) {
   return { passed: !fired, fired, namedMissing: null };
 }
 
-export function claudeArgs({ model, effort, contextText, query }) {
+export function claudeArgs({ model, effort, contextText, query, cwd }) {
   const args = [
     '-p', '--model', model, '--effort', effort,
     '--tools', 'Skill,Read,Glob,Grep', '--permission-mode', 'dontAsk', '--max-turns', String(MAX_TURNS),
     '--output-format', 'stream-json', '--verbose', '--no-session-persistence',
-    '--settings', workerSettings(),
+    '--settings', workerSettings(cwd),
   ];
   if (contextText) args.push('--append-system-prompt', contextText);
   args.push('--', query);
@@ -484,7 +527,7 @@ async function runOnce(job, ctx, attempt) {
   const project = makeProject(ctx.runDir, installed);
   try {
     const contextText = c.context_skill ? `${contextIntro(c.context_skill)}\n\n${ctx.bodyOf(c.context_skill)}` : null;
-    const args = claudeArgs({ model: ctx.model, effort: ctx.effort, contextText, query: c.query });
+    const args = claudeArgs({ model: ctx.model, effort: ctx.effort, contextText, query: c.query, cwd: project });
     const child = await runChild(ctx.bin, args, { cwd: project, env: ctx.env, timeoutMs: ctx.timeout * 1000 });
     const stream = path.join(ctx.runDir, 'streams', `${c.skill}-${c.index}-r${job.run}${attempt > 1 ? `-a${attempt}` : ''}.jsonl`);
     fs.writeFileSync(stream, ctx.redact(child.stdout));

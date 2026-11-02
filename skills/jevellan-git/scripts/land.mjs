@@ -48,12 +48,25 @@
 //    never onto the default branch, and is never pushed (D-048). It is refused while the parent is gone, stopped or
 //    landed, or has no registered worktree.
 //
+// Other skills are reached only through their public scripts, found by role: the ledger skill's ledger.mjs for every
+// read (show --json) and line (record), through lib/ledger-client.mjs, and the placement skill's `jev.mjs decide --json`
+// for Jev's answer (state and questions on stdin; the Jev key, providers.json and the client stay that skill's). Only
+// the Jev path needs the placement skill: --force and the verify-then-land continuation land without it. A missing
+// role is exit 2 naming it. The policy parser, the project's paths, ids, locks and the redactor are this skill's own
+// copies in lib/.
+//
 // Exit codes: 0 landed (or landed before), 2 refused with the reason, 3 not found, 6 verify-then-land, 7 ask-owner.
 
 import fs from 'node:fs';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
-import { importFromRole } from './lib/roles.mjs';
+import { runRole } from './lib/roles.mjs';
+import { loadPolicy, parseIdLines, requireSection } from './lib/policy.mjs';
+import { ownerHome, projectPaths } from './lib/project.mjs';
+import { compactTime } from './lib/ids.mjs';
+import { acquire } from './lib/lock.mjs';
+import { redactValue } from './lib/redact.mjs';
+import { appendLine } from './lib/ledger-client.mjs';
 import {
   GitSkillError,
   SKILL_DIR,
@@ -69,7 +82,6 @@ import {
   isMain,
   lastOfKind,
   lastWorktree,
-  ledgerRole,
   listText,
   listWorktrees,
   parse,
@@ -77,6 +89,7 @@ import {
   print,
   projectName,
   readProjectConfig,
+  readTaskOr,
   remotes,
   requireRoot,
   requireTask,
@@ -97,6 +110,10 @@ export const VERIFY_BEFORE_LANDING =
   'Full verification before landing: run the whole test command and every browser journey the change could affect.';
 export const STATE_LIMIT = 60000;
 export const TASK_SHORTENED = '[Task shortened.]';
+/** What a landing state over STATE_LIMIT is refused with (the Jev client's own words for it). */
+export const STATE_TOO_LARGE = 'Jev: decision context exceeds the size limit';
+/** What an answer without a usable landing_route is refused with. */
+export const INVALID_RESPONSE = 'Jev: invalid response';
 /** Default timeout of one landing check (Jevellan's TEST_TIMEOUT_MS). */
 export const CHECK_TIMEOUT_MS = 30 * 60000;
 /** Characters of a check's output kept in landing.checked. */
@@ -111,33 +128,16 @@ const LOCK_STALE_MS = 24 * 60 * 60000;
 const CLOSING_KINDS = Object.freeze(['landing.checked', 'task.asked', 'task.landed']);
 const CHECK_ENV_KEYS = Object.freeze(['PATH', 'USER', 'LANG', 'TERM', 'SHELL', 'TMPDIR']);
 
-// ---- roles ---------------------------------------------------------------------------------------------------
-
-let placementModules = null;
-
-// The placement skill's Jev client, policy parser and providers file, found through its role. Only a landing that
-// asks Jev loads them, so --force and the verify-then-land continuation work without that role.
-export async function placementRole() {
-  if (!placementModules) {
-    const [jev, policy, providers] = await Promise.all([
-      importFromRole('placement', 'scripts/jev.mjs'),
-      importFromRole('placement', 'scripts/lib/policy.mjs'),
-      importFromRole('placement', 'scripts/lib/providers-file.mjs'),
-    ]);
-    placementModules = { jev, policy, providers };
-  }
-  return placementModules;
-}
-
 // ---- the landing policy --------------------------------------------------------------------------------------
 
 // This skill's SKILL.md as the landing policy: the question's instructions, one criterion per route, the rules.
-// Refuses (exit 2) when a section is missing or "## routes" does not hold exactly the three routes.
-export function landingPolicy(policyModule, file = POLICY_FILE) {
-  const policy = policyModule.loadPolicy(file);
-  const instructions = policyModule.requireSection(policy, LANDING_QUESTION);
+// Refuses (exit 2) when a section is missing or "## routes" does not hold exactly the three routes. Only those three
+// sections reach Jev; every other section (the "## Interface" at the end included) is for people.
+export function landingPolicy(file = POLICY_FILE) {
+  const policy = loadPolicy(file);
+  const instructions = requireSection(policy, LANDING_QUESTION);
   const where = `${file}, "## routes"`;
-  const routes = policyModule.parseIdLines(policyModule.requireSection(policy, 'routes'), where);
+  const routes = parseIdLines(requireSection(policy, 'routes'), where);
   const unknown = [...routes.keys()].filter((r) => !ROUTES.includes(r));
   const missing = ROUTES.filter((r) => !routes.has(r));
   if (unknown.length || missing.length) {
@@ -145,7 +145,7 @@ export function landingPolicy(policyModule, file = POLICY_FILE) {
       `${where} must have exactly the lines ${ROUTES.join(', ')}${missing.length ? `; missing ${missing.join(', ')}` : ''}${unknown.length ? `; unknown ${unknown.join(', ')}` : ''}`,
     );
   }
-  const rules = policyModule.requireSection(policy, 'rules');
+  const rules = requireSection(policy, 'rules');
   return { policy, instructions, routes, rules };
 }
 
@@ -155,12 +155,13 @@ export function landingQuestions(lp) {
   };
 }
 
-// Ported resolveChoice: the highest probability wins; a tie goes to Jev's own choice.
+// Ported resolveChoice: the highest probability wins; a tie goes to Jev's own choice. An answer whose probabilities
+// are all zero keeps Jev's choice as it is (none, for no answer), which the caller refuses when it is not a route.
 export function resolveChoice(question, answer) {
   const keys = Object.keys(question.criteria);
   const p = (key) => answer?.probabilities?.[key] ?? 0;
   const max = Math.max(...keys.map(p));
-  const option = p(answer?.choice) === max ? answer.choice : keys.find((key) => p(key) === max);
+  const option = p(answer?.choice) === max ? answer?.choice : keys.find((key) => p(key) === max);
   return { option, probabilities: Object.fromEntries(keys.map((key) => [key, p(key)])) };
 }
 
@@ -250,12 +251,12 @@ export function changedFiles(cwd, base, head) {
 }
 
 // What the ledger says about the task's steps for the state: each step's duty and state, its last summary since it
-// last started (or was reset), its latest testsRun, and the step.retrying reasons.
-export function landingFacts(L, info, view) {
-  const resets = L.ledger.resetPoints(info.events);
-  const steps = view.steps.map((s) => {
-    const reset = L.ledger.resetFor(resets, s.ordinal);
-    const sv = L.ledger.stepView(info.events, s.ordinal, reset);
+// last started (or was reset), its latest testsRun, and the step.retrying reasons. `info` is the task as
+// ledger-client's readTask gives it: the projection's steps, view(ordinal) since the step's last reset, the events.
+export function landingFacts(info) {
+  const steps = info.steps.map((s) => {
+    const sv = info.view(s.ordinal);
+    const reset = sv.resetSeq ?? 0;
     const reports = info.events.filter((e) => e.kind === 'step.report' && e.step === s.ordinal && e.seq > reset);
     const tested = [...reports].reverse().find((e) => e.data?.testsRun && typeof e.data.testsRun.passed === 'boolean');
     return {
@@ -516,20 +517,18 @@ export function resolveConflictInstructions(into, branch, files) {
 // ---- preconditions -------------------------------------------------------------------------------------------
 
 // Where the task lands: the default branch, or the parent's branch for a child task (D-048). Refuses with the reason.
-function landingTarget(L, root, info, events, config) {
+function landingTarget(root, info, config) {
   const task = info.created.task;
   const parentId = info.created.data?.parent;
   if (!parentId) {
-    const into = defaultBranch(L, root, config);
+    const into = defaultBranch(root, config);
     if (!resolveRef(root, `refs/heads/${into}`)) throw new GitSkillError(`the default branch ${into} does not exist in ${root}`);
     return { into, parent: null };
   }
   const of = `task ${task} lands into its parent's branch`;
-  const parent = L.ledger.groupByTask(events).get(parentId);
-  if (!parent) throw new GitSkillError(`${of}, but the parent ${parentId} is not in the ledger`);
+  const parent = readTaskOr(root, parentId, () => new GitSkillError(`${of}, but the parent ${parentId} is not in the ledger`));
   if (parent.events.some((e) => e.kind === 'task.landed')) throw new GitSkillError(`${of}, but the parent ${parentId} already landed; its branch takes no more work`);
-  const pview = L.ledger.projectTask(parent);
-  if (pview.state === 'stopped') throw new GitSkillError(`${of}, but the parent ${parentId} was stopped (${pview.reason ?? 'no reason'})`);
+  if (parent.state === 'stopped') throw new GitSkillError(`${of}, but the parent ${parentId} was stopped (${parent.reason ?? 'no reason'})`);
   const pwt = lastWorktree(parent);
   if (!pwt) throw new GitSkillError(`${of}, but the parent ${parentId} has no worktree`);
   if (!resolveRef(root, `refs/heads/${pwt.branch}`)) throw new GitSkillError(`${of}, but the parent's branch ${pwt.branch} does not exist`);
@@ -538,14 +537,14 @@ function landingTarget(L, root, info, events, config) {
   return { into: pwt.branch, parent: { task: parentId, worktree: pwt.path } };
 }
 
-// Everything that must hold before landing, read from the ledger and git. Throws the first refusal.
-function preconditions(L, root, info, events) {
+// Everything that must hold before landing, read from the ledger (the projection's state, workflowResolved, steps and
+// reason) and git. Throws the first refusal.
+function preconditions(root, info) {
   const task = info.created.task;
-  const view = L.ledger.projectTask(info);
-  if (view.state === 'stopped') throw new GitSkillError(`task ${task} was stopped (${view.reason ?? 'no reason'}); there is nothing to land`);
-  if (!view.workflowResolved) throw new GitSkillError(`task ${task} has no workflow yet (task.workflow); its steps must run before it lands`);
-  if (!view.steps.length) throw new GitSkillError(`task ${task} has no steps to land`);
-  const open = view.steps.filter((s) => s.state !== 'done' && s.state !== 'skipped');
+  if (info.state === 'stopped') throw new GitSkillError(`task ${task} was stopped (${info.reason ?? 'no reason'}); there is nothing to land`);
+  if (!info.workflowResolved) throw new GitSkillError(`task ${task} has no workflow yet (task.workflow); its steps must run before it lands`);
+  if (!info.steps.length) throw new GitSkillError(`task ${task} has no steps to land`);
+  const open = info.steps.filter((s) => s.state !== 'done' && s.state !== 'skipped');
   if (open.length) {
     throw new GitSkillError(`task ${task} has steps that are not done or skipped: ${open.map((s) => `${s.ordinal} ${s.duty ?? 'step'} (${s.state})`).join(', ')}`);
   }
@@ -558,10 +557,10 @@ function preconditions(L, root, info, events) {
   if (branch !== wt.branch) throw new GitSkillError(`the worktree ${wt.path} has ${branch ?? 'a detached HEAD'} checked out, not ${wt.branch}`);
   const dirty = uncommittedFiles(wt.path);
   if (dirty.length) throw new GitSkillError(`the worktree ${wt.path} has uncommitted changes: ${listText(dirty)}. Commit or discard them first`);
-  const config = readProjectConfig(L, root);
-  const settings = landingSettings(config, L.project.projectPaths(root).projectJson);
-  const target = landingTarget(L, root, info, events, config);
-  return { task, view, wt, settings, target };
+  const config = readProjectConfig(root);
+  const settings = landingSettings(config, projectPaths(root).projectJson);
+  const target = landingTarget(root, info, config);
+  return { task, wt, settings, target };
 }
 
 // ---- the landing lock ----------------------------------------------------------------------------------------
@@ -576,17 +575,17 @@ function lockHolder(file) {
 
 let releaseLock = null;
 
-function acquireLandingLock(L, root) {
-  const file = path.join(L.project.projectPaths(root).locks, 'landing.lock');
+function acquireLandingLock(root) {
+  const file = path.join(projectPaths(root).locks, 'landing.lock');
   const options = { retryMs: 500, staleMs: LOCK_STALE_MS };
   try {
-    return L.lock.acquire(file, { ...options, timeoutMs: 0 });
+    return acquire(file, { ...options, timeoutMs: 0 });
   } catch (error) {
     if (error.code !== 'LOCK_TIMEOUT') throw error;
   }
   warn(`waiting for another landing of ${projectName(root)} (process ${lockHolder(file)}) to finish`);
   try {
-    return L.lock.acquire(file, { ...options, timeoutMs: LOCK_WAIT_MS });
+    return acquire(file, { ...options, timeoutMs: LOCK_WAIT_MS });
   } catch (error) {
     if (error.code !== 'LOCK_TIMEOUT') throw error;
     throw new GitSkillError(`another landing of ${projectName(root)} (process ${lockHolder(file)}) is still running after ${LOCK_WAIT_MS / 60000} minutes; try again later`);
@@ -605,15 +604,42 @@ function onSignal(signal) {
 
 // ---- the routes ----------------------------------------------------------------------------------------------
 
+// The landing lines have no guard of their own to run in the ledger (the landing lock serializes landings), so they
+// are recorded as they are. Returns the line as written, secrets masked.
 function append(ctx, kind, data) {
-  return ctx.L.ledger.appendEvent(ctx.root, { kind, task: ctx.task, session: process.env.JH_SESSION, data });
+  return appendLine(ctx.root, kind, { task: ctx.task, session: process.env.JH_SESSION, data });
+}
+
+const isObject = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
+
+// Jev's answer to `questions` about `state` (JSON text), through the placement skill's public script:
+// `jev.mjs decide --json` with {state, questions} on stdin prints {jevModel, answeredBy, answers, usage, latencyMs}.
+// Its refusal (no key, auth, network, timeout, an invalid request or response, a JH_JEV_URL off loopback) is exit 2
+// with {error: "Jev: ..."}, which becomes this script's refusal word for word. No placement skill installed is exit 2
+// naming the role (RoleMissing, thrown by runRole).
+export function askJev(state, questions) {
+  const started = Date.now();
+  const r = runRole('placement', 'jev.mjs', ['decide', '--json'], { input: { state, questions } });
+  if (r.code !== 0 || !isObject(r.json) || r.json.error !== undefined) {
+    // Its message as it is ("Jev: ..." for a Jev failure; providers.json's own refusals keep their words).
+    const said = typeof r.json?.error === 'string' && r.json.error.trim() ? r.json.error.trim() : `Jev: ${firstLine(r.stderr) || `the placement skill's jev.mjs decide exited ${r.code}`}`;
+    throw new GitSkillError(said);
+  }
+  const out = r.json;
+  if (!isObject(out.answers)) throw new GitSkillError(INVALID_RESPONSE);
+  return {
+    jevModel: typeof out.jevModel === 'string' ? out.jevModel : null,
+    answeredBy: typeof out.answeredBy === 'string' ? out.answeredBy : null,
+    answers: out.answers,
+    usage: isObject(out.usage) ? out.usage : {},
+    latencyMs: Number.isSafeInteger(out.latencyMs) && out.latencyMs >= 0 ? out.latencyMs : Date.now() - started,
+  };
 }
 
 async function decide(ctx) {
-  const { L, root, info, view, wt, settings, target } = ctx;
-  const P = await placementRole();
-  const lp = landingPolicy(P.policy);
-  const facts = landingFacts(L, info, view);
+  const { root, info, wt, settings, target } = ctx;
+  const lp = landingPolicy();
+  const facts = landingFacts(info);
   const files = changedFiles(wt.path, `refs/heads/${target.into}`, `refs/heads/${wt.branch}`);
   const created = info.created.data ?? {};
   const { state, json } = buildLandingState({
@@ -624,35 +650,20 @@ async function decide(ctx) {
     files,
     riskyPaths: settings.riskyPaths,
     rules: lp.rules,
-    redact: (v) => L.redact.redactValue(v),
+    redact: (v) => redactValue(v),
   });
-  const jevError = (error) => new GitSkillError(P.jev.jevMessage(error));
-  if (json.length > STATE_LIMIT) throw jevError(new P.jev.JevError('state-too-large'));
-  const config = P.providers.loadProviders();
-  let client;
-  try {
-    // Refuses a JH_JEV_URL off the loopback interface before the key is read.
-    client = P.jev.jevClient(config.jev, { home: config.ownerHome });
-  } catch (error) {
-    if (error instanceof P.jev.JevError) throw jevError(error);
-    throw error;
-  }
+  if (json.length > STATE_LIMIT) throw new GitSkillError(STATE_TOO_LARGE);
   const questions = landingQuestions(lp);
-  const started = Date.now();
-  let response;
-  try {
-    response = await client.decide({ model: config.jev.model, state: json, questions });
-  } catch (error) {
-    if (error instanceof P.jev.JevError) throw jevError(error);
-    throw error;
-  }
-  const latencyMs = Date.now() - started;
-  const { option, probabilities } = resolveChoice(questions[LANDING_QUESTION], response.answers[LANDING_QUESTION]);
-  if (!ROUTES.includes(option)) throw jevError(new P.jev.JevError('invalid-response'));
+  const response = askJev(json, questions);
+  const answer = response.answers[LANDING_QUESTION];
+  if (!isObject(answer)) throw new GitSkillError(INVALID_RESPONSE);
+  const { option, probabilities } = resolveChoice(questions[LANDING_QUESTION], answer);
+  if (!ROUTES.includes(option)) throw new GitSkillError(INVALID_RESPONSE);
+  const { latencyMs } = response;
   const reason = lp.routes.get(option);
   const t = new Date().toISOString();
-  const id = `${ctx.task}-landing-${L.ids.compactTime(t)}`;
-  const file = path.join(L.project.projectPaths(root).dir, 'decisions', `${id}.json`);
+  const id = `${ctx.task}-landing-${compactTime(t)}`;
+  const file = path.join(projectPaths(root).dir, 'decisions', `${id}.json`);
   writeJsonAtomic(file, {
     schema: 'jh-decision-v1',
     id,
@@ -660,8 +671,8 @@ async function decide(ctx) {
     task: ctx.task,
     t,
     policy: { file: lp.policy.file, hash: lp.policy.hash },
-    jevModel: config.jev.model,
-    answeredBy: response.model,
+    jevModel: response.jevModel,
+    answeredBy: response.answeredBy,
     state,
     questions,
     answers: response.answers,
@@ -669,7 +680,7 @@ async function decide(ctx) {
     latencyMs,
     chosen: { route: option, probabilities, reason, source: 'jev' },
   });
-  return { route: option, probabilities, reason, policyHash: lp.policy.hash, source: 'jev', jevModel: config.jev.model, latencyMs, decisionFile: path.relative(root, file) };
+  return { route: option, probabilities, reason, policyHash: lp.policy.hash, source: 'jev', jevModel: response.jevModel, latencyMs, decisionFile: path.relative(root, file) };
 }
 
 function writeJsonAtomic(file, value) {
@@ -696,13 +707,13 @@ function verifyThenLand(ctx, reason, again) {
 }
 
 async function landRoute(ctx, { forced, reason }) {
-  const { L, root, wt, target, settings } = ctx;
+  const { root, wt, target, settings } = ctx;
   const into = target.into;
   const branch = wt.branch;
-  const ownerHome = L.project.ownerHome();
-  const identity = gitIdentity(root, ownerHome);
+  const owner = ownerHome();
+  const identity = gitIdentity(root, owner);
   const env = gitEnv(identityEnv(identity));
-  const checkEnv = checkEnvironment(ownerHome, identity);
+  const checkEnv = checkEnvironment(owner, identity);
   const results = [];
   for (let round = 1; round <= MAX_ROUNDS; round += 1) {
     const merged = mergeInto(wt.path, into, branch, env);
@@ -720,7 +731,7 @@ async function landRoute(ctx, { forced, reason }) {
     // A worktree whose setup command never succeeded (made before the project had one, or interrupted) gets it now,
     // so the checks run against the project's dependencies rather than fail for want of them.
     if (settings.checks.length) {
-      const setup = runSetup(L, root, wt.path, readProjectConfig(L, root));
+      const setup = runSetup(root, wt.path, readProjectConfig(root));
       if (setup.ran && !setup.ok) {
         const event = append(ctx, 'landing.checked', { command: setup.command, passed: false, tail: setup.tail });
         throw new GitSkillError(`the worktree's setupCommand "${setup.command}" failed (${setup.problem}) before the checks (landing.checked #${event.seq}):\n${String(event.data.tail ?? '').trimEnd()}`);
@@ -747,7 +758,7 @@ async function landRoute(ctx, { forced, reason }) {
     append(ctx, 'task.landed', { commit: ff.commit, target: into, method: ff.method });
     let push = null;
     if (settings.pushAfterLanding && !target.parent) {
-      push = pushTarget(root, into, gitEnv({ HOME: ownerHome, ...identityEnv(identity) }));
+      push = pushTarget(root, into, gitEnv({ HOME: owner, ...identityEnv(identity) }));
       if (!push.pushed) warn(`warning: ${push.detail}`);
     }
     const onto = target.parent ? `${into} (the branch of the parent ${target.parent.task})` : into;
@@ -795,22 +806,21 @@ async function main(argv) {
     return 0;
   }
   const { values } = parse(argv, { task: { type: 'string' }, force: { type: 'boolean' }, json: { type: 'boolean' } });
-  const L = await ledgerRole();
-  const root = requireRoot(L);
-  let { info, events } = requireTask(L, root, values.task);
+  const root = requireRoot();
+  let info = requireTask(root, values.task);
   let landed = alreadyLanded(info);
   if (landed) return printAlready(values.json, info.created.task, landed);
   // Refuse at once when the task cannot land, before waiting for another landing; checked again under the lock.
-  preconditions(L, root, info, events);
-  const release = acquireLandingLock(L, root);
+  preconditions(root, info);
+  const release = acquireLandingLock(root);
   releaseLock = release;
   process.on('SIGINT', onSignal);
   process.on('SIGTERM', onSignal);
   try {
-    ({ info, events } = requireTask(L, root, values.task));
+    info = requireTask(root, values.task);
     landed = alreadyLanded(info);
     if (landed) return printAlready(values.json, info.created.task, landed);
-    const ctx = { L, root, info, events, json: Boolean(values.json), force: Boolean(values.force), ...preconditions(L, root, info, events) };
+    const ctx = { root, info, json: Boolean(values.json), force: Boolean(values.force), ...preconditions(root, info) };
     return await landTask(ctx);
   } finally {
     release();

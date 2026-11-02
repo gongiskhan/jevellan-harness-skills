@@ -33,8 +33,9 @@
 // owner's, and every menu model needs a line in the router policy); no login command (a Claude worker logs in with a
 // token file, Codex with `codex login`, and the fix says which); no local usage rows for openai-compatible providers
 // (no runtime runs them yet). Errors are short fixed sentences: no server body, header value or credential ever
-// reaches the state file, the output or an error. As a last line of defence the state and the output pass through the
-// ledger skill's redactor when that skill is installed.
+// reaches the state file, the output or an error. As a last line of defence the state and the output pass through this
+// skill's own redactor (lib/redact.mjs), which masks every value of the secret files and of the key and token files
+// providers.json names.
 //
 // JH_ANTHROPIC_URL overrides the Messages API base for tests with a fake server; it is accepted only for an http URL
 // on the loopback interface, so a token can never be sent anywhere but the real API or this machine.
@@ -58,7 +59,8 @@ import {
   writeProvidersState,
 } from './lib/providers-file.mjs';
 import { jevClient, JevError } from './jev.mjs';
-import { importFromRole, RoleMissing, SKILLS_ROOT, skillsWithRole } from './lib/roles.mjs';
+import { RoleMissing, skillsWithRole } from './lib/roles.mjs';
+import { redactText, redactValue } from './lib/redact.mjs';
 
 const isObject = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
 const BASE_ENV_KEYS = ['PATH', 'USER', 'LANG', 'TERM', 'SHELL', 'TMPDIR'];
@@ -376,10 +378,13 @@ export async function probeCodex(options) {
 
 // ---- one provider --------------------------------------------------------------------------------------------------
 
-// The provider kinds some installed runtime skill can run (the union of their jh-kinds).
-export function runtimeKinds(root = SKILLS_ROOT) {
+// The provider kinds some installed runtime skill can run (the union of their jh-kinds). With no runtime skill
+// installed no provider can run here, so the check refuses (exit 2) and names the missing role.
+export function runtimeKinds(root) {
   const kinds = new Set();
-  for (const skill of skillsWithRole('runtime', {}, root)) {
+  const runtimes = skillsWithRole('runtime', {}, root);
+  if (!runtimes.length) throw new RoleMissing('runtime');
+  for (const skill of runtimes) {
     if (Array.isArray(skill.meta['jh-kinds'])) for (const kind of skill.meta['jh-kinds']) kinds.add(kind);
   }
   return kinds;
@@ -487,15 +492,9 @@ async function checkJev(config, ctx) {
 
 // ---- the check -----------------------------------------------------------------------------------------------------
 
-async function loadRedactor(root) {
-  try {
-    const mod = await importFromRole('ledger', 'scripts/lib/redact.mjs', {}, root);
-    return { text: (t) => mod.redactText(t), value: (v) => mod.redactValue(v) };
-  } catch (error) {
-    if (!(error instanceof RoleMissing)) throw error;
-    return { text: (t) => t, value: (v) => v };
-  }
-}
+// The redactor the state and the printed output pass through; deps.redact replaces it in tests that must see what
+// the probe code itself would write.
+const REDACT = Object.freeze({ text: (t) => redactText(t), value: (v) => redactValue(v) });
 
 // Every probe, the merge and the write. Returns the state and what the command line prints with it: the providers
 // checked, their fixes, which were probed, the Jev fix, the runtime kinds and the clock (for formatCheck and checkJson).
@@ -506,7 +505,7 @@ export async function runCheck({ only = [], deps = {}, jev: withJev = true } = {
     if (!config.providers.some((p) => p.name === name)) throw new ProvidersError(`no provider "${name}" in ${config.file}`, 3);
   }
   const env = deps.env ?? process.env;
-  const root = deps.skillsRoot ?? SKILLS_ROOT;
+  const root = deps.skillsRoot;
   const ctx = {
     fetch: deps.fetch ?? globalThis.fetch,
     spawn: deps.spawn ?? nodeSpawn,
@@ -518,7 +517,7 @@ export async function runCheck({ only = [], deps = {}, jev: withJev = true } = {
     anthropicBase: anthropicBase(env),
     kinds: runtimeKinds(root),
   };
-  const redact = await loadRedactor(root);
+  const redact = deps.redact ?? REDACT;
   const chosen = names.length ? config.providers.filter((p) => names.includes(p.name)) : config.providers;
   const [results, jevResult] = await Promise.all([
     Promise.all(chosen.map(async (p) => [p.name, await checkOne(p, ctx)])),
@@ -552,7 +551,9 @@ export async function runCheck({ only = [], deps = {}, jev: withJev = true } = {
 // object written. deps (all optional): fetch (Claude probe and Jev), spawn (starts `codex app-server`, called as
 // spawn('codex', ['app-server'], options)), env (where the Codex child's PATH and locale come from, and
 // JH_ANTHROPIC_URL), home (the owner home for the default CODEX_HOME), skillsRoot (where runtime skills are looked
-// up), now (a clock in milliseconds), timeoutMs, codexTimeoutMs. `jev: false` leaves the recorded Jev state as it is.
+// up), now (a clock in milliseconds), timeoutMs, codexTimeoutMs, redact ({text, value}: what the state and output
+// pass through; a test passes the identity to see what the probes themselves would write). `jev: false` leaves the
+// recorded Jev state as it is.
 export async function checkProviders({ only = [], deps = {}, jev = true } = {}) {
   return (await runCheck({ only, deps, jev })).state;
 }
@@ -640,9 +641,13 @@ const USAGE = 'usage: node providers.mjs check [--json] [--only <name>]...';
 async function main(argv) {
   let args;
   try {
-    args = parseArgs({ args: argv, options: { json: { type: 'boolean' }, only: { type: 'string', multiple: true } }, allowPositionals: true, strict: true });
+    args = parseArgs({ args: argv, options: { json: { type: 'boolean' }, only: { type: 'string', multiple: true }, help: { type: 'boolean', short: 'h' } }, allowPositionals: true, strict: true });
   } catch (error) {
     throw new ProvidersError(`${String(error.message).replace(/^TypeError \[[A-Z_]+\]: /, '')}\n${USAGE}`);
+  }
+  if (args.values.help) {
+    process.stdout.write(`${USAGE}\n`);
+    return 0;
   }
   if (args.positionals.length !== 1 || args.positionals[0] !== 'check') throw new ProvidersError(USAGE);
   const json = args.values.json === true;

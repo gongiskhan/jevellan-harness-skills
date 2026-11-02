@@ -289,6 +289,21 @@ describe('--export', () => {
     assert.deepEqual([b2second.split, b2second.source, b2second.expected], ['dev', 'outcome', { model: 'claude-opus-5-5', effort: 'high' }]);
   });
 
+  test('reads each named project through the ledger skill even when JH_PROJECT names another one', async () => {
+    jev.reset();
+    const fx = makeFixture();
+    const other = makeFixture();
+    const a = addTask(fx.root);
+    await place(fx, a, 1, 'investigate', { model: 'Haiku', effort: 'low' });
+    started(fx.root, a, 1, 'investigate');
+    report(fx.root, a, 1);
+    // The ledger finds its project from JH_PROJECT first; the export points it at each root it names.
+    const r = await runNode(fx.runner, ['--export', fx.root, '--json'], { cwd: other.root, env: { ...envOf(fx), JH_PROJECT: other.root } });
+    assert.equal(r.status, 0, r.stderr);
+    assert.equal(r.json().exported, 1);
+    assert.equal(readCases(fx.casesFile).at(-1).task, a);
+  });
+
   test('refuses an export without a project root, and a project without a ledger', async () => {
     const fx = makeFixture();
     const none = await runEvals(fx, ['--export']);

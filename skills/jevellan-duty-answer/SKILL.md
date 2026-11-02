@@ -30,3 +30,7 @@ This step runs as one turn with no tools, so you cannot write a file. Your repor
 The block must be valid JSON: escape quotes and line breaks inside strings. Leave out limitations when there are none. Wherever the paragraph below says to write .jevellan/report.json, this block is how you do it when you have no tools. A session of this duty that can write files writes the same object to .jevellan/report.json instead and leaves the block out.
 
 Finish by writing .jevellan/report.json in your working folder, once, with: status (progress | done | blocked | needs-decision), summary (for the owner, in the owner's language, up to 4000 characters: what changed, what they can see or do, how to try it, remaining limitations), question and 2 to 4 options when status is needs-decision, testsRun {command, passed, summary} when you ran tests, changedFiles, screenshots [{path, caption}] under .jevellan/evidence/, limitations, ownerCommands [{command, cwd, why}] only when the owner must run something. Then end your turn.
+
+## Interface
+
+No scripts. Other skills read only this file: its frontmatter (`jh-duty`, `jh-needs`) when a step is placed, and its body, which a runtime that cannot load skills gives its worker inline.

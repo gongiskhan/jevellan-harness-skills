@@ -1,9 +1,12 @@
-// Placement (skills/jevellan-router/scripts/route.mjs), driven as a child process the way a coordinator runs it,
-// against a fake Jev on 127.0.0.1 (JH_JEV_URL) that answers /models and /systemone with scripted answers and
-// records every request. Each test builds a temporary project whose .claude/skills holds copies of the router and
-// ledger skills, fixture duty skills (jh-needs) and runtime skills (jh-kinds), and a temporary JH_HARNESS_HOME with
-// providers.json, providers-state.json and dummy secret files. The copied providers.mjs is replaced by a stub, so no
-// test can probe a real provider.
+// Placement (skills/jevellan-router/scripts/route.mjs) together with the real ledger skill, driven as a child process
+// the way a coordinator runs it, against a fake Jev on 127.0.0.1 (JH_JEV_URL) that answers /models and /systemone
+// with scripted answers and records every request. Each test builds a temporary project whose .claude/skills holds
+// copies of the router and ledger skills, fixture duty skills (jh-needs) and runtime skills (jh-kinds), and a
+// temporary JH_HARNESS_HOME with providers.json, providers-state.json and dummy secret files. The copied providers.mjs
+// is replaced by a stub, so no test can probe a real provider. The router reaches the ledger only through its public
+// script (show --json, events --json, record), so these tests are where the ledger's views, events and record meet
+// the router's reading of them. The router's own pieces, and placement against a fake ledger, are tested in
+// skills/jevellan-router/test/.
 import { test, describe, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -690,16 +693,6 @@ describe('the policy cannot drift from the providers', () => {
 // ---- efforts and the state --------------------------------------------------------------------------------------
 
 describe('effort mapping', () => {
-  test('mapEffort: the next supported level above, else the highest below', () => {
-    assert.equal(route.mapEffort('max', ['low', 'medium']), 'medium');
-    assert.equal(route.mapEffort('medium', ['low', 'high']), 'high');
-    assert.equal(route.mapEffort('low', ['max', 'high']), 'high');
-    assert.equal(route.mapEffort('xhigh', ['low', 'medium', 'high', 'xhigh']), 'xhigh');
-    assert.equal(route.mapEffort('xhigh', ['low', 'medium', 'high']), 'high');
-    assert.throws(() => route.mapEffort('huge', ['low']), (e) => e.exitCode === 2 && /unknown effort huge/.test(e.message));
-    assert.throws(() => route.mapEffort('low', []), (e) => e.exitCode === 2);
-  });
-
   test("Jev's effort is mapped onto the chosen model's efforts after the answer", async () => {
     jev.reset();
     const fx = makeFixture({ providers: [{ name: 'claude-main', kind: 'claude-subscription', models: [OPUS, HAIKU] }] });
@@ -734,32 +727,6 @@ describe('the state', () => {
     assert.ok(text.startsWith(state.task.text.slice(0, -'[Task shortened.]'.length)));
     assert.equal(state.rules, route.loadRouterPolicy(fx.policyFile).rules);
     assert.equal(readDecision(fx.root, lastLine(fx.root).data.decisionFile).state, sent);
-  });
-
-  test('stateJson drops history first, then earlier summaries, then cuts the task text', () => {
-    const base = {
-      project: { name: 'p', guidance: '' },
-      task: { id: 'T1', kind: 'feature', title: 't', text: 'x'.repeat(500), parent: null },
-      step: { ordinal: 3, duty: 'verify', instructions: '', attempt: 1, previous: [{ duty: 'plan', status: 'done', summary: 'a'.repeat(300) }, { duty: 'implement', status: 'done', summary: 'b'.repeat(300) }] },
-      history: { recent: [{ duty: 'plan', model: 'm', effort: 'high', outcome: 'done', attempts: 1, pad: 'h'.repeat(300) }, { duty: 'implement', model: 'm', effort: 'high', outcome: 'done', attempts: 1, pad: 'i'.repeat(300) }] },
-      rules: 'r',
-    };
-    const full = JSON.stringify(base).length;
-    assert.equal(route.stateJson(base, full), JSON.stringify(base));
-    const lessHistory = JSON.parse(route.stateJson(base, full - 100));
-    assert.equal(lessHistory.history.recent.length, 1);
-    assert.equal(lessHistory.history.recent[0].duty, 'implement', 'the oldest history entry goes first');
-    const noHistory = JSON.parse(route.stateJson(base, full - 450));
-    assert.deepEqual(noHistory.history.recent, []);
-    assert.equal(noHistory.step.previous.length, 2);
-    const fewer = JSON.parse(route.stateJson(base, full - 1000));
-    assert.equal(fewer.step.previous.length, 1);
-    assert.equal(fewer.step.previous[0].duty, 'implement');
-    assert.equal(fewer.task.text, 'x'.repeat(500));
-    const cut = route.stateJson(base, full - 1500);
-    assert.ok(cut.length <= full - 1500);
-    assert.ok(JSON.parse(cut).task.text.endsWith('[Task shortened.]'));
-    assert.throws(() => route.stateJson(base, 50), (e) => e.exitCode === 2 && e.message === 'Jev: decision context exceeds the size limit');
   });
 
   test('a retry carries the attempt and the failing report; history holds the last ten placements', async () => {
@@ -965,7 +932,7 @@ describe('the task', () => {
     const task = featureAfterPlan(fx.root);
     const noDuty = await run(fx, ['--task', task, '--step', '3', '--duty', 'verify']);
     assert.equal(noDuty.status, 2);
-    assert.equal(noDuty.stderr.trim(), 'no installed skill has the role duty (duty verify)');
+    assert.equal(noDuty.stderr.trim(), 'no installed skill has the role duty (duty verify); tell the owner which role is missing and do not improvise it');
     const wrong = await run(fx, ['--task', task, '--step', '2', '--duty', 'verify']);
     assert.equal(wrong.status, 2);
     assert.match(wrong.stderr, new RegExp(`step 2 of ${task} is duty implement, not verify`));
@@ -973,66 +940,7 @@ describe('the task', () => {
     const t2 = addTask(noRuntime.root, { kind: 'single', duty: 'investigate' });
     const r = await run(noRuntime, ['--task', t2, '--step', '1', '--duty', 'investigate']);
     assert.equal(r.status, 2);
-    assert.equal(r.stderr.trim(), 'no installed skill has the role runtime');
+    assert.equal(r.stderr.trim(), 'no installed skill has the role runtime; tell the owner which role is missing and do not improvise it');
     assert.equal(jev.requests.length, 0);
-  });
-});
-
-// ---- pieces --------------------------------------------------------------------------------------------------------
-
-describe('pieces of the router', () => {
-  test('frontmatterList reads inline lists, single values and block lists', () => {
-    const fm = (body) => `---\nname: x\n${body}\n---\nbody`;
-    assert.deepEqual(route.frontmatterList(fm('jh-needs: []'), 'jh-needs'), []);
-    assert.deepEqual(route.frontmatterList(fm('jh-needs: [repo-write, "shell"]'), 'jh-needs'), ['repo-write', 'shell']);
-    assert.deepEqual(route.frontmatterList(fm('jh-needs: repo-read'), 'jh-needs'), ['repo-read']);
-    assert.deepEqual(route.frontmatterList(fm('jh-needs:\n  - repo-write\n  - browser\nother: 1'), 'jh-needs'), ['repo-write', 'browser']);
-    assert.equal(route.frontmatterList(fm('other: 1'), 'jh-needs'), undefined);
-  });
-
-  test('modelOptionKeys keeps every option distinct; resolveChoice breaks exact ties toward Jev', () => {
-    const keys = route.modelOptionKeys([
-      { id: 'a-1', label: 'A', provider: 'p', kind: 'claude-subscription' },
-      { id: 'a-2', label: 'A', provider: 'p', kind: 'claude-subscription' },
-      { id: 'b', label: 'B', provider: 'p', kind: 'claude-endpoint' },
-    ]);
-    assert.deepEqual([...keys], [['A via p (claude-subscription) [a-1]', 'a-1'], ['A via p (claude-subscription) [a-2]', 'a-2'], ['B via p (claude-endpoint)', 'b']]);
-    const questions = { q: { type: 'choice', instructions: 'i', criteria: { x: 'x', y: 'y', z: 'z' } } };
-    assert.equal(route.resolveChoice(questions, { q: { type: 'choice', choice: 'y', probabilities: { x: 0.4, y: 0.4, z: 0.2 } } }, 'q').option, 'y');
-    assert.equal(route.resolveChoice(questions, { q: { type: 'choice', choice: 'z', probabilities: { x: 0.4, y: 0.4, z: 0.2 } } }, 'q').option, 'x');
-    assert.throws(() => route.resolveChoice(questions, {}, 'q'), (e) => e.message === 'Jev: invalid response');
-  });
-
-  test('rankProviders orders eligible, unmetered, known usage, lower usage; paid use follows paidUse', () => {
-    const now = Date.now();
-    const p = (name, kind, extra = {}) => ({ name, kind, enabled: true, ceilingPct: 90, paidUse: 'always', metered: kind === 'claude-endpoint', models: [OPUS], ...extra });
-    const entry = (weeklyPct, fiveHourPct) => ({ auth: 'ready', weeklyPct, fiveHourPct, observedAt: new Date(now).toISOString() });
-    const state = { providers: { a: entry(40, 10), b: entry(20, 30), c: entry(null, null), e: entry(null, null), f: entry(null, null), d: { auth: 'needs-login', observedAt: new Date(now).toISOString() } } };
-    const ranked = route.rankProviders({
-      providers: [p('a', 'claude-subscription'), p('b', 'claude-subscription'), p('c', 'claude-subscription'), p('d', 'claude-subscription'), p('e', 'claude-endpoint'), p('f', 'claude-endpoint', { paidUse: 'when-subscriptions-run-out' })],
-      state,
-      kinds: ['claude-subscription', 'claude-endpoint'],
-      keyReady: () => true,
-      now,
-    });
-    assert.deepEqual(ranked.map((r) => `${r.provider.name}:${r.reason}`), ['b:eligible', 'a:eligible', 'c:eligible', 'e:eligible', 'd:needs-login', 'f:paid-not-allowed']);
-    assert.equal(route.providerCriterion({ name: 'x', weeklyPct: 12.345, fiveHourPct: null, ceilingPct: 90 }), 'x: week 12.3% of 90%, five hours unknown');
-  });
-
-  test('placementOutcome reads how placed work ended, and on which attempt', () => {
-    let seq = 0;
-    const e = (kind, step, data = {}) => ({ seq: (seq += 1), kind, task: 'T1', step, data });
-    const placed = e('task.placed', 2, { step: 2, attempt: 1 });
-    const events = [placed, e('step.started', 2), e('step.report', 2, { status: 'blocked' }), e('step.started', 2), e('step.report', 2, { status: 'done' }), e('step.done', 2)];
-    assert.deepEqual(route.placementOutcome(events, placed), { outcome: 'done', attempts: 1, placedAttempt: 1, onPlacedAttempt: true });
-    const failing = [placed, e('step.started', 2), e('step.report', 2, { status: 'done', testsRun: { command: 'npm test', passed: false } })];
-    assert.equal(route.placementOutcome(failing, placed).outcome, 'failed');
-    const running = [placed, e('step.started', 2), e('step.report', 2, { status: 'progress' }), e('step.started', 2)];
-    assert.deepEqual(route.placementOutcome(running, placed), { outcome: 'running', attempts: null, placedAttempt: 1, onPlacedAttempt: false });
-    const later = [placed, e('step.started', 2), e('step.failed', 2, { reason: 'crash' }), e('step.retrying', 2, { gotoOrdinal: 2 }), e('step.started', 2), e('step.report', 2, { status: 'done' })];
-    assert.deepEqual(route.placementOutcome(later, placed), { outcome: 'done', attempts: 2, placedAttempt: 1, onPlacedAttempt: false });
-    const replaced = [placed, e('step.started', 2), e('step.lost', 2, { pid: 1 }), e('task.placed', 2, { step: 2, attempt: 1 }), e('step.started', 2), e('step.report', 2, { status: 'done' })];
-    assert.equal(route.placementOutcome(replaced, placed).outcome, 'lost');
-    assert.equal(route.placementOutcome([placed], placed).outcome, 'pending');
   });
 });

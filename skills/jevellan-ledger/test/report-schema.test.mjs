@@ -4,9 +4,9 @@ import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
 // The fixture points JH_HARNESS_HOME at a temporary folder: fitReportLine redacts with the secrets it finds there, and
 // no test reads the real ~/.jevellan-harness.
-import './helpers/ledger-fixture.mjs';
-import { LIMITS, REPORT_LINE_BYTES, STATUSES, cutText, fitReportLine, normalizeReport, validateReport } from '../skills/jevellan-ledger/scripts/lib/report-schema.mjs';
-import { MAX_LINE } from '../skills/jevellan-ledger/scripts/lib/ledger.mjs';
+import './helpers.mjs';
+import { LIMITS, REPORT_LINE_BYTES, STATUSES, cutText, fitReportLine, normalizeReport, validateReport } from '../scripts/lib/report-schema.mjs';
+import { MAX_LINE } from '../scripts/lib/ledger.mjs';
 
 const base = { status: 'done', summary: 'Added the section.' };
 const decision = { status: 'needs-decision', summary: 'Two ways.', question: 'Blue or Green?', options: [{ label: 'Blue' }, { label: 'Green' }] };

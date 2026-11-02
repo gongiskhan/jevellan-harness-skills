@@ -2,13 +2,13 @@
   "id": "H8",
   "title": "Needs-decision",
   "status": "passed",
-  "startedAt": "2026-11-02T01:15:30.849Z",
-  "finishedAt": "2026-11-02T01:18:05.665Z",
-  "elapsedMs": 154815,
+  "startedAt": "2026-11-02T11:27:43.926Z",
+  "finishedAt": "2026-11-02T11:30:13.336Z",
+  "elapsedMs": 149410,
   "passed": 8,
   "total": 8,
   "timings": {
-    "request to done report": 110129
+    "request to done report": 115168
   },
   "notes": [
     "after the decision: task.landed",
@@ -19,49 +19,49 @@
       "name": "the skills are installed",
       "ok": true,
       "detail": "",
-      "at": "2026-11-02T01:15:30.921Z"
+      "at": "2026-11-02T11:27:44.018Z"
     },
     {
       "name": "the step reported needs-decision",
       "ok": true,
-      "detail": "TSQ65Q9: Blue or Green? [Blue, Green]",
-      "at": "2026-11-02T01:16:50.883Z"
+      "detail": "T1KES8Q: Blue or Green? [Blue, Green]",
+      "at": "2026-11-02T11:29:08.768Z"
     },
     {
       "name": "the question is \"Blue or Green?\" with two options",
       "ok": true,
       "detail": "",
-      "at": "2026-11-02T01:16:50.883Z"
+      "at": "2026-11-02T11:29:08.768Z"
     },
     {
       "name": "the coordinator surfaced the question with numbered options",
       "ok": true,
-      "detail": "The worker stopped as the brief asked: it reported needs-decision, changed no files and didn't pick a colour. The colour is your call, so I need your answer before I resume the step. 1. TSQ65Q9 Blue or Green? 1) Blue 2) Green",
-      "at": "2026-11-02T01:17:06.991Z"
+      "detail": "The needs-decision path now works for T1KES8Q, though not on the first attempt. The ledger shows the task waiting on you with the question exactly \"Blue or Green?\" and the options Blue and Green. The worker has changed nothing and made no commits. The first report was rejected because each option ca",
+      "at": "2026-11-02T11:29:22.811Z"
     },
     {
       "name": "the coordinator resumed the step through the runtime with the answer",
       "ok": true,
-      "detail": "owner: Blue",
-      "at": "2026-11-02T01:17:13.736Z"
+      "detail": "coordinator: Your needs-decision report was rejected as invalid: options[0] has an unknown field \"value\". Each option may only have \"label\" (and optionally \"description\"). Make no file changes and no commits. Write .jevellan/report.json again with status needs-decision, question exactly \"Blue or Green?\", and options exactly [{\"label\":\"Blue\"},{\"label\":\"Green\"}], keep your summary, then end your turn.",
+      "at": "2026-11-02T11:29:29.532Z"
     },
     {
       "name": "the step then reports done",
       "ok": true,
-      "detail": "done: The sandbox colour is now recorded in README.md. The owner chose Blue, and a new line under the existing setup paragraph reads: \"The colour of this sandbox is Blue.\" Nothing else in the README changed",
-      "at": "2026-11-02T01:17:23.759Z"
+      "detail": "done: The owner chose Blue, so README.md now has one new line after the existing paragraph: \"The colour of this sandbox is Blue.\" The rest of the README is unchanged. The change is committed as 6e54b01 on j",
+      "at": "2026-11-02T11:29:39.543Z"
     },
     {
       "name": "zero slips",
       "ok": true,
       "detail": "",
-      "at": "2026-11-02T01:18:03.928Z"
+      "at": "2026-11-02T11:30:11.599Z"
     },
     {
       "name": "the README on main names Blue",
       "ok": true,
       "detail": "",
-      "at": "2026-11-02T01:18:05.664Z"
+      "at": "2026-11-02T11:30:13.335Z"
     }
   ]
 }

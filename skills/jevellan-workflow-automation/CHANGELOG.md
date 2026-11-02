@@ -13,3 +13,5 @@ Changes made by the trigger-eval improvement loop (brief section 10); `evals/RES
 ## Trigger evals round 4, 2026-11-02
 
 - No change to the skill. Case 8 (held out) now says the task's worktree is ready, as the other workflow cases do: without it, the coordinator's own order (status, worktree, workflow) used the run's turns before reaching this skill, which is the order the coordinator body prescribes, not a trigger miss. The case was changed after it was seen failing; the decision record says so.
+
+## 0.2.0 - Interface section added; body otherwise unchanged

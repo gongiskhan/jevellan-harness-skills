@@ -13,6 +13,6 @@
     "node": ">=22.13"
   },
   "scripts": {
-    "test": "node --test --test-concurrency=4 \"test/**/*.test.mjs\" && node scripts/check-roles.mjs --check"
+    "test": "node scripts/test-skills.mjs && node --test --test-concurrency=4 \"test/**/*.test.mjs\" && node scripts/check-roles.mjs --check && node scripts/check-decoupling.mjs"
   }
 }

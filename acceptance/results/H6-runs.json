@@ -77,5 +77,59 @@
       "jevellan-runtime-claude"
     ],
     "elapsedMs": 174584
+  },
+  {
+    "run": 5,
+    "passed": true,
+    "otherChecksPassed": true,
+    "at": "2026-11-02T11:00:07.456Z",
+    "dir": "/home/ggomes/jevellan-projects/jevellan-harness-runs/h6-r5-1793617112647/jevellan-harness-sandbox",
+    "task": "T40EKTN",
+    "session": "1059b4e0-d660-4345-8141-0b8a4986f60e",
+    "slips": [],
+    "skills": [
+      "jevellan-coordinator",
+      "jevellan-ledger",
+      "jevellan-git",
+      "jevellan-router",
+      "jevellan-runtime-claude"
+    ],
+    "elapsedMs": 94533
+  },
+  {
+    "run": 6,
+    "passed": true,
+    "otherChecksPassed": true,
+    "at": "2026-11-02T11:01:52.321Z",
+    "dir": "/home/ggomes/jevellan-projects/jevellan-harness-runs/h6-r6-1793617207513/jevellan-harness-sandbox",
+    "task": "T7TM90B",
+    "session": "067ee059-38dc-4fe4-a255-ec9a2227c21f",
+    "slips": [],
+    "skills": [
+      "jevellan-coordinator",
+      "jevellan-ledger",
+      "jevellan-git",
+      "jevellan-router",
+      "jevellan-runtime-claude"
+    ],
+    "elapsedMs": 104525
+  },
+  {
+    "run": 7,
+    "passed": true,
+    "otherChecksPassed": true,
+    "at": "2026-11-02T11:03:47.189Z",
+    "dir": "/home/ggomes/jevellan-projects/jevellan-harness-runs/h6-r7-1793617312379/jevellan-harness-sandbox",
+    "task": "T87VQAV",
+    "session": "a96ef15e-3768-4e2c-aa49-23a69c40e886",
+    "slips": [],
+    "skills": [
+      "jevellan-coordinator",
+      "jevellan-ledger",
+      "jevellan-git",
+      "jevellan-router",
+      "jevellan-runtime-claude"
+    ],
+    "elapsedMs": 114536
   }
 ]

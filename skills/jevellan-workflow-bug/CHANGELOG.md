@@ -9,3 +9,5 @@ Changes made by the trigger-eval improvement loop (brief section 10); `evals/RES
 ## Trigger evals round 2, 2026-11-02
 
 - The role-missing sentence now says to call no skill at all when no listed skill has the role: one of the two placement-removed runs still tried the guessed name jevellan-placement (router case 9).
+
+## 0.2.0 - Interface section added; body otherwise unchanged

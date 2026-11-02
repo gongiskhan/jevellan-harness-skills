@@ -80,3 +80,15 @@ Small, clear changes need no plan. Plan when the work spans several parts of the
 Tests catch problems better than reviews. Review only when the owner's workflow has a review step.
 Sonnet almost never. Haiku and the cheap endpoint models for answers and conversation.
 A provider above 80% of its weekly ceiling is a last resort; above the ceiling it is not in the menu.
+
+## Interface
+
+Not policy: this section is neither sent to Jev nor part of the policy hash.
+
+- `route.mjs (--task-file F | --task T) --step N --duty D [--json]` -> `{provider, model, effort, kind, probabilities, latencyMs, policyHash, step, duty, source: "jev"}`. Reads the task through the ledger skill (a task file is what its `show T --json` prints; only `task` is read), asks Jev, writes `.jevellan/decisions/<T>-s<N>-<time>.json` and records `task.placed` through the ledger skill.
+- `route.mjs (--task-file F | --task T) --step N --duty D --owner <provider>/<model>/<effort> [--json]` -> the same with `source: "owner"`, `probabilities: {}` and `latencyMs: 0`; no Jev call, no decision file.
+- `route.mjs (--task-file F | --task T) --questions [--json]` -> `{<question id>: true|false, ..., probabilities: {<id>: p}, policyHash, latencyMs}`; writes `.jevellan/decisions/<T>-workflow-<time>.json` and records nothing.
+- `providers.mjs check [--json] [--only <name>]...` -> `{checkedAt, jev: {ok, models, configured, detail, checkedAt, fix?}, providers: {<name>: {auth, detail, weeklyPct, fiveHourPct, weeklyResetsAt, fiveHourResetsAt, observedAt, kind, menu: {models: [{id, efforts}], excluded, detail}, fix?}}, ok, error?, exitCode?}`, also written (without kind, menu and fix) to `~/.jevellan-harness/providers-state.json`. Exit 2 when Jev is not ready or no checked provider is ready, 3 for an `--only` name not in providers.json.
+- `jev.mjs models [--json]` -> `{ok, model, models: [<name>]}`; exit 2 when Jev fails or the configured model is not listed.
+- `jev.mjs decide [--json]`, stdin `{"state": "<JSON text of at most 60000 characters>", "questions": {<id>: {type: "choice" | "noul" | "score", instructions, criteria}}}` -> `{jevModel, answeredBy, answers: {<id>: {type, choice, probabilities, confidence} | {type, noul} | {type, score, legend, probabilities, confidence}}, usage: {input_tokens, output_tokens}, latencyMs}`: one Jev call with the Jev model of providers.json; nothing is written.
+- Exit codes: 0 done; 2 refused with the reason (a Jev failure as "Jev: <message>", the policy, providers.json, the menu, a missing role, the ledger refusing); 3 not found. With `--json` a refusal prints `{"error", "exitCode"}` on stdout and the message on stderr. The Jev key is never printed.

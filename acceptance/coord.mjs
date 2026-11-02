@@ -108,7 +108,7 @@ export function stripHeredocs(command) {
 }
 
 // git commands that only read: the coordinator may run them ("git log, git show and read-only inspection").
-const READ_ONLY_GIT = ['log', 'show', 'status', 'diff', 'rev-parse', 'ls-files', 'ls-tree', 'cat-file', 'merge-base', 'describe', 'shortlog', 'blame', 'grep', 'reflog'];
+const READ_ONLY_GIT = ['log', 'show', 'status', 'diff', 'rev-parse', 'ls-files', 'ls-tree', 'cat-file', 'merge-base', 'describe', 'shortlog', 'blame', 'grep', 'reflog', 'check-ignore'];
 export function readOnlyGit(sub, rest = '') {
   if (READ_ONLY_GIT.includes(sub)) return true;
   if (sub === 'branch') return !/\s-(d|D|m|M|c|C|f)\b|--delete|--move|--copy|--force|--set-upstream/.test(rest) && !/\s[^-\s]/.test(rest.replace(/--(list|all|remotes|contains|merged|no-merged|show-current|format=\S+)\b/g, '').replace(/\s-[avrl]+\b/g, ''));

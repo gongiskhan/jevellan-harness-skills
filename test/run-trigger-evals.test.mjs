@@ -13,6 +13,7 @@ import { NODE, REPO, tempDir } from './helpers/ledger-fixture.mjs';
 import { readSkills } from '../scripts/check-roles.mjs';
 import {
   THRESHOLDS,
+  contextSkill,
   loadCases,
   namesMissingRole,
   parseStream,
@@ -93,11 +94,11 @@ const writeJson = (file, value) => {
   fs.writeFileSync(file, `${JSON.stringify(value, null, 2)}\n`);
 };
 
-// A repository with the demo skills (each with an evals/ folder holding its case file), a harness home with
-// providers.json and a token file, and the fake's output folder with its plan.
-function setup({ cases, plan = {}, providers, token = true } = {}) {
+// A repository with the demo skills (each with an evals/ folder holding its case file) and `extra` ones, a harness
+// home with providers.json and a token file, and the fake's output folder with its plan.
+function setup({ cases, plan = {}, providers, token = true, extra = {} } = {}) {
   const root = tempDir('jh-te-repo-');
-  for (const [name, s] of Object.entries(SKILLS)) {
+  for (const [name, s] of Object.entries({ ...SKILLS, ...extra })) {
     const dir = path.join(root, 'skills', name);
     fs.mkdirSync(path.join(dir, 'evals'), { recursive: true });
     fs.writeFileSync(path.join(dir, 'SKILL.md'), `---\nname: ${name}\ndescription: "${s.description}"\njh-role: ${s.role}\n${s.extra ?? ''}---\n\n${s.body}\n`);
@@ -163,14 +164,14 @@ describe('scoring and installs', () => {
   };
   const cases = {
     'demo-router': [
-      { query: Q.place, should_trigger: true, role_phrase: true, context_skill: 'demo-coordinator' },
+      { query: Q.place, should_trigger: true, role_phrase: true, context_role: 'coordinator' },
       { query: Q.model, should_trigger: true },
-      { query: Q.worktree, should_trigger: false, role_phrase: true, context_skill: 'demo-coordinator' },
+      { query: Q.worktree, should_trigger: false, role_phrase: true, context_role: 'coordinator' },
       { query: Q.plain, should_trigger: false, held_out: true },
-      { query: Q.place, should_trigger: false, role_phrase: true, context_skill: 'demo-coordinator', remove_role: 'placement', expect_role_missing: 'placement' },
+      { query: Q.place, should_trigger: false, role_phrase: true, context_role: 'coordinator', remove_role: 'placement', expect_role_missing: 'placement' },
     ],
     'demo-git': [
-      { query: Q.worktree, should_trigger: true, role_phrase: true, context_skill: 'demo-coordinator' },
+      { query: Q.worktree, should_trigger: true, role_phrase: true, context_role: 'coordinator' },
       { query: Q.natural, should_trigger: true, held_out: true },
       { query: Q.model, should_trigger: false },
     ],
@@ -230,7 +231,6 @@ describe('scoring and installs', () => {
     assert.equal(log.length, 8);
     const configDir = path.join(fx.harness, 'claude-config-evals');
     assert.equal(fs.statSync(configDir).mode & 0o777, 0o700);
-    const home = os.userInfo().homedir;
     for (const call of log) {
       const { argv } = call;
       assert.equal(argv[0], '-p');
@@ -242,7 +242,11 @@ describe('scoring and installs', () => {
       assert.equal(flagValue(argv, '--output-format'), 'stream-json');
       assert.ok(argv.includes('--verbose'));
       const settings = JSON.parse(flagValue(argv, '--settings'));
-      assert.ok(settings.claudeMdExcludes.includes(`${home}/.claude/**`));
+      // No instruction file from a folder above the session's project reaches it (H-001, generalized in H-034).
+      const above = path.dirname(call.cwd);
+      assert.ok(settings.claudeMdExcludes.includes(path.join(above, '.claude', '**')), 'the folder above the project is excluded');
+      assert.ok(settings.claudeMdExcludes.includes(path.join(above, 'CLAUDE.md')));
+      assert.equal(settings.claudeMdExcludes.some((p) => p.startsWith(`${call.cwd}/`)), false, 'nothing inside the project is excluded');
       assert.equal(argv[argv.length - 2], '--', 'the query follows "--"');
       assert.equal(argv[argv.length - 1], call.query);
       assert.equal(argv.indexOf('--'), argv.length - 2);
@@ -304,7 +308,7 @@ describe('scoring and installs', () => {
       cases: {
         'demo-router': [
           { query: 'P1 which model', should_trigger: true },
-          { query: q, should_trigger: false, role_phrase: true, context_skill: 'demo-coordinator', remove_role: 'placement', expect_role_missing: 'placement' },
+          { query: q, should_trigger: false, role_phrase: true, context_role: 'coordinator', remove_role: 'placement', expect_role_missing: 'placement' },
         ],
       },
       plan: { 'P1 which model': { invoke: ['demo-router'] }, [q]: { invoke: ['demo-router'], ifMissing: 'I cannot continue with this step.' } },
@@ -323,7 +327,7 @@ describe('scoring and installs', () => {
       cases: {
         'demo-duty-plan': [
           { query: 'Your step is duty plan. Use the duty skill for plan now and follow it.', should_trigger: true, role_phrase: true },
-          { query: q, should_trigger: false, role_phrase: true, context_skill: 'demo-router', remove_role: 'duty', expect_role_missing: 'duty' },
+          { query: q, should_trigger: false, role_phrase: true, context_role: 'placement', remove_role: 'duty', expect_role_missing: 'duty' },
         ],
       },
       plan: {
@@ -414,7 +418,18 @@ describe('errors', () => {
           { query: 'B4', should_trigger: false, remove_role: 'git', expect_role_missing: 'git', role_phrase: true },
           { query: `B5 ${EM_DASH} dash`, should_trigger: false },
           { query: '', should_trigger: 'yes' },
+          { query: 'B7', should_trigger: true, context_skill: 'demo-coordinator' },
+          { query: 'B8', should_trigger: true, context_role: 'duty' },
+          { query: 'B9', should_trigger: true, context_role: 'router' },
+          { query: 'B10', should_trigger: true, context_role: 'git', context_for: 'main' },
+          { query: 'B11', should_trigger: true, context_for: 'plan' },
+          { query: 'B12', should_trigger: true, context_role: 'duty', context_for: 'answer' },
+          { query: 'B13', should_trigger: true, context_role: 'coordinator', context_skill: 'demo-router' },
+          { query: 'B14', should_trigger: false, role_phrase: true, context_role: 'placement', remove_role: 'placement', expect_role_missing: 'placement' },
         ],
+      },
+      extra: {
+        'demo-duty-verify': { role: 'duty', extra: 'jh-duty: verify\njh-needs: [shell]\n', description: 'Duty verify. Use when the step duty is verify.', body: 'Verify body.' },
       },
     });
     const r = run(bad, ['--skill', 'demo-router']);
@@ -427,6 +442,14 @@ describe('errors', () => {
       /case 5: query holds an em dash/,
       /case 6: query must be a non-empty string/,
       /case 6: should_trigger must be true or false/,
+      /case 7: context_skill names another skill, demo-coordinator; name the calling skill by its role with context_role/,
+      /case 8: context_role duty: 2 skills hold it \(demo-duty-plan, demo-duty-verify\); add context_for \(their jh-duty\)/,
+      /case 9: context_role "router" is not one of coordinator, placement/,
+      /case 10: context_for applies only to the roles runtime, duty, workflow, not git/,
+      /case 11: context_for needs context_role/,
+      /case 12: context_role duty for answer: no skill under skills\/ has it/,
+      /case 13: give context_role, not context_skill as well/,
+      /case 14: the calling skill demo-router has the removed role placement/,
     ]) assert.match(r.stderr, pattern);
     const noFile = setup({ cases: ok });
     fs.renameSync(path.join(noFile.root, 'skills', 'demo-git', 'evals', 'trigger-cases.json'), path.join(noFile.root, 'skills', 'demo-git', 'evals', 'trigger-cases.json.moved'));
@@ -454,7 +477,7 @@ describe('secrets', () => {
 });
 
 describe('selection and thresholds', () => {
-  const mk = (skill, should, extra = {}) => ({ skill, index: 0, query: 'q', should_trigger: should, held_out: false, role_phrase: false, context_skill: null, remove_role: null, expect_role_missing: null, ...extra });
+  const mk = (skill, should, extra = {}) => ({ skill, index: 0, query: 'q', should_trigger: should, held_out: false, role_phrase: false, context_role: null, context_for: null, context_skill: null, remove_role: null, expect_role_missing: null, ...extra });
 
   test('--split and --limit choose cases per skill, alternating positives and negatives in file order', () => {
     const list = [
@@ -531,7 +554,77 @@ describe('selection and thresholds', () => {
   });
 });
 
+describe('the calling skill, named by its role', () => {
+  const skill = (folder, role, data = {}) => ({ folder, data: { 'jh-role': role, ...data } });
+  const skills = [
+    skill('a-coordinator', 'coordinator'),
+    skill('a-runtime-one', 'runtime', { 'jh-kinds': ['one-subscription', 'one-endpoint'] }),
+    skill('a-runtime-two', 'runtime', { 'jh-kinds': ['two-subscription'] }),
+    skill('a-workflow-bug', 'workflow', { 'jh-kind': 'bug' }),
+    skill('a-workflow-feature', 'workflow', { 'jh-kind': 'feature' }),
+    skill('a-duty-plan', 'duty', { 'jh-duty': 'plan' }),
+  ];
+
+  test('a role held by one skill resolves alone; context_for narrows a runtime, a workflow or a duty', () => {
+    assert.deepEqual(contextSkill(skills, 'coordinator'), { skill: 'a-coordinator' });
+    assert.deepEqual(contextSkill(skills, 'duty'), { skill: 'a-duty-plan' });
+    assert.deepEqual(contextSkill(skills, 'runtime', 'one-endpoint'), { skill: 'a-runtime-one' });
+    assert.deepEqual(contextSkill(skills, 'runtime', 'two-subscription'), { skill: 'a-runtime-two' });
+    assert.deepEqual(contextSkill(skills, 'workflow', 'feature'), { skill: 'a-workflow-feature' });
+    assert.deepEqual(contextSkill(skills, 'duty', 'plan'), { skill: 'a-duty-plan' });
+  });
+
+  test('an ambiguous, unknown, missing or wrongly narrowed role is a problem', () => {
+    assert.match(contextSkill(skills, 'workflow').problem, /2 skills hold it \(a-workflow-bug, a-workflow-feature\); add context_for \(their jh-kind\)/);
+    assert.match(contextSkill(skills, 'runtime').problem, /add context_for \(their jh-kinds\)/);
+    assert.match(contextSkill(skills, 'placement').problem, /context_role placement: no skill under skills\/ has it/);
+    assert.match(contextSkill(skills, 'router').problem, /is not one of/);
+    assert.match(contextSkill(skills, 'workflow', 'automation').problem, /context_role workflow for automation: no skill/);
+    assert.match(contextSkill(skills, 'coordinator', 'x').problem, /context_for applies only to the roles runtime, duty, workflow, not coordinator/);
+  });
+
+  test('a run gets the resolved skill\'s body, and the results keep its name as context_skill', () => {
+    const q = 'Q-ROLE Task T1AAAA is created. Use the placement skill now and continue with its answer.';
+    const fx = setup({
+      cases: { 'demo-router': [{ query: q, should_trigger: true, role_phrase: true, context_role: 'coordinator' }] },
+      plan: { [q]: { invoke: ['demo-router'] } },
+    });
+    const r = run(fx, ['--skill', 'demo-router']);
+    assert.equal(r.status, 0, r.stderr + r.stdout);
+    const [call] = r.log();
+    assert.ok(call.append.startsWith('The skill demo-coordinator is loaded; follow its instructions:\n\n'), call.append);
+    assert.match(call.append, /C0RD-MARKER/);
+    const [c] = r.results().cases;
+    assert.equal(c.context_role, 'coordinator');
+    assert.equal(c.context_for, null);
+    assert.equal(c.context_skill, 'demo-coordinator', 'results files keep the resolved name');
+    assert.ok(r.results().links.some((l) => l.link === 'demo-coordinator -> demo-router'));
+  });
+
+  test('a case file may still name its own skill with context_skill', () => {
+    const q = 'Q-OWN place step 1';
+    const fx = setup({ cases: { 'demo-router': [{ query: q, should_trigger: true, context_skill: 'demo-router' }] }, plan: { [q]: { invoke: ['demo-router'] } } });
+    const r = run(fx, ['--skill', 'demo-router']);
+    assert.equal(r.status, 0, r.stderr + r.stdout);
+    assert.ok(r.log()[0].append.startsWith('The skill demo-router is loaded'));
+    assert.equal(r.results().cases[0].context_role, 'placement');
+  });
+});
+
 describe('the shipped case files', () => {
+  test('no case file names another skill: the calling skill is a role', () => {
+    const { skills } = readSkills(REPO);
+    for (const skill of skills) {
+      const file = path.join(REPO, 'skills', skill.folder, 'evals', 'trigger-cases.json');
+      for (const [i, c] of JSON.parse(fs.readFileSync(file, 'utf8')).entries()) {
+        assert.equal(c.context_skill, undefined, `${skill.folder} case ${i + 1} still has context_skill`);
+        for (const other of skills) {
+          if (other.folder !== skill.folder) assert.equal(JSON.stringify(c).includes(other.folder), false, `${skill.folder} case ${i + 1} names ${other.folder}`);
+        }
+      }
+    }
+  });
+
   test('every skill has a valid case file with at least 6 positives, 6 negatives and about one in five held out', () => {
     const { skills } = readSkills(REPO);
     assert.equal(skills.length, 17);
@@ -548,7 +641,7 @@ describe('the shipped case files', () => {
       assert.equal(new Set(mine.map((c) => `${c.query}|${c.remove_role}`)).size, mine.length, `${skill.folder}: a case is repeated`);
       for (const c of mine) {
         if (c.remove_role) {
-          assert.ok(mine.some((p) => p.should_trigger && p.query === c.query && p.context_skill === c.context_skill), `${skill.folder} case ${c.index}: a role-missing case repeats a positive of the same file`);
+          assert.ok(mine.some((p) => p.should_trigger && p.query === c.query && p.context_role === c.context_role && p.context_for === c.context_for && p.context_skill === c.context_skill), `${skill.folder} case ${c.index}: a role-missing case repeats a positive of the same file`);
         }
       }
     }

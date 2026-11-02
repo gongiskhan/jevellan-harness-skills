@@ -1,13 +1,38 @@
 // append task.workflow built by the script: --from-workflow with placement's answers, --add-step for the extra
-// verify step of verify-then-land, and --data-file.
+// verify step of verify-then-land, and --data-file. The workflow files are written here, the same shape as the
+// feature and bug workflows' workflow.json (this skill's suites run with only this skill present).
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
-import { LEDGER_CLI, NODE, REPO, childEnv, makeRepo, tempDir } from './helpers/ledger-fixture.mjs';
-import { readEvents } from '../skills/jevellan-ledger/scripts/lib/ledger.mjs';
+import { LEDGER_CLI, NODE, childEnv, makeRepo, tempDir } from './helpers.mjs';
+import { readEvents } from '../scripts/lib/ledger.mjs';
+
+const FEATURE = {
+  name: 'feature',
+  steps: [
+    { duty: 'plan', when: 'jev:needs_plan', instructions: 'Write plan.md at the worktree root: the change in one paragraph, the files to touch, the tests to add or change, open questions as needs-decision only if a choice is the owner\'s.' },
+    { duty: 'implement', instructions: 'Follow plan.md when it exists. Commit on the task branch. Add or change the tests that cover what you changed, and run only those.' },
+    { duty: 'verify', instructions: 'Run the project\'s test command, then the browser journeys for every screen the change touches, at desktop and phone widths, saving screenshots to .jevellan/evidence/. Report testsRun with passed true only when everything you ran passed.', onFail: { goto: 2, maxLoops: 2 } },
+    { duty: 'document', when: 'jev:needs_docs', instructions: 'Update the docs the project keeps (README, docs/, changelog if the project uses one) for what changed. Nothing else.' },
+  ],
+};
+
+const BUG = {
+  name: 'bug',
+  steps: [
+    { duty: 'implement', instructions: 'Reproduce first with a failing test when the bug is testable, then fix. Commit on the task branch.' },
+    { duty: 'verify', instructions: 'Run the project\'s test command and the browser journey for the affected screen if there is one. Save evidence to .jevellan/evidence/.', onFail: { goto: 1, maxLoops: 2 } },
+  ],
+};
+
+function workflowFile(workflow) {
+  const file = path.join(tempDir('jh-wf-'), 'workflow.json');
+  fs.writeFileSync(file, `${JSON.stringify(workflow, null, 2)}\n`);
+  return file;
+}
 
 const cli = (root, args) => spawnSync(NODE, [LEDGER_CLI, ...args, '--json'], { cwd: root, encoding: 'utf8', env: childEnv() });
 const create = (root, kind, extra = []) => JSON.parse(cli(root, ['task', 'create', '--kind', kind, ...extra, '--title', `t ${kind} ${Math.random()}`, '--text', 'brief']).stdout).task;
@@ -16,7 +41,7 @@ const workflowLine = (root, task) => readEvents(root).events.filter((e) => e.tas
 test('the feature workflow file and the answers give ordinals, gotos and skipped steps', () => {
   const root = makeRepo();
   const task = create(root, 'feature');
-  const file = path.join(REPO, 'skills', 'jevellan-workflow-feature', 'workflow.json');
+  const file = workflowFile(FEATURE);
   const answers = path.join(tempDir('jh-answers-'), 'answers.json');
   fs.writeFileSync(answers, JSON.stringify({ needs_plan: false, needs_docs: true, probabilities: { needs_plan: 0.1 }, policyHash: 'x' }));
   const r = cli(root, ['append', 'task.workflow', '--task', task, '--from-workflow', file, '--answers', answers]);
@@ -39,7 +64,7 @@ test('a goto that names a duty goes to the nearest earlier step with it; a missi
   assert.equal(r.status, 0, r.stderr);
   assert.deepEqual(workflowLine(root, task).data.steps[1].onFail, { goto: 1, maxLoops: 2 });
   const other = create(root, 'feature');
-  r = cli(root, ['append', 'task.workflow', '--task', other, '--from-workflow', path.join(REPO, 'skills', 'jevellan-workflow-feature', 'workflow.json')]);
+  r = cli(root, ['append', 'task.workflow', '--task', other, '--from-workflow', workflowFile(FEATURE)]);
   assert.equal(r.status, 2);
   assert.match(r.stderr, /depends on needs_plan/);
 });
@@ -47,7 +72,7 @@ test('a goto that names a duty goes to the nearest earlier step with it; a missi
 test('--add-step adds the extra verify step to a feature workflow (with --force) and to a single task', () => {
   const root = makeRepo();
   const task = create(root, 'bug');
-  cli(root, ['append', 'task.workflow', '--task', task, '--from-workflow', path.join(REPO, 'skills', 'jevellan-workflow-bug', 'workflow.json')]);
+  cli(root, ['append', 'task.workflow', '--task', task, '--from-workflow', workflowFile(BUG)]);
   const extra = JSON.stringify({ duty: 'verify', instructions: 'Full verification before landing.' });
   let r = cli(root, ['append', 'task.workflow', '--task', task, '--add-step', extra]);
   assert.equal(r.status, 2, 'a second workflow needs --force');

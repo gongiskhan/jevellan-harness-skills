@@ -9,8 +9,8 @@
 // decisionFile?, note?}. expected maps a question id to the expected answer (a model id, an effort, a provider name,
 // or a boolean for a workflow question); null means unlabelled.
 //
-// Export (--export): from each project's ledger, every task.placed line with source jev and a decisionFile, in
-// ledger order:
+// Export (--export): from each project's ledger, read through the ledger skill's public script (events --json), every
+// task.placed line with source jev and a decisionFile, in ledger order:
 // - every fifth such line is held-out, the rest dev. The position counts every such line of that ledger, so a
 //   decision keeps its split across exports;
 // - skipped: a decision file that cannot be read, one that asked Jev nothing (only-option answers and the models
@@ -42,11 +42,13 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { jevClient } from '../scripts/jev.mjs';
 import { loadProviders } from '../scripts/lib/providers-file.mjs';
+import { readEvents } from '../scripts/lib/ledger-client.mjs';
+import { projectPaths } from '../scripts/lib/project.mjs';
 import {
   PROVIDER_INSTRUCTIONS,
   RouteError,
   askJev,
-  ledgerLibs,
+  groupByTask,
   loadRouterPolicy,
   modelOptionKeys,
   placementOutcome,
@@ -157,12 +159,26 @@ export function jevAnswers(decision, questions, state) {
 
 const ENDED_BADLY = ['failed', 'lost', 'blocked'];
 
+// The ledger finds its project from JH_PROJECT before the working folder; the export names its projects itself, so
+// each read runs with JH_PROJECT set to that project root.
+function projectEvents(root) {
+  const had = Object.hasOwn(process.env, 'JH_PROJECT');
+  const previous = process.env.JH_PROJECT;
+  process.env.JH_PROJECT = root;
+  try {
+    return readEvents(root).events;
+  } finally {
+    if (had) process.env.JH_PROJECT = previous;
+    else delete process.env.JH_PROJECT;
+  }
+}
+
 /** The cases of one project's ledger (see the header for every rule). */
-export function exportProject(L, root) {
-  const ledgerFile = path.join(root, '.jevellan', 'ledger.jsonl');
+export function exportProject(root) {
+  const ledgerFile = projectPaths(root).ledger;
   if (!fs.existsSync(ledgerFile)) throw new RouteError(`no ledger at ${ledgerFile}`, 3);
-  const { events } = L.ledger.readEvents(root);
-  const tasks = L.ledger.groupByTask(events);
+  const events = projectEvents(root);
+  const tasks = groupByTask(events);
   const skipped = { 'not-ended': 0, stopped: 0, 'nothing-asked': 0, unreadable: 0 };
   const cases = [];
   let position = 0;
@@ -188,7 +204,7 @@ export function exportProject(L, root) {
       skipped['nothing-asked'] += 1;
       continue;
     }
-    const outcome = placementOutcome(tasks.get(placed.task)?.events ?? [], placed);
+    const outcome = placementOutcome(tasks.get(placed.task) ?? [], placed);
     const name = path.basename(file);
     const base = { id: name.replace(/\.json$/, ''), kind: 'placement', state, questions: decision.questions, split, decisionFile: name, project: path.basename(root), task: placed.task, step: placed.data.step };
     if (outcome.outcome === 'done' && outcome.onPlacedAttempt) {
@@ -227,11 +243,10 @@ export function mergeCases(existing, exported) {
 }
 
 export async function exportCases(roots, casesFile = CASES_FILE) {
-  const L = await ledgerLibs();
   const exported = [];
   const skipped = { 'not-ended': 0, stopped: 0, 'nothing-asked': 0, unreadable: 0 };
   for (const root of roots) {
-    const r = exportProject(L, path.resolve(root));
+    const r = exportProject(path.resolve(root));
     exported.push(...r.cases);
     for (const [k, v] of Object.entries(r.skipped)) skipped[k] += v;
   }

@@ -50,8 +50,8 @@ edit it by hand: change the skill, run the command again and commit the result. 
 - `jevellan-git`: none
 - `jevellan-ledger`: none
 - `jevellan-router`: "the ledger skill"
-- `jevellan-runtime-claude`: "the ledger skill"
-- `jevellan-runtime-codex`: "the ledger skill"
+- `jevellan-runtime-claude`: "the ledger skill", "the duty skill for"
+- `jevellan-runtime-codex`: "the ledger skill", "the duty skill for"
 - `jevellan-workflow-automation`: "the placement skill", "the ledger skill", "the git skill", "the runtime skill for"
 - `jevellan-workflow-bug`: "the placement skill", "the ledger skill", "the git skill", "the runtime skill for"
 - `jevellan-workflow-feature`: "the placement skill", "the ledger skill", "the git skill", "the runtime skill for"

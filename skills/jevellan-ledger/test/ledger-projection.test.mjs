@@ -3,7 +3,7 @@
 // Rule order in lib/ledger.mjs: stopped, done, waiting-owner, landing, failed, running, queued.
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
-import { TaskScript, cli, deadPid, livePid, makeRepo, readLedger } from './helpers/ledger-fixture.mjs';
+import { TaskScript, cli, deadPid, livePid, makeRepo, readLedger } from './helpers.mjs';
 import {
   appendEvent,
   groupByTask,
@@ -13,7 +13,7 @@ import {
   resetFor,
   resetPoints,
   stepView,
-} from '../skills/jevellan-ledger/scripts/lib/ledger.mjs';
+} from '../scripts/lib/ledger.mjs';
 
 // Every scenario lives in one ledger, so the last test can check that `ledger.mjs status --json` agrees.
 const root = makeRepo();

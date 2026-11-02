@@ -374,3 +374,95 @@ again; round 3 the coordinator's line on finding a role's skill. Single-run roun
   router's own body cannot change a run in which it is not installed, and the calling body of case 9 is the
   coordinator's, whose rounds are used. Naming the skill after its role would most likely close this; the brief fixes
   the name, so it is the owner's call.
+
+## H-031 Decoupling over efficiency: skills meet only at their public scripts
+
+The owner's rule for this repository is that decoupling wins over efficiency, always, and the repository itself must
+stop an agent (or the owner) from coupling skills, because the efficient shared module is what anyone reaches for.
+Until 0.1.0 the router, the git skill and both runtimes imported the ledger's internal modules
+(`importFromRole('ledger', 'scripts/lib/ledger.mjs')`), the git skill imported the placement skill's Jev client and
+policy parser, and `check-roles.mjs` forced shared copies to stay byte-identical. From 0.2.0 a skill uses another only
+through that skill's public interface: a script at the top of its `scripts/` folder, run as a child process found by
+role (`runRole(role, script, args)` in the caller's own `roles.mjs`), JSON on stdin or argv and JSON on stdout, listed
+in the target's `## Interface` section. Reading or importing another skill's `scripts/lib/` is forbidden; reading a
+sibling's `SKILL.md` through the role scan is the scan itself. The scan's results no longer carry a skill's folder, and
+the skills folder is private to `roles.mjs`, so no caller holds a path into a sibling.
+
+The process boundary has a price and it is accepted as the rule: every ledger read or write from another skill is a
+Node process (about 55 ms on dev-madrid). `acceptance/timings.mjs` measures the deterministic scripts the same way on
+any checkout; `acceptance/RESULTS.md` records it before (v0.1.0) and after. Medians of nine runs: a worktree 105 to
+268 ms, a runtime start 77 to 304 ms, a runtime stop 162 to 274 ms, a landing with `--force` 140 to 367 ms; the
+ledger's own commands are unchanged (about 58 ms). That is a few hundred milliseconds per script call against model
+turns of minutes, and every journey H1 to H12 was run again on the change (H6 three times in a row). A future change
+that wants the time back must not do it by sharing code between skills.
+
+## H-032 The ledger's interface for other skills, and where the in-lock checks went
+
+The ledger keeps the meaning of its lines, so no other skill re-implements the projection. Its public script gained:
+`show T --json` with `lastSeq` (the task's newest seq) and `views` (for each ordinal, the step's view since its last
+retry reset and over all lines, events named by seq); `events` (lines of the whole ledger, by task, kind and seq);
+`record <kind>` for the kinds the skills' scripts own (task.worktree, task.placed, step.started, step.stopped,
+session.*, landing.*, task.landed, task.asked; not task.created, step.lost or step.report); `take-report` (what the Stop
+hook does with a worker's report.json, for a runtime whose agent has no Stop hook; the hook and the command share
+`lib/report-file.mjs`); and `--if-last-seq N` on `append` and `record`.
+
+The scripts used to pass a closure to `appendEvent(..., {check})` that ran inside the ledger lock. A closure cannot
+cross a process boundary, so the guard now runs in the calling script on what it read, and the append is a
+compare-and-append: with `--if-last-seq N` the line is written only when the task's newest line is still #N, otherwise
+exit 6 and nothing is written, and the script reads again and decides again (`appendChecked` in each consumer's
+`ledger-client.mjs`, five attempts). The comparison is per task, so parallel tasks never refuse each other; any line of
+the same task counts, notes and session events included, which costs at most a re-read. Where each former check lives
+now: the runtimes' start and resume guards (nothing started on this placement since, the task's newest worker gone,
+the step not done; for resume, the current start still the one resumed) in `task.mjs`, run on the fresh snapshot,
+with the spawned worker's group killed on any refusal or failure so no worker runs without its start in the ledger;
+`task.worktree`'s "another worktree meanwhile" and the archive's "already stopped" in `worktree.mjs`; `task.placed`'s
+"the task exists" in `record` itself. The landing lines need none: the landing lock serializes landings.
+
+What a session may append by hand (`append`) and what only scripts write (`record`) is now a convention, not a
+boundary: any process can run `record`. It was a convention before too (a session could import the library), and the
+guards that matter (quota, landing, worktree, retries) stay in scripts that refuse. A Codex runner now waits (up to
+30 s) for its own `step.started` to reach the ledger before it records the session and the report, because the start
+and its record are now separate processes and a fast turn could otherwise report before its start.
+
+## H-033 Helpers stay duplicated; each skill passes its own tests alone
+
+Code two skills need is copied into both (`roles.mjs`, `ledger-client.mjs`, `project.mjs`, `ids.mjs`, `redact.mjs`,
+`lock.mjs`, `policy.mjs`, and the runtimes' shared files). The copies may drift: `check-roles.mjs` prints a notice
+listing the copies that differ and never fails on them. Each skill's own tests live in `skills/<x>/test/` and
+`scripts/test-skills.mjs` runs them with only that skill's folder present. A test that needs another role builds a
+small fake of it next to the copy (`fake-ledger`, `fake-placement`: a `SKILL.md` with the role and a script answering
+canned JSON and logging its calls), never the real sibling; the tests of several real skills together stay in `test/`.
+`test/isolation.test.mjs` copies each skill alone into a project and checks every public script: `--help` exits 0 and a
+role-dependent command exits 2 with the role-missing sentence, never 1. `providers.mjs check` now refuses with that
+sentence when no runtime skill is installed, since no provider could run.
+
+## H-034 Workers ignore instructions from every folder above their worktree
+
+H-001 kept the owner's instructions out of workers with `claudeMdExcludes` naming the owner's `~/.claude/**`,
+`~/CLAUDE.md` and `~/CLAUDE.local.md`. A skill may no longer reference `~/.claude` (only `install.mjs` touches the
+owner's Claude settings), and the rule was narrower than its purpose. The worker settings now exclude `CLAUDE.md`,
+`CLAUDE.local.md` and `.claude/**` of every folder above the step's worktree (both spellings of a symlinked path), so
+no instruction file from outside the project reaches a worker; worktrees live under `~/.jevellan-harness/worktrees/`,
+so the owner's home is among those folders. Nothing inside the worktree is excluded.
+
+## H-035 Trigger cases name the calling skill by role; the recorded measurement stands
+
+Every `trigger-cases.json` named its calling skill with `context_skill`, a sibling's folder name, which the decoupling
+lint forbids. Cases now say `context_role` (with `context_for` when several skills hold the role: a runtime by kind, a
+duty by duty, a workflow by kind) and `run-trigger-evals.mjs` resolves it; results keep the resolved name. The paid
+measurement of H-030 was not re-run: no description changed, and the only body change is the `## Interface` section
+appended last to every `SKILL.md` (recorded in each skill's CHANGELOG). The router's and the git skill's bodies are also
+their policies; `policy.mjs` leaves the Interface section out of the policy and its hash, so placement and landing see
+the same policy text and hash as before.
+
+## H-036 The decoupling lint, its heuristics and its two exemptions
+
+`scripts/check-decoupling.mjs` checks every file under `skills/<x>/` (rules and heuristics in `docs/decoupling.md`):
+imports and requires (Node built-ins and paths inside the skill only; `createRequire` refused), paths that climb out of
+the skill (string and template literals, path calls anchored on the file's own location), the skills folder and the
+scan's folders outside `roles.mjs`, another skill's folder name anywhere, root modules, `~/.claude` and
+`.claude/settings`, event kinds beyond the twenty, `runRole` targets against the Interface sections, links and
+`node_modules` under a skill, TypeScript files, and `importFromRole`. Two exemptions, both argued in the doc: data files
+under `evals/` may quote `.claude/settings.json` (a near-miss trigger case quotes what an owner might type), and an
+own test under `test/` may import its copied skill by a computed path (`test-skills.mjs` runs it with no sibling
+present).

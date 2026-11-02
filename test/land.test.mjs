@@ -1,6 +1,7 @@
 // The git skill's land.mjs and its evals, run as child processes from temporary projects the way a coordinator runs
-// them: the git, placement and ledger skills are copied into the project's .claude/skills (land.mjs reaches the Jev
-// client, the policy parser and the providers file through the placement role), the project has a bare "remote",
+// them: the git, placement and ledger skills are copied into the project's .claude/skills (land.mjs reads and writes
+// the ledger through the ledger skill's ledger.mjs and asks Jev through the placement skill's jev.mjs decide, both run
+// as processes found by role, so the real Jev client and providers file answer here), the project has a bare "remote",
 // tasks and their steps are written through the ledger library, worktrees are made with worktree.mjs, and Jev is a
 // fake server on 127.0.0.1 (JH_JEV_URL) whose answer each test chooses.
 import { test, describe, before, after } from 'node:test';
@@ -33,6 +34,9 @@ writeProviders(HARNESS_HOME, path.join(HARNESS_HOME, 'secrets', 'jev.key'));
 const POLICY = fs.readFileSync(path.join(REPO, 'skills', 'jevellan-git', 'SKILL.md'), 'utf8');
 const POLICY_BODY = POLICY.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n?/, '');
 const section = (name) => new RegExp(`^## ${name}\\n([\\s\\S]*?)(?=^## |(?![\\s\\S]))`, 'm').exec(POLICY_BODY)[1].trim();
+// What the policy hash covers: the body without the "## Interface" section (last in the file), which documents the
+// scripts and is not policy.
+const POLICY_HASHED = POLICY_BODY.replace(/\n## Interface\n[\s\S]*$/, '');
 const CRITERIA = Object.fromEntries(section('routes').split('\n').map((l) => /^([a-z-]+): (.*)$/.exec(l)).map((m) => [m[1], m[2]]));
 
 // ---- the fake Jev ----------------------------------------------------------------------------------------------
@@ -286,7 +290,7 @@ describe('land.mjs route land', () => {
     assert.equal(decided.data.route, 'land');
     assert.deepEqual(decided.data.probabilities, { land: 0.8, 'verify-then-land': 0.1, 'ask-owner': 0.1 });
     assert.equal(decided.data.reason, CRITERIA.land);
-    assert.equal(decided.data.policyHash, crypto.createHash('sha256').update(POLICY_BODY).digest('hex'));
+    assert.equal(decided.data.policyHash, crypto.createHash('sha256').update(POLICY_HASHED).digest('hex'));
     assert.equal(decided.data.source, 'jev');
     assert.equal(decided.data.jevModel, 'jev-test');
     assert.ok(Number.isInteger(decided.data.latencyMs));

@@ -5,12 +5,10 @@
 
 import fs from 'node:fs';
 import { parseArgs } from 'node:util';
-import { RuntimeError, ledger, loadTask, projectLib, rootFor } from './lib/step.mjs';
+import { RuntimeError, loadTask, rootFor } from './lib/step.mjs';
 import { pidAlive } from './lib/proc.mjs';
+import { redactText } from './lib/redact.mjs';
 import { isEntry, main } from './lib/cli.mjs';
-import { importFromRole } from './lib/roles.mjs';
-
-const { redactText } = await importFromRole('ledger', 'scripts/lib/redact.mjs');
 
 // The last line of the log that says something, as a short text: the result line, or the last assistant text, or
 // the last tool used.
@@ -51,10 +49,10 @@ export async function status(argv) {
   if (!values.task) throw new RuntimeError('--task is required');
   const step = Number(values.step);
   if (!(Number.isInteger(step) && step > 0)) throw new RuntimeError('--step must be a positive integer');
-  const root = projectLib.projectRoot(process.cwd()) ?? rootFor(process.cwd());
+  const root = rootFor(process.cwd());
   const info = loadTask(root, values.task);
   // The step's newest start, even when a retry reset the step since: its process may still be running.
-  const view = ledger.stepView(info.events, step);
+  const view = info.overall(step);
   if (!view.started) throw new RuntimeError(`step ${step} of ${values.task} has not started`, 3);
   const d = view.started.data;
   const alive = pidAlive(d.pid);
@@ -63,4 +61,6 @@ export async function status(argv) {
   return { out, text: `${values.task} step ${step}: ${out.state} (pid ${d.pid}, session ${d.nativeSessionId}, ${d.model} ${d.effort} via ${d.provider})${out.ended ? `, ended by ${out.ended}` : ''}${out.lastLine ? `\nlast: ${out.lastLine}` : ''}` };
 }
 
-if (isEntry(import.meta.url)) main(status);
+export const USAGE = 'usage: node status.mjs --task T --step N [--json]';
+
+if (isEntry(import.meta.url)) main(status, USAGE);

@@ -14,3 +14,5 @@ Changes made by the trigger-eval improvement loop (brief section 10); `evals/RES
 ## Trigger evals round 3, 2026-11-02
 
 - "Running a task" now says to find a role's skill in the skill list by the first word of its description and never to call a skill by a name not in the list: with the placement skill removed, a session with this body in context still tried the guessed name jevellan-placement once (router case 9).
+
+## 0.2.0 - Interface section added; body otherwise unchanged

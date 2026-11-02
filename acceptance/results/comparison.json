@@ -1,0 +1,178 @@
+{
+  "title": "Before and after the move to process boundaries (v0.1.0 and 0.2.0)",
+  "intro": [
+    "From 0.2.0 a skill reaches another only by running its public script as a process (docs/decisions.md H-031, H-032). The cost is a Node process per call into another skill. The table below times the deterministic scripts on the same machine, the same way, on v0.1.0 and on 0.2.0; the journeys below it were all run again after the change.",
+    "Most of what a journey spends is model time (a worker turn takes minutes), so the journeys' times vary from run to run far more than the added process time; they are listed to show that nothing slowed down by an order of magnitude, not as a benchmark."
+  ],
+  "scripts": {
+    "runs": 9,
+    "before": {
+      "label": "v0.1.0 (in-process imports)",
+      "repo": "/tmp/claude-1001/-home-ggomes-dev/c91657f1-20ea-45ed-ab1f-88c620400907/scratchpad/v010",
+      "commit": "155b2d5",
+      "node": "v22.23.2",
+      "runs": 9,
+      "at": "2026-11-02T09:30:34.790Z",
+      "host": "dev-madrid",
+      "ms": {
+        "ledger task create": {
+          "median": 58,
+          "max": 61
+        },
+        "ledger append note": {
+          "median": 57,
+          "max": 72
+        },
+        "ledger status --json": {
+          "median": 55,
+          "max": 73
+        },
+        "worktree create": {
+          "median": 105,
+          "max": 124
+        },
+        "runtime start": {
+          "median": 77,
+          "max": 79
+        },
+        "runtime status": {
+          "median": 59,
+          "max": 68
+        },
+        "runtime stop": {
+          "median": 162,
+          "max": 173
+        },
+        "ledger append step.done": {
+          "median": 60,
+          "max": 64
+        },
+        "land --force": {
+          "median": 140,
+          "max": 147
+        }
+      }
+    },
+    "after": {
+      "label": "0.2.0 (process boundaries)",
+      "repo": "/home/ggomes/dev/jevellan-harness-skills",
+      "commit": "155b2d5 + uncommitted changes",
+      "node": "v22.23.2",
+      "runs": 9,
+      "at": "2026-11-02T12:31:20.970Z",
+      "host": "dev-madrid",
+      "ms": {
+        "ledger task create": {
+          "median": 59,
+          "max": 63
+        },
+        "ledger append note": {
+          "median": 60,
+          "max": 66
+        },
+        "ledger status --json": {
+          "median": 57,
+          "max": 60
+        },
+        "worktree create": {
+          "median": 268,
+          "max": 276
+        },
+        "runtime start": {
+          "median": 304,
+          "max": 340
+        },
+        "runtime status": {
+          "median": 116,
+          "max": 121
+        },
+        "runtime stop": {
+          "median": 274,
+          "max": 290
+        },
+        "ledger append step.done": {
+          "median": 59,
+          "max": 61
+        },
+        "land --force": {
+          "median": 367,
+          "max": 370
+        }
+      }
+    }
+  },
+  "journeys": {
+    "beforeLabel": "v0.1.0 (records at that tag)",
+    "afterLabel": "0.2.0 (this run)",
+    "rows": [
+      {
+        "id": "H1 Install",
+        "before": "passed, 23/23, 3 s (one-turn session in the sandbox 3 s)",
+        "after": "passed, 23/23, 3 s (one-turn session in the sandbox 3 s)"
+      },
+      {
+        "id": "H2 Ledger",
+        "before": "passed, 24/24, 7 s (10 x 50 appends through ledger.mjs 5 s; wait after the report line 0 s)",
+        "after": "passed, 24/24, 7 s (10 x 50 appends through ledger.mjs 5 s; wait after the report line 0 s)"
+      },
+      {
+        "id": "H3 Hooks",
+        "before": "passed, 14/14, 25 s (worker without a report 6 s; worker with a valid report 6 s; worker with an invalid report 10 s)",
+        "after": "passed, 14/14, 49 s (worker without a report 26 s; worker with a valid report 6 s; worker with an invalid report 12 s)"
+      },
+      {
+        "id": "H4 Placement",
+        "before": "passed, 17/17, 3 s (placement 1 s)",
+        "after": "passed, 17/17, 5 s (placement 1 s)"
+      },
+      {
+        "id": "H5 Worker",
+        "before": "passed, 26/26, 323 s (placement 0 s; start to report 278 s; resume to report 31 s; stop 1 s)",
+        "after": "passed, 26/26, 389 s (placement 1 s; start to report 252 s; resume to report 119 s; stop 1 s)"
+      },
+      {
+        "id": "H6 The chain",
+        "before": "passed, 13/13, 175 s (request to landing 155 s)",
+        "after": "passed, 13/13, 115 s (request to landing 95 s)"
+      },
+      {
+        "id": "H7 Three in parallel",
+        "before": "passed, 10/10, 672 s (wall time, request to the last landing 377 s; task T67AEHV (README: how to run) 66 s; task TJTX078 (Unit test for the HTML escape helper) 96 s; task TKZD411 (Customers page: empty-state message) 371 s)",
+        "after": "passed, 10/10, 522 s (wall time, request to the last landing 502 s; task TYJMZ7Y (README: how to run) 87 s; task TW3G0NB (Unit test for an untested pure function ) 101 s; task TYDWRBY (Customers page empty-state message with ) 407 s)"
+      },
+      {
+        "id": "H8 Needs-decision",
+        "before": "passed, 8/8, 155 s (request to done report 110 s)",
+        "after": "passed, 8/8, 149 s (request to done report 115 s)"
+      },
+      {
+        "id": "H9 Restart",
+        "before": "passed, 8/8, 164 s (request to landing, across the restart 144 s)",
+        "after": "passed, 8/8, 135 s (request to landing, across the restart 115 s)"
+      },
+      {
+        "id": "H10 Codex",
+        "before": "passed, 9/9, 63 s (task to report 63 s)",
+        "after": "passed, 9/9, 37 s (task to report 37 s)"
+      },
+      {
+        "id": "H11 Trigger evals",
+        "before": "blocked, 19/21, 0 s",
+        "after": "blocked, 19/21, 0 s"
+      },
+      {
+        "id": "H12 No leaks, no runtime",
+        "before": "passed, 13/13, 2 s",
+        "after": "passed, 13/13, 1 s"
+      }
+    ]
+  },
+  "notes": [
+    "H1, H2, H3, H5, H8, H9, H10: unchanged journeys, run again on the 0.2.0 skills; all passed at the first attempt. H8 and H9 ran on fresh baseline clones (their work is already on the sandbox's main).",
+    "H4: the ceiling check read claude-main's weekly usage from providers-state.json as recorded hours earlier (79%), but that window had reset at 05:00Z, so placement rightly treated the usage as unknown and kept claude-main in the menu: the journey, not placement, was wrong. It now runs the providers probe first and sets the ceiling under the usage placement reads (the router's own currentUsage). Jev then chose GPT (via codex) rather than a Claude model, so the check now asks that the decision avoids claude-main and that a Claude model goes to claude-second, instead of naming claude-second outright. Passed 17/17 after the change.",
+    "H6: three runs in a row on fresh baseline clones (runs 5, 6 and 7 of H6-runs.json), each a single document task landed with zero slips, 95 to 115 s from request to landing.",
+    "H7: the first run (kept as results/H7-0.2.0-run1.json) failed 8/10. Two tasks landed; the README task's extra verify step ran the project's whole check set, including npm run check:changelog, which diffs against origin/main, and the clones have no remote (clone-sandbox.mjs removes it, the sandbox never had one), so the check could not pass; the ledger refused step.done for the failing check and the coordinator asked the owner with numbered options, which the journey (counting only task.landed and task.asked lines) waited on until its deadline. One slip was a read-only git check-ignore that the slip analyser did not know. Changes: clones get refs/remotes/origin/main as a symbolic ref to their own main (what CI compares a branch with), and check-ignore joined the analyser's read-only git commands. The second run, on a fresh clone, passed 10/10.",
+    "H11: the trigger evals were not run again (docs/decisions.md H-035: no description changed; the Interface sections are appended last and left out of the placement and landing policies). The journey reads the recorded measurement and stays blocked by section 10's round limit, with the reason recorded for the first run (JH_H11_BLOCK_REASON).",
+    "H12: the check for the OAuth variable's assignment was named after the very string it searches for, so its own record (H12.json, RESULTS.md) matched it on any second run; it now has a name without the literal, and the first run after the rename still saw the old record, the second passed 13/13. JH_RUN_START (09:22:51Z, the time of this task's message) dates the checks on the other run's folders, which the other run may legitimately have changed since the first build run."
+  ]
+}

@@ -46,7 +46,7 @@
     "query": "Task T3K9QZ \"README: how to run\" is created (kind single, duty document) and has no worktree yet. Use the git skill to make the worktree.",
     "should_trigger": false,
     "role_phrase": true,
-    "context_skill": "jevellan-coordinator"
+    "context_role": "coordinator"
   },
   {
     "query": "In my Go side project (~/code/rss-reader, not this repository), how do I make an http.Client give up after 5 seconds? Just the code.",

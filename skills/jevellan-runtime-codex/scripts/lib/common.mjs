@@ -1,4 +1,4 @@
-// What every runtime skill shares, identical in each of them (scripts/check-roles.mjs checks the copies match): the
+// What every runtime skill shares, a copy in each of them (kept identical where it can be; the copies may drift): the
 // error type, the owner's and the harness's folders, providers.json lookups, secrets read for a child's environment
 // only, the machine's git identity and the Node 22 binary.
 

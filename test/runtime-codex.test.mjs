@@ -116,6 +116,10 @@ test('a step runs on codex exec: command line, first message, thread id, the rep
   assert.match(thread, /^thread-/);
   assert.equal(events.find((e) => e.kind === 'step.started').data.runtime, 'codex');
   assert.ok(events.some((e) => e.kind === 'session.ended'));
+  // The runner records nothing ahead of the start that spawned it: step.started, then session.started, then the report.
+  const seqOf = (kind) => events.find((e) => e.kind === kind).seq;
+  assert.ok(seqOf('step.started') < seqOf('session.started'), 'session.started follows step.started');
+  assert.ok(seqOf('session.started') < seqOf('step.report'), 'step.report follows session.started');
 
   // resume the same thread
   const res = run('resume.mjs', ['--task', task, '--step', '1', '--message', 'Continue.']);

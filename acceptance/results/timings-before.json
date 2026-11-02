@@ -1,0 +1,47 @@
+{
+  "label": "v0.1.0 (in-process imports)",
+  "repo": "/tmp/claude-1001/-home-ggomes-dev/c91657f1-20ea-45ed-ab1f-88c620400907/scratchpad/v010",
+  "commit": "155b2d5",
+  "node": "v22.23.2",
+  "runs": 9,
+  "at": "2026-11-02T09:30:34.790Z",
+  "host": "dev-madrid",
+  "ms": {
+    "ledger task create": {
+      "median": 58,
+      "max": 61
+    },
+    "ledger append note": {
+      "median": 57,
+      "max": 72
+    },
+    "ledger status --json": {
+      "median": 55,
+      "max": 73
+    },
+    "worktree create": {
+      "median": 105,
+      "max": 124
+    },
+    "runtime start": {
+      "median": 77,
+      "max": 79
+    },
+    "runtime status": {
+      "median": 59,
+      "max": 68
+    },
+    "runtime stop": {
+      "median": 162,
+      "max": 173
+    },
+    "ledger append step.done": {
+      "median": 60,
+      "max": 64
+    },
+    "land --force": {
+      "median": 140,
+      "max": 147
+    }
+  }
+}

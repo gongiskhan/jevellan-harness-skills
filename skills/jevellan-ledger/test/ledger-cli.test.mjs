@@ -6,9 +6,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
 import { performance } from 'node:perf_hooks';
-import { NODE, TaskScript, cli, cliAsync, deadPid, makeRepo, readLedger, sleep, tempDir } from './helpers/ledger-fixture.mjs';
-import { appendEvent } from '../skills/jevellan-ledger/scripts/lib/ledger.mjs';
-import { isTaskId } from '../skills/jevellan-ledger/scripts/lib/ids.mjs';
+import { NODE, TaskScript, cli, cliAsync, deadPid, makeRepo, readLedger, sleep, tempDir } from './helpers.mjs';
+import { appendEvent } from '../scripts/lib/ledger.mjs';
+import { isTaskId } from '../scripts/lib/ids.mjs';
 
 const create = (root, args, options) => cli(root, ['task', 'create', ...args, '--json'], options);
 

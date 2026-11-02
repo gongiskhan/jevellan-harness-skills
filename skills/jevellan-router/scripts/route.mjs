@@ -7,7 +7,8 @@
 //   node route.mjs (--task-file <file> | --task T) --questions [--json]
 //
 // Placement of a step, in the order of 7.2:
-//   1. load the policy (this skill's own SKILL.md), check its six sections, hash its body;
+//   1. load the policy (this skill's own SKILL.md), check its six sections, hash its body (the "## Interface" section,
+//      which documents the scripts, is not policy: it is neither read nor hashed);
 //   2. build the menu: providers that are enabled, whose key or token file has a value, whose login is ready per a
 //      probe of the last twelve hours (providers-state.json; a missing or stale entry is probed again through
 //      providers.mjs first), under their ceiling, and whose kind can run the duty's needs (the duty skill's jh-needs,
@@ -35,16 +36,28 @@
 // the ledger itself, so a task file written before later steps ran cannot give Jev a stale state, and --task and
 // --task-file always agree. The project root is found from the working folder through git (or JH_PROJECT).
 //
-// Exit codes: 0 placed, 2 refused (Jev, the policy, providers.json, the menu, a missing role), 3 not found.
+// The ledger is reached only through the ledger skill's public script, run as a process (lib/ledger-client.mjs):
+// `show T --json` gives the task, its lines and each step's view since its last retry reset, `events --json` the
+// placements of the project for the history, and `record task.placed` appends the placement (it refuses, exit 3, a
+// task that is not in the ledger). The duty and runtime skills are read by their SKILL.md frontmatter (jh-needs,
+// jh-kinds). Ids, the project folder and the redactor are this skill's own copies (lib/ids.mjs, lib/project.mjs,
+// lib/redact.mjs).
+//
+// Exit codes: 0 placed, 2 refused (Jev, the policy, providers.json, the menu, a missing role, the ledger refusing),
+// 3 not found.
 
 import fs from 'node:fs';
 import path from 'node:path';
 import { parseArgs } from 'node:util';
 import { fileURLToPath } from 'node:url';
-import { JevError, jevClient, jevMessage } from './jev.mjs';
+import { JevError, STATE_LIMIT, jevClient, jevMessage } from './jev.mjs';
 import { EFFORTS, PROVIDER_KINDS, currentUsage, freshProviderState, loadProviders, readProvidersState, secretFile, secretPresent } from './lib/providers-file.mjs';
 import { loadPolicy, parseIdLines, parseQuestionLines, requireSection } from './lib/policy.mjs';
-import { RoleMissing, SKILLS_ROOT, importFromRole, skillWithRole, skillsWithRole } from './lib/roles.mjs';
+import { RoleMissing, skillWithRole, skillsWithRole } from './lib/roles.mjs';
+import { LedgerCallError, NOT_FOUND, appendLine, readEvents, readTask } from './lib/ledger-client.mjs';
+import { compactTime, isTaskId } from './lib/ids.mjs';
+import { projectRoot, readProjectJson } from './lib/project.mjs';
+import { redactValue } from './lib/redact.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 // The policy is this skill's own SKILL.md, wherever the skill is installed.
@@ -147,23 +160,17 @@ export function frontmatterList(text, key) {
 }
 
 /** The jh-needs of the installed duty skill for `duty`. Exit 2 when no such skill is installed or it declares none. */
-export function dutyNeeds(duty, root = SKILLS_ROOT) {
+export function dutyNeeds(duty, root) {
   const skill = skillWithRole('duty', { duty }, root);
-  let text;
-  try {
-    text = fs.readFileSync(path.join(skill.dir, 'SKILL.md'), 'utf8');
-  } catch (error) {
-    throw refused(`cannot read the duty skill for ${duty} (${skill.dir}): ${error.code ?? error.message}`);
-  }
-  const needs = frontmatterList(text, 'jh-needs');
-  if (needs === undefined) throw refused(`the duty skill for ${duty} (${skill.dir}) declares no jh-needs`);
+  const needs = frontmatterList(skill.text, 'jh-needs');
+  if (needs === undefined) throw refused(`the duty skill for ${duty} (${skill.name}) declares no jh-needs`);
   const unknown = needs.filter((n) => !KNOWN_NEEDS.includes(n));
   if (unknown.length) throw refused(`the duty skill for ${duty} declares unknown jh-needs: ${unknown.join(', ')} (known: ${KNOWN_NEEDS.join(', ')})`);
   return needs;
 }
 
 /** The provider kinds the installed runtime skills can run (the union of their jh-kinds). Exit 2 when there is none. */
-export function runtimeKinds(root = SKILLS_ROOT) {
+export function runtimeKinds(root) {
   const runtimes = skillsWithRole('runtime', {}, root);
   if (!runtimes.length) throw new RoleMissing('runtime');
   const kinds = new Set();
@@ -322,7 +329,8 @@ export function candidates(ranking) {
 
 // ---- state (7.2 step 3) -------------------------------------------------------------------------------------------
 
-export const STATE_LIMIT = 60_000;
+// The size limit of Jev's state is Jev's contract, kept with the client.
+export { STATE_LIMIT };
 export const TASK_SHORTENED = '[Task shortened.]';
 export const PREVIOUS_SUMMARY_CHARS = 600;
 export const HISTORY_LIMIT = 10;
@@ -361,20 +369,12 @@ export function stateJson(state, limit = STATE_LIMIT) {
 }
 
 // ---- reading the task from the ledger -------------------------------------------------------------------------
+// A task here is what lib/ledger-client.mjs readTask returns: the ledger's show --json (created, events, lastSeq, the
+// projection's fields) with view(ordinal), the step's view since its last retry reset, whose started, end, done,
+// lastReport and placed are the lines themselves.
 
-/** The ledger skill's modules, found by role and imported when a command needs them. */
-export async function ledgerLibs(root = SKILLS_ROOT) {
-  const [ledger, project, ids, redact] = await Promise.all([
-    importFromRole('ledger', 'scripts/lib/ledger.mjs', {}, root),
-    importFromRole('ledger', 'scripts/lib/project.mjs', {}, root),
-    importFromRole('ledger', 'scripts/lib/ids.mjs', {}, root),
-    importFromRole('ledger', 'scripts/lib/redact.mjs', {}, root),
-  ]);
-  return { ledger, project, ids, redact };
-}
-
-/** The task id a task file names (what `show T --json` prints: {"task": "T...", ...}). */
-export function taskIdFromFile(file, isTaskId) {
+/** The task id a task file names (what `show T --json` prints: {"task": "T...", ...}). Needs no other skill. */
+export function taskIdFromFile(file) {
   let text;
   try {
     text = fs.readFileSync(file, 'utf8');
@@ -399,10 +399,10 @@ function lastOf(events, predicate) {
 }
 
 /** The task's workflow steps: one step for a single task, the latest task.workflow otherwise ([] before it). */
-export function workflowOf(info) {
-  const created = info.created.data ?? {};
+export function workflowOf(task) {
+  const created = task.created.data ?? {};
   if (created.kind === 'single') return { steps: [{ ordinal: 1, duty: created.duty, instructions: '' }], skipped: [] };
-  const workflow = lastOf(info.events, (e) => e.kind === 'task.workflow');
+  const workflow = lastOf(task.events, (e) => e.kind === 'task.workflow');
   return { steps: Array.isArray(workflow?.data?.steps) ? workflow.data.steps : [], skipped: Array.isArray(workflow?.data?.skipped) ? workflow.data.skipped : [] };
 }
 
@@ -429,21 +429,21 @@ function failureOf(events, retry) {
  * retry the failure that sent the task back here. Refuses a duty that is not the workflow's for that step, and a
  * skipped step.
  */
-export function stepState(L, info, ordinal, duty) {
-  const events = info.events;
-  const { steps, skipped } = workflowOf(info);
+export function stepState(task, ordinal, duty) {
+  const events = task.events;
+  const { steps, skipped } = workflowOf(task);
   const spec = steps.find((s) => s.ordinal === ordinal);
-  if (spec && spec.duty !== duty) throw refused(`step ${ordinal} of ${info.created.task} is duty ${spec.duty}, not ${duty}`);
-  if (skipped.includes(ordinal)) throw refused(`step ${ordinal} of ${info.created.task} is skipped by its workflow`);
+  if (spec && spec.duty !== duty) throw refused(`step ${ordinal} of ${task.created.task} is duty ${spec.duty}, not ${duty}`);
+  if (skipped.includes(ordinal)) throw refused(`step ${ordinal} of ${task.created.task} is skipped by its workflow`);
   const retries = retriesBack(events, ordinal);
   const attempt = 1 + retries.length;
-  const resets = L.ledger.resetPoints(events);
   const ordinals = new Set(steps.map((s) => s.ordinal));
   for (const e of events) if (e.kind === 'step.started' && Number.isInteger(e.step)) ordinals.add(e.step);
   const previous = [];
   for (const o of [...ordinals].filter((o) => o < ordinal).sort((a, b) => a - b)) {
     const oSpec = steps.find((s) => s.ordinal === o);
-    const view = L.ledger.stepView(events, o, L.ledger.resetFor(resets, o));
+    // The ledger's view of step o since its last retry reset: an earlier attempt's end does not count.
+    const view = task.view(o);
     const oDuty = oSpec?.duty ?? view.started?.data?.duty ?? '';
     if (skipped.includes(o)) {
       previous.push({ duty: oDuty, status: 'skipped', summary: SKIP_REASON });
@@ -506,29 +506,48 @@ export function placementOutcome(taskEvents, placed) {
   return { outcome, attempts, placedAttempt, onPlacedAttempt: attempts !== null && attempts <= placedAttempt };
 }
 
-/** The last task.placed lines of the project's ledger, newest last: what ran and how it ended. */
-export function recentHistory(L, events, limit = HISTORY_LIMIT) {
-  const tasks = L.ledger.groupByTask(events);
-  return events
-    .filter((e) => e.kind === 'task.placed')
-    .slice(-limit)
-    .map((placed) => {
-      const { outcome, attempts } = placementOutcome(tasks.get(placed.task)?.events ?? [], placed);
-      return { duty: placed.data?.duty ?? '', model: placed.data?.model ?? '', effort: placed.data?.effort ?? '', outcome, attempts };
-    });
+/** Lines grouped by their task, in ledger order: task id -> that task's lines. */
+export function groupByTask(events) {
+  const tasks = new Map();
+  for (const e of events) {
+    if (typeof e?.task !== 'string') continue;
+    if (!tasks.has(e.task)) tasks.set(e.task, []);
+    tasks.get(e.task).push(e);
+  }
+  return tasks;
 }
 
-export function projectState(L, root) {
-  const json = L.project.readProjectJson(root);
+/** Each placement of `placed` with how its work ended, read from `events` (every line of the placements' tasks). */
+export function historyOf(placed, events) {
+  const tasks = groupByTask(events);
+  return placed.map((p) => {
+    const { outcome, attempts } = placementOutcome(tasks.get(p.task) ?? [], p);
+    return { duty: p.data?.duty ?? '', model: p.data?.model ?? '', effort: p.data?.effort ?? '', outcome, attempts };
+  });
+}
+
+/**
+ * The last task.placed lines of the project's ledger, newest last: what ran and how it ended. Two reads through the
+ * ledger skill: the placements, then every line of the tasks the last `limit` of them belong to.
+ */
+export function recentHistory(root, limit = HISTORY_LIMIT) {
+  const placed = readEvents(root, { kinds: ['task.placed'] }).events.slice(-limit);
+  if (!placed.length) return [];
+  const { events } = readEvents(root, { tasks: [...new Set(placed.map((e) => e.task))] });
+  return historyOf(placed, events);
+}
+
+export function projectState(root) {
+  const json = readProjectJson(root);
   return {
     name: typeof json.name === 'string' && json.name.trim() ? json.name : path.basename(root),
     guidance: typeof json.guidance === 'string' ? json.guidance : '',
   };
 }
 
-export function taskState(info) {
-  const d = info.created.data ?? {};
-  return { id: info.created.task, kind: d.kind ?? '', title: d.title ?? '', text: d.text ?? '', parent: d.parent ?? null };
+export function taskState(task) {
+  const d = task.created.data ?? {};
+  return { id: task.created.task, kind: d.kind ?? '', title: d.title ?? '', text: d.text ?? '', parent: d.parent ?? null };
 }
 
 // ---- questions and answers ----------------------------------------------------------------------------------------
@@ -691,49 +710,48 @@ export function writeDecision(root, base, record) {
 
 // ---- the commands -----------------------------------------------------------------------------------------------
 
-function requireRoot(L, cwd) {
-  const root = L.project.projectRoot(cwd);
+function requireRoot(cwd) {
+  const root = projectRoot(cwd);
   if (!root) throw refused('not inside a git repository: placement records into the ledger at the project root');
   return root;
 }
 
-function requireTask(L, root, taskId) {
-  if (!L.ids.isTaskId(taskId)) throw refused(`"${taskId}" is not a task id (T and six characters)`);
-  const { events } = L.ledger.readEvents(root);
-  const info = L.ledger.groupByTask(events).get(taskId);
-  if (!info) throw notFound(`no task ${taskId} in this project's ledger (${root})`);
-  return { events, info };
+// The task through the ledger skill (show --json). The id is checked here first, so a malformed id is refused without
+// the ledger; a task the ledger does not have is exit 3. A missing ledger role is exit 2 (RoleMissing).
+function requireTask(root, taskId) {
+  if (!isTaskId(taskId)) throw refused(`"${taskId}" is not a task id (T and six characters)`);
+  try {
+    return readTask(root, taskId);
+  } catch (error) {
+    if (error instanceof LedgerCallError && error.exitCode === NOT_FOUND) throw notFound(`no task ${taskId} in this project's ledger (${root})`);
+    throw error;
+  }
 }
 
-// Appends task.placed; the lock-time check refuses when the task vanished from the ledger (it cannot, but a ledger
-// written by hand could lose it).
-function appendPlaced(L, root, taskId, step, data) {
-  return L.ledger.appendEvent(root, { kind: 'task.placed', task: taskId, step, session: process.env.JH_SESSION, data }, {
-    check: (now) => {
-      if (!L.ledger.groupByTask(now).has(taskId)) throw notFound(`no task ${taskId} in this project's ledger`);
-    },
-  });
+// Appends task.placed through the ledger skill's record command, which refuses (exit 3) a task the ledger does not
+// have, and returns the line as written.
+function appendPlaced(root, taskId, step, data) {
+  return appendLine(root, 'task.placed', { task: taskId, step, session: process.env.JH_SESSION, data });
 }
 
 /** Places step `ordinal` (duty `duty`) of a task through Jev. Returns what the command prints. */
 export async function placeStep({ taskId, ordinal, duty, cwd = process.cwd(), now = Date.now() }) {
-  const L = await ledgerLibs();
-  const root = requireRoot(L, cwd);
+  const root = requireRoot(cwd);
   const policy = loadRouterPolicy();
   const config = loadProviders();
-  const { events, info } = requireTask(L, root, taskId);
-  const step = stepState(L, info, ordinal, duty);
+  const task = requireTask(root, taskId);
+  const step = stepState(task, ordinal, duty);
   const needs = dutyNeeds(duty);
   const kinds = dutyKinds(duty, needs, runtimeKinds());
   const refreshed = await refreshStale(config, readProvidersState(), kinds, now);
   const menu = buildMenu({ config, state: refreshed.state, kinds, policy, now, probeError: refreshed.probeError });
-  const state = L.redact.redactValue({
-    project: projectState(L, root),
-    task: taskState(info),
+  const state = redactValue({
+    project: projectState(root),
+    task: taskState(task),
     step,
     duty: { needs: [...needs], kinds: [...kinds] },
     menu: { models: menu.models, providers: menu.providers },
-    history: { recent: recentHistory(L, events) },
+    history: { recent: recentHistory(root) },
     rules: policy.rules,
   });
   const { questions, modelKeys } = placementQuestions(policy, menu);
@@ -795,7 +813,7 @@ export async function placeStep({ taskId, ordinal, duty, cwd = process.cwd(), no
     ...(refreshed.probed.length ? { probed: refreshed.probed } : {}),
   };
   // The decision file is written before the ledger line that names it, so task.placed never points at nothing.
-  const decisionFile = writeDecision(root, `${taskId}-s${ordinal}-${L.ids.compactTime(new Date(now).toISOString())}`, {
+  const decisionFile = writeDecision(root, `${taskId}-s${ordinal}-${compactTime(new Date(now).toISOString())}`, {
     kind: 'placement',
     task: taskId,
     step: ordinal,
@@ -809,7 +827,7 @@ export async function placeStep({ taskId, ordinal, duty, cwd = process.cwd(), no
     policyHash: policy.hash,
     calls,
   });
-  appendPlaced(L, root, taskId, ordinal, {
+  appendPlaced(root, taskId, ordinal, {
     step: ordinal,
     duty,
     provider: chosen.provider,
@@ -848,11 +866,10 @@ const HARD_REASONS = {
 export async function placeOwner({ taskId, ordinal, duty, owner, cwd = process.cwd() }) {
   const wanted = parseOwner(owner);
   if (!isEffort(wanted.effort)) throw refused(`unknown effort ${wanted.effort} (the efforts are ${EFFORTS.join(', ')})`);
-  const L = await ledgerLibs();
-  const root = requireRoot(L, cwd);
+  const root = requireRoot(cwd);
   const config = loadProviders();
-  const { info } = requireTask(L, root, taskId);
-  const step = stepState(L, info, ordinal, duty);
+  const task = requireTask(root, taskId);
+  const step = stepState(task, ordinal, duty);
   const needs = dutyNeeds(duty);
   const kinds = dutyKinds(duty, needs, runtimeKinds());
   const ranking = rankProviders({ providers: config.providers, state: readProvidersState(), kinds, model: wanted.model });
@@ -867,7 +884,7 @@ export async function placeOwner({ taskId, ordinal, duty, owner, cwd = process.c
   } catch {
     // the owner's placement does not read the policy; the hash is informational
   }
-  appendPlaced(L, root, taskId, ordinal, {
+  appendPlaced(root, taskId, ordinal, {
     step: ordinal,
     duty,
     provider: chosen.provider.name,
@@ -891,14 +908,13 @@ export async function placeOwner({ taskId, ordinal, duty, owner, cwd = process.c
  * resolved steps as task.workflow).
  */
 export async function workflowQuestions({ taskId, cwd = process.cwd(), now = Date.now() }) {
-  const L = await ledgerLibs();
-  const root = requireRoot(L, cwd);
+  const root = requireRoot(cwd);
   const policy = loadRouterPolicy();
   const config = loadProviders();
-  const { info } = requireTask(L, root, taskId);
+  const task = requireTask(root, taskId);
   const questions = {};
   for (const [id, q] of policy.questions) questions[id] = { type: 'noul', instructions: q.question, criteria: { true: q.true, false: q.false } };
-  const state = L.redact.redactValue({ project: projectState(L, root), task: taskState(info), rules: policy.rules });
+  const state = redactValue({ project: projectState(root), task: taskState(task), rules: policy.rules });
   const stateText = stateJson(state);
   const client = jevClient(config.jev, { home: config.ownerHome });
   const exchange = await askJev(client, config.jev, stateText, questions);
@@ -911,7 +927,7 @@ export async function workflowQuestions({ taskId, cwd = process.cwd(), now = Dat
     probabilities[id] = r.probability;
     answers[id] = r;
   }
-  writeDecision(root, `${taskId}-workflow-${L.ids.compactTime(new Date(now).toISOString())}`, {
+  writeDecision(root, `${taskId}-workflow-${compactTime(new Date(now).toISOString())}`, {
     kind: 'workflow',
     task: taskId,
     state: stateText,
@@ -959,10 +975,7 @@ async function main(argv) {
   }
   if ((values['task-file'] === undefined) === (values.task === undefined)) throw refused(`give --task-file <file> or --task T, one of them\n${USAGE}`);
   let taskId = values.task;
-  if (values['task-file'] !== undefined) {
-    const { isTaskId } = await importFromRole('ledger', 'scripts/lib/ids.mjs');
-    taskId = taskIdFromFile(values['task-file'], isTaskId);
-  }
+  if (values['task-file'] !== undefined) taskId = taskIdFromFile(values['task-file']);
   let out;
   if (values.questions) {
     if (values.step !== undefined || values.duty !== undefined || values.owner !== undefined) throw refused(`--questions takes no --step, --duty or --owner\n${USAGE}`);

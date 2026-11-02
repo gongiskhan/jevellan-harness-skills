@@ -2,73 +2,73 @@
   "id": "H10",
   "title": "Codex",
   "status": "passed",
-  "startedAt": "2026-11-02T02:47:43.637Z",
-  "finishedAt": "2026-11-02T02:48:46.683Z",
-  "elapsedMs": 63046,
+  "startedAt": "2026-11-02T11:32:28.647Z",
+  "finishedAt": "2026-11-02T11:33:05.685Z",
+  "elapsedMs": 37039,
   "passed": 9,
   "total": 9,
   "timings": {
-    "task to report": 62699
+    "task to report": 36736
   },
   "notes": [
-    "worktree /home/ggomes/.jevellan-harness/worktrees/jevellan-harness-sandbox/h10-where-is-the-invoice-total-computed-T1GZQZ1",
-    "step 1 investigate: gpt-6-astra xhigh via codex",
-    "  report: done - The invoice total is computed by invoiceTotalCents in src/invoices/index.ts:3. Line rounding is implemented by lineTotalCents in src/invoices/index.ts:2. invoic"
+    "worktree /home/ggomes/.jevellan-harness/worktrees/jevellan-harness-sandbox/h10-where-is-the-invoice-total-computed-TS1B9KV",
+    "step 1 investigate: gpt-6-astra medium via codex",
+    "  report: done - The invoice total is computed by invoiceTotalCents in src/invoices/index.ts:3. It reduces the lines starting from 0, adding lineTotalCents(line) for each line. "
   ],
   "checks": [
     {
       "name": "codex login status says logged in",
       "ok": true,
       "detail": "Logged in using ChatGPT",
-      "at": "2026-11-02T02:47:43.790Z"
+      "at": "2026-11-02T11:32:28.705Z"
     },
     {
       "name": "the skills are installed",
       "ok": true,
       "detail": "",
-      "at": "2026-11-02T02:47:43.859Z"
+      "at": "2026-11-02T11:32:28.775Z"
     },
     {
       "name": "the installed policy was edited for the journey",
       "ok": true,
       "detail": "",
-      "at": "2026-11-02T02:47:43.859Z"
+      "at": "2026-11-02T11:32:28.775Z"
     },
     {
       "name": "the policy is restored byte for byte",
       "ok": true,
       "detail": "",
-      "at": "2026-11-02T02:48:46.624Z"
+      "at": "2026-11-02T11:33:05.621Z"
     },
     {
       "name": "Jev placed the step on GPT via codex",
       "ok": true,
-      "detail": "gpt-6-astra via codex (p 0.98)",
-      "at": "2026-11-02T02:48:46.627Z"
+      "detail": "gpt-6-astra via codex (p 1)",
+      "at": "2026-11-02T11:33:05.625Z"
     },
     {
       "name": "the step ran on codex exec",
       "ok": true,
       "detail": "codex",
-      "at": "2026-11-02T02:48:46.627Z"
+      "at": "2026-11-02T11:33:05.625Z"
     },
     {
       "name": "the Codex thread id is the native session id",
       "ok": true,
-      "detail": "01a19a27-dd07-71c0-828f-3d886cc7f8ca",
-      "at": "2026-11-02T02:48:46.627Z"
+      "detail": "01a19c08-4a93-7102-a7c0-efc8b8765549",
+      "at": "2026-11-02T11:33:05.625Z"
     },
     {
       "name": "its report was recorded by the runtime parent",
       "ok": true,
-      "detail": "The invoice total is computed by invoiceTotalCents in src/invoices/index.ts:3. Line rounding is implemented by lineTotalCents in src/invoices/index.ts:2.\n\ninvoiceTotalCents reduces the lines from an i",
-      "at": "2026-11-02T02:48:46.627Z"
+      "detail": "The invoice total is computed by invoiceTotalCents in src/invoices/index.ts:3. It reduces the lines starting from 0, adding lineTotalCents(line) for each line.\n\nLine rounding is in lineTotalCents at s",
+      "at": "2026-11-02T11:33:05.625Z"
     },
     {
       "name": "the single investigate task is done",
       "ok": true,
       "detail": "",
-      "at": "2026-11-02T02:48:46.627Z"
+      "at": "2026-11-02T11:33:05.625Z"
     }
   ]
 }

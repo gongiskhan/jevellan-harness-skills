@@ -29,3 +29,7 @@ Status done when every flow ran in full once (or up to the point the task allows
 Status blocked when the target cannot be reached or needs a sign-in you do not have, with ownerCommands naming what the owner must provide and in which environment variable; each cwd there is `worktree`, `checkout`, `home` or an absolute folder.
 
 Finish by writing .jevellan/report.json in your working folder, once, with: status (progress | done | blocked | needs-decision), summary (for the owner, in the owner's language, up to 4000 characters: what changed, what they can see or do, how to try it, remaining limitations), question and 2 to 4 options when status is needs-decision, testsRun {command, passed, summary} when you ran tests, changedFiles, screenshots [{path, caption}] under .jevellan/evidence/, limitations, ownerCommands [{command, cwd, why}] only when the owner must run something. Then end your turn.
+
+## Interface
+
+No scripts. Other skills read only this file: its frontmatter (`jh-duty`, `jh-needs`) when a step is placed, and its body, which a runtime that cannot load skills gives its worker inline.

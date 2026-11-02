@@ -30,3 +30,24 @@ If no skill in your list has that role (a skill's role is the first word of its 
   "From the coordinator: ...", to the same Codex thread.
 - Every script accepts `--json`. Exit codes: 0 ok, 2 refused with the reason, 3 not found. The raw event stream goes
   to `~/.jevellan-harness/logs/<session>.log`.
+
+## Interface
+
+What other skills' scripts may run, by role (runtime, for kind codex-subscription). Every script takes its input as
+arguments (nothing on stdin), prints one JSON object with `--json`, and on an error prints `{"error", "exitCode"}` on
+stdout and the message on stderr. Exit codes: 0 ok, 2 refused with the reason (including a missing role: the ledger,
+or the duty skill for the step's duty), 3 not found. resume, stop and status run with the project (or a folder inside
+it) as their working folder.
+
+- `start.mjs --task T --step N --duty D --cwd DIR --provider P --model M --effort E [--prompt-file F] --json` ->
+  `{task, step, duty, session, pid, provider, model, effort, cwd, logFile, appendFile, staleReport}`; `pid` leads the
+  turn's process group (the runner and Codex); the ledger gets step.started, then session.started with the Codex
+  thread id, and the turn's report when Codex exits.
+- `resume.mjs --task T --step N --message TEXT [--from owner|coordinator] --json` -> `{task, step, session, threadId,
+  pid, from, logFile}`; the ledger gets step.message and a new step.started on the same thread.
+- `stop.mjs --task T --step N [--reason TEXT] --json` -> `{task, step, pid, how, seq}`, `how` one of `SIGTERM`,
+  `SIGKILL`, `not running`; the ledger gets step.stopped (`seq`).
+- `status.mjs --task T --step N --json` -> `{task, step, state, pid, session, startedAt, model, effort, provider,
+  ended, lastLine}`, `state` `alive` or `exited`, `session` the Codex thread id (null until Codex announced it),
+  `ended` the kind of the line that ended the turn or null, `lastLine` the last thing the log says, with secrets
+  masked.

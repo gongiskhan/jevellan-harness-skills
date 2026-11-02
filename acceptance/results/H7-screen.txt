@@ -1,41 +1,41 @@
-       8    try {                                                                                                                                        
+       8    try {                                                                                                                                             
        9      if (request.url === '/api/customers') { response.setHeader('Content-Type', 'application/json'); response.end(JSON.stringify(await store.lis
           t())); return; }                                                                                                                               
       10      response.setHeader('Content-Type', 'text/html; charset=utf-8');                                                                            
       11 -    if (request.url?.startsWith('/customers')) { const rows = await store.list(); response.end(page('Customers', '<table><thead><tr><th>Name</t
-         -h><th>VAT</th></tr></thead><tbody>' + rows.map(row => '<tr><td>' + escape(row.name) + '</td><td>' + escape(row.vat) + '</td></tr>').join('') +        
-         -'</tbody></table>')); return; }                                                                                                                
+         -h><th>VAT</th></tr></thead><tbody>' + rows.map(row => '<tr><td>' + escape(row.name) + '</td><td>' + escape(row.vat) + '</td></tr>').join('') +     
+         -'</tbody></table>')); return; }                                                                                                                     
       11 +    if (request.url?.startsWith('/customers')) { const rows = await store.list(); response.end(page('Customers', customersBody(rows))); return;
          + }                                                                                                                                             
-      12      const total = invoiceTotalCents([{ quantity: 2, unitPrice: 12.50 }]); response.end(page('Invoices', '<table><tr><th>Invoice</th><th>Total</
-          th></tr><tr><td>Invoice 1</td><td>' + (total / 100).toFixed(2) + '</td></tr></table>'));                                                       
-      13    } catch (error) { response.statusCode = 500; response.end((error as Error).message); }                                                       
-      14  }).listen(Number(process.env.PORT ?? 4173), '127.0.0.1');                                                                                      
-                                                                                                                                                         
-  Thought for 6s                                                                                                                                         
+      12      const total = invoiceTotalCents([{ quantity: 2, unitPrice: 12.50 }]); response.end(page('Invoices', '<table><tr><th>Invoice</th><th>Total</      
+          th></tr><tr><td>Invoice 1</td><td>' + (total / 100).toFixed(2) + '</td></tr></table>'));                                                             
+      13    } catch (error) { response.statusCode = 500; response.end((error as Error).message); }                                                             
+      14  }).listen(Number(process.env.PORT ?? 4173), '127.0.0.1');                                                                                             
+  ⎿  … 1 more file changed                                                                                                                                     
+                                                                                                                                                               
+  Thought for 7s, ran 1 shell command                                                                                                                          
 
-● All three tasks are landed on main:                                                                                                                          
+● All three tasks are on local main, and the ledger shows nothing left open.                                                                                    
                                                                                                                                                                
-  - README: how to run (T67AEHV) - aa08466. Setup, run and test commands now work when copy-pasted, including the required SANDBOX_DATA_DIR, TZ=UTC for unit   
-    tests, and the Playwright browser install.                                                                                                  
-  - Unit test for the HTML escape helper (TJTX078) - 5e757bd. escape moved unchanged into src/web/html.ts, with 4 tests in src/web/html.test.ts.                
-  - Customers page: empty-state message (TKZD411) - b3bba11. The table keeps its headers and shows a centred "No customers yet." row when the list is empty. Two
-    unit tests cover the empty and non-empty page. The browser spec doesn't check the message, because Playwright runs against .sandbox-data and may find      
-    someone's records there.                                                                                                                                   
-                                                                                                                                                               
-  Unit tests, lint and browser tests all pass. npm run check:changelog can't run here because the repo has no origin remote. The README change has no CHANGELOG
-  bullet, so on GitHub CI that check would fail it.                                                                                                      
-                                                                                                                                                               
-  One layout detail the verify step noticed: on a phone, the VAT column sits a little further left on the empty page than once customers exist. That comes from
-  the existing auto-width table, which already moves columns whenever a name gets longer or shorter. Fixed column widths would stop it if it bothers you.
+  - TYJMZ7Y "README: how to run" landed as 5b3db2b. The README commands now include the environment variables they need.                                       
+  - TW3G0NB "Unit test for an untested pure function (escape)" landed as 702bfa0. escape is now in src/web/html.ts with 7 tests.                               
+  - TYDWRBY "Customers page empty-state message with test" landed as 871b89e. /customers shows "No customers yet." when empty and the same table as before
+    otherwise.                                                                                                                                           
+                                                                                                                                                          
+  TYDWRBY's verify step passed 13 of 13 unit tests, 3 of 3 browser tests, the type check and the changelog check. It also checked the page in a browser at   
+  desktop and phone widths, with no file, an empty list, two customers and after removing them. I looked at two of its screenshots: the message lines up with  
+  the heading, and a <script> name in the table shows as plain text.                                                                                           
+                                                                                                                                                          
+  - Not pushed, no pull requests: AGENTS.md says to publish a pull request, but the landing step merges into your local main. pushAfterLanding is false in
+    .jevellan/project.json, so nothing went to GitHub.                                                                
+  - Changelog order: CHANGELOG.md is out of order: two new entries are at the top and the README one is at the bottom.
                                                                                                                                                             
-  1. Open a bug task for lineTotalCents rounding? It does Math.floor(unitPrice * 100), so a 4.35 line bills 434 cents instead of 435. Options: open it now /
-     leave it.                                                                                                                                               
+  1. Open a bug task for the lineTotalCents rounding (0.29 gives 28 cents, 1.15 gives 114)? a) Yes b) No                                             
 
-✻ Brewed for 17s · done 1:09 AM                                                                                                                               
+✻ Cooked for 22s · done 11:43 AM                                                                                                                              
                                                                                                                                                                 
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 ❯                                     
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-  jevellan-harness-sandbox | main | 11% | Opus 5.5@xhigh | 0 files
+  jevellan-harness-sandbox | main | 12% | Opus 5.5@xhigh | 0 files
   ⏵⏵ bypass permissions on (shift+tab to cycle) · ← 1 agent   

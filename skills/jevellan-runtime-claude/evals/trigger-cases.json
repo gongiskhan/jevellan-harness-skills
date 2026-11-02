@@ -3,24 +3,25 @@
     "query": "Placement printed {\"provider\":\"claude-second\",\"model\":\"claude-sonnet-5-5\",\"effort\":\"medium\",\"kind\":\"claude-subscription\"} for step 1 (document) of T3K9QZ, whose worktree is ~/.jevellan-harness/worktrees/sandbox/readme-how-to-run-T3K9QZ. Use the runtime skill for provider kind claude-subscription to start the step.",
     "should_trigger": true,
     "role_phrase": true,
-    "context_skill": "jevellan-coordinator"
+    "context_role": "coordinator"
   },
   {
     "query": "Placement printed {\"provider\":\"claude-main\",\"model\":\"claude-opus-5-5\",\"effort\":\"high\",\"kind\":\"claude-subscription\"} for step 2 (implement) of feature task T8QW2N. Use the runtime skill for provider kind claude-subscription to start the step.",
     "should_trigger": true,
     "role_phrase": true,
-    "context_skill": "jevellan-workflow-feature"
+    "context_role": "workflow",
+    "context_for": "feature"
   },
   {
     "query": "Placement printed {\"provider\":\"glm\",\"model\":\"glm-5.3\",\"effort\":\"high\",\"kind\":\"claude-endpoint\"} for step 1 (investigate) of T6NP3X. Use the runtime skill for provider kind claude-endpoint to start the step.",
     "should_trigger": true,
     "role_phrase": true,
-    "context_skill": "jevellan-coordinator"
+    "context_role": "coordinator"
   },
   {
     "query": "Step 2 of T8QW2N runs on claude-second and its report says progress: \"Export button added, tests still to write.\" Resume the step with \"Continue.\" through the runtime skill for provider kind claude-subscription.",
     "should_trigger": true,
-    "context_skill": "jevellan-coordinator"
+    "context_role": "coordinator"
   },
   {
     "query": "Is the Claude session for step 1 of task T3K9QZ still alive? It was started on claude-second; check it and show me the last line of its log.",
@@ -34,14 +35,15 @@
     "query": "Step 1 of T6NP3X, running on claude-second, asked a needs-decision question and the owner answered \"use the staging data\". Send that answer to the step on its Claude session, from the owner.",
     "should_trigger": true,
     "held_out": true,
-    "context_skill": "jevellan-coordinator"
+    "context_role": "coordinator"
   },
   {
     "query": "Placement printed {\"provider\":\"claude-second\",\"model\":\"claude-sonnet-5-5\",\"effort\":\"low\",\"kind\":\"claude-subscription\"} for step 2 (verify) of bug task T5HB7C. Use the runtime skill for provider kind claude-subscription to start the step.",
     "should_trigger": true,
     "role_phrase": true,
     "held_out": true,
-    "context_skill": "jevellan-workflow-bug"
+    "context_role": "workflow",
+    "context_for": "bug"
   },
   {
     "query": "Placement printed {\"provider\":\"claude-second\",\"model\":\"claude-sonnet-5-5\",\"effort\":\"medium\",\"kind\":\"claude-subscription\"} for step 1 (document) of T3K9QZ, whose worktree is ~/.jevellan-harness/worktrees/sandbox/readme-how-to-run-T3K9QZ. Use the runtime skill for provider kind claude-subscription to start the step.",
@@ -49,25 +51,25 @@
     "remove_role": "runtime",
     "expect_role_missing": "runtime",
     "role_phrase": true,
-    "context_skill": "jevellan-coordinator"
+    "context_role": "coordinator"
   },
   {
     "query": "Placement printed {\"provider\":\"codex\",\"model\":\"gpt-6-astra\",\"effort\":\"medium\",\"kind\":\"codex-subscription\"} for step 2 (implement) of feature task T8QW2N, whose worktree is ~/.jevellan-harness/worktrees/sandbox/csv-export-T8QW2N. Use the runtime skill for provider kind codex-subscription to start the step.",
     "should_trigger": false,
     "role_phrase": true,
-    "context_skill": "jevellan-coordinator"
+    "context_role": "coordinator"
   },
   {
     "query": "Task T3K9QZ \"README: how to run\" (single, duty document) is created and its worktree is ready. Step 1 has not been placed yet. Use the placement skill now and continue with its answer.",
     "should_trigger": false,
     "role_phrase": true,
-    "context_skill": "jevellan-coordinator"
+    "context_role": "coordinator"
   },
   {
     "query": "The owner asked: \"Add a How to run section to the README listing the commands in package.json.\" Status shows no open task for it, and the brief is written to .jevellan/briefs/readme-how-to-run.md. Use the ledger skill to create the task.",
     "should_trigger": false,
     "role_phrase": true,
-    "context_skill": "jevellan-coordinator"
+    "context_role": "coordinator"
   },
   {
     "query": "Your step is duty implement. Use the duty skill for implement now and follow it.\n\n# Your step\n\nTask T8QW2N: CSV export on the invoices page\nKind: feature. Step 2 of 4: implement.\n\nAdd an Export CSV button to the invoices page that downloads the rows currently shown, with the same filters.\n\nStep instructions:\nFollow plan.md when it exists. Commit on the task branch. Add or change the tests that cover what you changed, and run only those.\n\nPlan: plan.md in the worktree root.\n\nStart the step now. End by writing .jevellan/report.json.",

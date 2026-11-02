@@ -40,7 +40,7 @@ function makeWorktree(task) {
 function runWorker(task, cwd, prompt, { readOnly }) {
   const session = crypto.randomUUID();
   const env = E.workerEnv({ provider, task, step: 1, duty: 'investigate', project: SANDBOX, session });
-  const args = ['-p', '--session-id', session, '--model', 'claude-sonnet-5-5', '--effort', 'low', '--output-format', 'stream-json', '--verbose', '--include-hook-events', '--settings', E.workerSettings()];
+  const args = ['-p', '--session-id', session, '--model', 'claude-sonnet-5-5', '--effort', 'low', '--output-format', 'stream-json', '--verbose', '--include-hook-events', '--settings', E.workerSettings(cwd)];
   if (readOnly) args.push('--permission-mode', 'dontAsk', '--tools', 'Read,Glob,Grep');
   else args.push('--permission-mode', 'bypassPermissions');
   args.push('--', prompt);
@@ -97,7 +97,7 @@ j.check('the corrected report was then recorded', reportC?.data?.status === 'nee
 
 // (d) coordinator session: the open work
 const env = { PATH: process.env.PATH, HOME: process.env.HOME, USER: process.env.USER, LANG: 'C.UTF-8', TERM: 'dumb', SHELL: process.env.SHELL, TMPDIR: '/tmp', ...E.providerLogin(provider), CLAUDE_CONFIG_DIR: E.claudeConfigDir(), ENABLE_CLAUDEAI_MCP_SERVERS: 'false', CLAUDE_CODE_DISABLE_BACKGROUND_TASKS: '1' };
-const coord = sh('claude', ['-p', '--model', 'claude-haiku-5-5', '--output-format', 'stream-json', '--verbose', '--include-hook-events', '--settings', E.workerSettings(), '--tools', '', '--', 'Reply with the word OK.'], { cwd: SANDBOX, env, timeoutMs: 180_000 });
+const coord = sh('claude', ['-p', '--model', 'claude-haiku-5-5', '--output-format', 'stream-json', '--verbose', '--include-hook-events', '--settings', E.workerSettings(SANDBOX), '--tools', '', '--', 'Reply with the word OK.'], { cwd: SANDBOX, env, timeoutMs: 180_000 });
 const ssCoord = parseStream(coord.stdout).hooks.find((h) => h.subtype === 'hook_response' && h.hook_event === 'SessionStart');
 j.check('SessionStart printed the open work to a coordinator session', Boolean(ssCoord?.stdout?.includes("Open work in this project's ledger:") && ssCoord.stdout.includes(tc)), (ssCoord?.stdout ?? '').replace(/\n/g, ' | ').slice(0, 300));
 

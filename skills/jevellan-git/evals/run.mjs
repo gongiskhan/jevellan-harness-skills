@@ -28,12 +28,18 @@
 // Every fifth decision by time is held-out, the rest dev; the position counts every readable decision, so a decision
 // keeps its split across exports. Merge rules: hand cases are kept; an exported case replaces the case with the same
 // decisionId; a person's label on an unlabelled case survives a re-export that is still unlabelled.
+//
+// Like land.mjs, this reaches other skills only through their public scripts, found by role: the ledger skill's
+// `ledger.mjs events --json` for the lines, and the placement skill's `jev.mjs decide --json` for each replayed
+// answer (one process per case, so cases are replayed one after another).
 
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { GitSkillError, isMain, ledgerRole, parse, print, runCli } from '../scripts/worktree.mjs';
-import { LANDING_QUESTION, STATE_LIMIT, landingPolicy, landingQuestions, placementRole, resolveChoice } from '../scripts/land.mjs';
+import { GitSkillError, isMain, parse, print, runCli } from '../scripts/worktree.mjs';
+import { LANDING_QUESTION, STATE_LIMIT, askJev, landingPolicy, landingQuestions, resolveChoice } from '../scripts/land.mjs';
+import { gitLocate, projectPaths } from '../scripts/lib/project.mjs';
+import { readEvents } from '../scripts/lib/ledger-client.mjs';
 
 const EVALS_DIR = path.dirname(fileURLToPath(import.meta.url));
 const SKILL_DIR = path.dirname(EVALS_DIR);
@@ -154,11 +160,21 @@ function readDecision(root, rel) {
   }
 }
 
+// The ledger's lines grouped by task, in order: task -> {events}.
+function byTask(events) {
+  const tasks = new Map();
+  for (const event of events) {
+    if (!event.task) continue;
+    if (!tasks.has(event.task)) tasks.set(event.task, { task: event.task, events: [] });
+    tasks.get(event.task).events.push(event);
+  }
+  return tasks;
+}
+
 export async function exportCases(projects) {
-  const L = await ledgerRole();
   const roots = [];
   for (const dir of projects.length ? projects : [process.cwd()]) {
-    const root = L.project.gitLocate(path.resolve(dir))?.root;
+    const root = gitLocate(path.resolve(dir))?.root;
     if (!root) throw new GitSkillError(`${path.resolve(dir)} is not inside a git repository`, 3);
     if (!roots.includes(root)) roots.push(root);
   }
@@ -166,12 +182,12 @@ export async function exportCases(projects) {
   const warnings = [];
   const found = [];
   for (const root of roots) {
-    if (!L.ledger.ledgerExists(root)) {
+    if (!fs.existsSync(projectPaths(root).ledger)) {
       warnings.push(`${root} has no ledger`);
       continue;
     }
-    const { events } = L.ledger.readEvents(root);
-    for (const info of L.ledger.groupByTask(events).values()) {
+    const { events } = readEvents(root);
+    for (const info of byTask(events).values()) {
       for (const event of info.events) {
         if (event.kind !== 'landing.decided') continue;
         if (event.data?.source !== 'jev') {
@@ -224,32 +240,16 @@ export function mergeCases(existing, exported) {
 
 // ---- replay --------------------------------------------------------------------------------------------------
 
-async function pool(items, size, fn) {
-  const out = new Array(items.length);
-  let next = 0;
-  const worker = async () => {
-    while (next < items.length) {
-      const i = next;
-      next += 1;
-      out[i] = await fn(items[i]);
-    }
-  };
-  await Promise.all(Array.from({ length: Math.max(1, Math.min(size, items.length)) }, worker));
-  return out;
-}
-
-export async function runEvals({ casesFile = CASES_FILE, split = 'all', thresholdFile = THRESHOLD_FILE, concurrency = 4, now = new Date() } = {}) {
-  const P = await placementRole();
-  const lp = landingPolicy(P.policy);
+export async function runEvals({ casesFile = CASES_FILE, split = 'all', thresholdFile = THRESHOLD_FILE, now = new Date() } = {}) {
+  const lp = landingPolicy();
   const threshold = readThreshold(thresholdFile);
   const all = readCasesFile(casesFile).cases;
   const cases = split === 'all' ? all : all.filter((c) => c.split === split);
-  const config = P.providers.loadProviders();
-  const client = P.jev.jevClient(config.jev, { home: config.ownerHome });
   const usage = { calls: 0, input_tokens: 0, output_tokens: 0 };
   const answeredBy = new Set();
+  let jevModel = null;
 
-  const replay = async (c) => {
+  const replay = (c) => {
     const base = { id: c.id, split: c.split, source: c.source };
     if (c.expected === null) return { ...base, status: 'unlabelled', results: [] };
     const expected = c.expected[LANDING_QUESTION];
@@ -260,19 +260,21 @@ export async function runEvals({ casesFile = CASES_FILE, split = 'all', threshol
     const questions = landingQuestions(lp);
     let response;
     try {
-      response = await client.decide({ model: config.jev.model, state, questions });
+      response = askJev(state, questions);
+      if (!isObject(response.answers[LANDING_QUESTION])) throw new GitSkillError('Jev: invalid response');
     } catch (error) {
-      if (error instanceof P.jev.JevError) throw new GitSkillError(`${P.jev.jevMessage(error)} (case ${c.id})`);
+      if (error instanceof GitSkillError) throw new GitSkillError(`${error.message} (case ${c.id})`);
       throw error;
     }
     usage.calls += 1;
-    usage.input_tokens += response.usage.input_tokens;
-    usage.output_tokens += response.usage.output_tokens;
-    answeredBy.add(response.model);
+    usage.input_tokens += Number(response.usage.input_tokens) || 0;
+    usage.output_tokens += Number(response.usage.output_tokens) || 0;
+    if (response.answeredBy) answeredBy.add(response.answeredBy);
+    jevModel ??= response.jevModel;
     const { option, probabilities } = resolveChoice(questions[LANDING_QUESTION], response.answers[LANDING_QUESTION]);
     return { ...base, status: 'scored', results: [{ question: LANDING_QUESTION, expected, got: option, agree: option === expected, probabilities }] };
   };
-  const results = await pool(cases, concurrency, replay);
+  const results = cases.map(replay);
 
   const agreement = {};
   const tally = (q, s, agree) => {
@@ -296,7 +298,7 @@ export async function runEvals({ casesFile = CASES_FILE, split = 'all', threshol
     date: now.toISOString(),
     casesFile,
     split,
-    jevModel: config.jev.model,
+    jevModel,
     answeredBy: [...answeredBy],
     cases: results,
     agreement,
@@ -378,7 +380,7 @@ export function resultsMarkdown(run, relativeTo) {
     `- Date: ${run.date}`,
     `- Policy hash: \`${run.hash}\``,
     `- Cases: ${counts(run)} from \`${casesFile}\``,
-    `- Jev: ${run.jevModel}${run.answeredBy.length ? ` (answered by ${run.answeredBy.join(', ')})` : ''}, ${run.usage.calls} calls, ${run.usage.input_tokens} input and ${run.usage.output_tokens} output tokens`,
+    `- Jev: ${run.jevModel ?? 'not asked'}${run.answeredBy.length ? ` (answered by ${run.answeredBy.join(', ')})` : ''}, ${run.usage.calls} calls, ${run.usage.input_tokens} input and ${run.usage.output_tokens} output tokens`,
     `- ${verdictLine(run)}`,
     '',
     '## Agreement',

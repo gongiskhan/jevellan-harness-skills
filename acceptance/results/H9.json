@@ -2,65 +2,63 @@
   "id": "H9",
   "title": "Restart",
   "status": "passed",
-  "startedAt": "2026-11-02T01:18:19.324Z",
-  "finishedAt": "2026-11-02T01:21:03.523Z",
-  "elapsedMs": 164199,
+  "startedAt": "2026-11-02T11:30:13.614Z",
+  "finishedAt": "2026-11-02T11:32:28.599Z",
+  "elapsedMs": 134985,
   "passed": 8,
   "total": 8,
   "timings": {
-    "request to landing, across the restart": 144244
+    "request to landing, across the restart": 115121
   },
-  "notes": [
-    "re-checked at 2026-11-02T01:21:38.399Z: the analyser read the > of a quoted git show --format string as a redirect; quoted strings are now ignored (acceptance/coord.mjs unquoted); the first analysis said: Bash \"git show --stat --format='%H%n%an <%ae>%n%s%n%b' jh/customers-module-header-comment-and-chan-TKFVN6M\": wrote /home/ggomes/jevellan-projects/jevellan-harness-sandbox/%n%s%n%b outside .jevellan"
-  ],
+  "notes": [],
   "checks": [
     {
       "name": "the skills are installed",
       "ok": true,
       "detail": "",
-      "at": "2026-11-02T01:18:19.418Z"
+      "at": "2026-11-02T11:30:13.690Z"
     },
     {
       "name": "a step started",
       "ok": true,
-      "detail": "TKFVN6M step 1 implement on claude-sonnet-5-5",
-      "at": "2026-11-02T01:19:30.014Z"
+      "detail": "TF2YDNK step 1 implement on claude-sonnet-5-5",
+      "at": "2026-11-02T11:30:54.411Z"
     },
     {
       "name": "the coordinator was killed while its task waited for a report",
       "ok": true,
       "detail": "",
-      "at": "2026-11-02T01:19:34.084Z"
+      "at": "2026-11-02T11:30:56.455Z"
     },
     {
       "name": "the new session started (session.started in the ledger)",
       "ok": true,
-      "detail": "8cb8a537-ed13-49a9-88ea-6aaa892bd637",
-      "at": "2026-11-02T01:19:39.625Z"
+      "detail": "8ef0e616-fe5b-4cbf-9e1a-2df187186e9b",
+      "at": "2026-11-02T11:31:02.987Z"
     },
     {
       "name": "its first reply names the open task",
       "ok": true,
-      "detail": "I landed \"Customers module: header comment and changelog line\" (TKFVN6M) on `main` as `11b29d5`, a fast-forward merge. Nothing else is open in the ledger. The change is two added lines, nothing else touched: - **`src/customers/index.ts`:** line 1 is now `// Stores customer records (id, name, VAT, cr",
-      "at": "2026-11-02T01:20:43.669Z"
+      "detail": "TF2YDNK \"Document what src/customers stores\" is landed on `main` as commit 1d1d25f. Sonnet 5.5 at medium effort ran step 1 and reported done. I checked the diff myself. It adds one comment line at the top of `src/customers/index.ts` (\"Stores customer records (id, name, VAT number, creation time) as ",
+      "at": "2026-11-02T11:32:08.817Z"
     },
     {
       "name": "and continues waiting for it (a ledger wait for the task)",
       "ok": true,
       "detail": "",
-      "at": "2026-11-02T01:20:43.670Z"
+      "at": "2026-11-02T11:32:08.817Z"
     },
     {
       "name": "the task lands",
       "ok": true,
       "detail": "task.landed",
-      "at": "2026-11-02T01:20:43.671Z"
+      "at": "2026-11-02T11:32:08.818Z"
     },
     {
       "name": "zero slips in both sessions",
       "ok": true,
       "detail": "",
-      "at": "2026-11-02T01:21:01.782Z"
+      "at": "2026-11-02T11:32:26.858Z"
     }
   ]
 }

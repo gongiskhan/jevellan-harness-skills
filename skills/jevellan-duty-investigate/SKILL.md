@@ -23,3 +23,7 @@ Status done, with the findings in summary: the direct answer first, then the evi
 Status needs-decision only when the task can be read in two ways that lead to different investigations and nothing in the task or the code settles which one the owner meant; give the readings as options. Status blocked only when the material the task names is not in the repository and cannot be found elsewhere in it.
 
 Finish by writing .jevellan/report.json in your working folder, once, with: status (progress | done | blocked | needs-decision), summary (for the owner, in the owner's language, up to 4000 characters: what changed, what they can see or do, how to try it, remaining limitations), question and 2 to 4 options when status is needs-decision, testsRun {command, passed, summary} when you ran tests, changedFiles, screenshots [{path, caption}] under .jevellan/evidence/, limitations, ownerCommands [{command, cwd, why}] only when the owner must run something. Then end your turn.
+
+## Interface
+
+No scripts. Other skills read only this file: its frontmatter (`jh-duty`, `jh-needs`) when a step is placed, and its body, which a runtime that cannot load skills gives its worker inline.

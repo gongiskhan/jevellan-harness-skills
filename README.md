@@ -63,8 +63,10 @@ Three ideas carry the design.
 1. Skills depend on roles, never on names. Every skill's description begins with its role (Coordinator, Placement,
    Runtime, Ledger, Git, Duty, Workflow) and no skill body names another skill: a body says "use the placement skill
    now", "use the runtime skill for provider kind <kind> to start the step", "use the ledger skill to wait for the
-   report". Scripts follow the same rule: they find a sibling skill by its `jh-role` (`scripts/lib/roles.mjs`).
-   `scripts/check-roles.mjs` enforces it and generates `docs/roles.md`.
+   report". Scripts follow the same rule: they find a sibling skill by its `jh-role` and run one of its public
+   scripts as a process (`runRole` in their own `scripts/lib/roles.mjs`), never importing its code.
+   `scripts/check-roles.mjs` enforces the roles and generates `docs/roles.md`; `scripts/check-decoupling.mjs` refuses
+   any coupling between skills (AGENTS.md, "Decoupling over efficiency"; `docs/decoupling.md`).
 2. The model decides whether; scripts own how. Routing, sequencing and the work itself are the sessions'. Anything
    that touches a branch people ship from, a secret or a provider's quota is a script that refuses (exit 2 with the
    reason) when its conditions are not met: `start.mjs` starts a step only on the provider, model and effort placement
@@ -119,15 +121,22 @@ A skill is a folder under `skills/` with a `SKILL.md` whose frontmatter has `nam
 `jh-kind` and a `workflow.json` for a workflow. A new duty is picked up by placement from its `jh-needs`; a new runtime
 from its `jh-kinds`; a new workflow kind by the coordinator through "the workflow skill for <kind>". Its body uses
 role phrases only, and when it uses one it carries the role-missing sentence that `scripts/check-roles.mjs` names
-(`ROLE_MISSING_SENTENCE`). Add `evals/trigger-cases.json` and run
-`node scripts/run-trigger-evals.mjs --skill <name>`; `npm test` runs the unit suites and the role lint.
+(`ROLE_MISSING_SENTENCE`). Its body ends with a `## Interface` section: its public scripts with what they take and
+print, or "No scripts.". It uses other skills only by running their public scripts by role (`runRole`), keeps its own
+copies of any helper it needs, and has its own tests in `test/` that pass with only its folder present. Add
+`evals/trigger-cases.json` and run `node scripts/run-trigger-evals.mjs --skill <name>`; `npm test` runs every skill's
+own tests alone, the repository suites, the role lint and the decoupling lint.
 
 ## Repository
 
 - `skills/`: the seventeen skills. `docs/roles.md` lists them with their roles.
 - `install.mjs`, `providers.example.json`.
-- `scripts/check-roles.mjs` (the lint), `scripts/run-trigger-evals.mjs` (trigger evals, results in `evals/RESULTS.md`).
-- `test/`: `node --test` suites for every script and hook. `acceptance/`: the H1 to H12 journeys and `RESULTS.md`.
+- `scripts/check-roles.mjs` (the role lint), `scripts/check-decoupling.mjs` (the decoupling lint),
+  `scripts/test-skills.mjs` (each skill's own tests, alone), `scripts/run-trigger-evals.mjs` (trigger evals, results in
+  `evals/RESULTS.md`).
+- `skills/<name>/test/`: each skill's own suites. `test/`: the suites of several skills together, the installer and the
+  lints. `acceptance/`: the H1 to H12 journeys, `timings.mjs` and `RESULTS.md`.
+- `docs/decoupling.md` (each kind of coupling the repository forbids and how the lint catches it).
 - `docs/decisions.md` (H-001 onwards, with reasons), `docs/findings.md` (verified tool behaviour).
 
 MIT licence.

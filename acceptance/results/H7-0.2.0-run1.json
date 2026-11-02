@@ -1,0 +1,88 @@
+{
+  "id": "H7",
+  "title": "Three in parallel",
+  "status": "failed",
+  "startedAt": "2026-11-02T11:03:47.453Z",
+  "finishedAt": "2026-11-02T11:27:43.646Z",
+  "elapsedMs": 1436193,
+  "passed": 8,
+  "total": 10,
+  "timings": {
+    "wall time, request to the last landing": 1415805,
+    "task TBY6627 (Unit test for the HTML escape helper in )": 144611,
+    "task T20RH0S (Customers page: empty-state message when)": 319026
+  },
+  "notes": [
+    "coordinator session fa2bc34b-5540-4dd7-af8e-102b251089e6 in /home/ggomes/jevellan-projects/jevellan-harness-runs/h07-v020-1793617427233/jevellan-harness-sandbox",
+    "(1) README: how to run the app and its tests: Jev document claude-sonnet-5-5 medium via claude-main (p 0.73); verify gpt-6-astra high via codex (p 0.54); Jevellan on 31 October: Opus medium",
+    "(2) Unit test for the HTML escape helper in src/web: Jev implement gpt-6-astra high via codex (p 0.80); Jevellan on 31 October: GPT medium",
+    "(3) Customers page: empty-state message when there are no customers: Jev implement claude-opus-5-5 high via claude-main (p 0.53); verify gpt-6-astra high via codex (p 0.56); Jevellan on 31 October: GPT high",
+    "Skill invocations: jevellan-coordinator, jevellan-ledger, jevellan-git, jevellan-workflow-feature, jevellan-router, jevellan-runtime-claude, jevellan-runtime-codex",
+    "landing of TDGTCW6: verify-then-land {\"land\":0.27,\"verify-then-land\":0.71,\"ask-owner\":0.02}",
+    "landing of TBY6627: land {\"land\":0.99,\"verify-then-land\":0.01,\"ask-owner\":0}",
+    "landing of T20RH0S: land {\"land\":0.93,\"verify-then-land\":0.02,\"ask-owner\":0.05}",
+    "coordinator's last reply: The empty-state task (T20RH0S) has landed on main as 61d7aa6. Landing merged main into its branch without a conflict, then fast-forwarded. On main, `server.ts` now has both the `escape` import from TBY6627 and the new customers branch, and `npm test` passed on the merged result. The browser tests ran on each branch separately, not on the merged main. The two changes touch separate lines, so I don't expect trouble, but I haven't confirmed it. The merges left CHANGELOG.md in an uneven order. TBY66"
+  ],
+  "checks": [
+    {
+      "name": "the skills are installed",
+      "ok": true,
+      "detail": "",
+      "at": "2026-11-02T11:03:47.525Z"
+    },
+    {
+      "name": "three tasks created",
+      "ok": true,
+      "detail": "TDGTCW6 single document: README: how to run the app and its tests | TBY6627 single implement: Unit test for the HTML escape helper in src/web | T20RH0S feature: Customers page: empty-state message when there are no customers",
+      "at": "2026-11-02T11:27:43.632Z"
+    },
+    {
+      "name": "three worktrees",
+      "ok": true,
+      "detail": "",
+      "at": "2026-11-02T11:27:43.633Z"
+    },
+    {
+      "name": "every started step was placed by Jev with probabilities first",
+      "ok": true,
+      "detail": "5 steps",
+      "at": "2026-11-02T11:27:43.633Z"
+    },
+    {
+      "name": "the tasks ran in parallel (their steps overlapped in time)",
+      "ok": true,
+      "detail": "",
+      "at": "2026-11-02T11:27:43.633Z"
+    },
+    {
+      "name": "three landings or asks",
+      "ok": false,
+      "detail": "TDGTCW6: open, TBY6627: task.landed, T20RH0S: task.landed",
+      "at": "2026-11-02T11:27:43.633Z"
+    },
+    {
+      "name": "screenshots for the customers task under its evidence folder",
+      "ok": true,
+      "detail": "8 image files, 12 in reports: .jevellan/evidence/customers-empty-desktop.png, .jevellan/evidence/customers-empty-phone.png, .jevellan/evidence/customers-populated-desktop.png, .jevellan/evidence/customers-populated-phone.png, .jevellan/evidence/invoices-navigation-desktop.png, .jevellan/evidence/customers-empty-desktop.png, .jevellan/evidence/customers-populated-desktop.png, .jevellan/evidence/customers-long-desktop.png, .jevellan/evidence/invoices-navigation-phone.png, .jevellan/evidence/customers-empty-phone.png, .jevellan/evidence/customers-populated-phone.png, .jevellan/evidence/customers-long-phone.png",
+      "at": "2026-11-02T11:27:43.634Z"
+    },
+    {
+      "name": "zero slips",
+      "ok": false,
+      "detail": "Bash \"git check-ignore -v .jevellan/briefs/x.md\": git check-ignore run by the coordinator",
+      "at": "2026-11-02T11:27:43.634Z"
+    },
+    {
+      "name": "main moved by the landings",
+      "ok": true,
+      "detail": "",
+      "at": "2026-11-02T11:27:43.638Z"
+    },
+    {
+      "name": "the project checkout is clean",
+      "ok": true,
+      "detail": "",
+      "at": "2026-11-02T11:27:43.646Z"
+    }
+  ]
+}

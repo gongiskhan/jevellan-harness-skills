@@ -430,13 +430,20 @@ test('the worker settings stay valid JSON and deny Read and Edit on the harness 
   assert.deepEqual(settings.permissions.deny, [`Read(/${secrets}/**)`, `Edit(/${secrets}/**)`]);
   assert.ok(settings.permissions.deny.every((rule) => /^(Read|Edit)\(\/\/[^/]/.test(rule)), 'absolute rules start with //');
   assert.deepEqual(settings.attribution, { commit: '', pr: '', sessionUrl: false });
+  // No instruction file of a folder above the worktree reaches the worker; the worktree's own are not excluded.
+  assert.deepEqual(settings.claudeMdExcludes, JSON.parse(env.workerSettings(dir)).claudeMdExcludes);
+  for (let at = path.dirname(dir); ; at = path.dirname(at)) {
+    for (const file of ['CLAUDE.md', 'CLAUDE.local.md', path.join('.claude', '**')]) assert.ok(settings.claudeMdExcludes.includes(path.join(at, file)), path.join(at, file));
+    if (at === path.dirname(at)) break;
+  }
+  assert.ok(!settings.claudeMdExcludes.some((p) => p.startsWith(`${dir}/`)), 'nothing in the worktree itself');
   // A harness home reached through a symlink is denied under both spellings.
   const link = path.join(tempDir('jh-harness-link-'), 'home');
   fs.symlinkSync(HARNESS_HOME, link);
   const saved = process.env.JH_HARNESS_HOME;
   process.env.JH_HARNESS_HOME = link;
   try {
-    const deny = JSON.parse(env.workerSettings()).permissions.deny;
+    const deny = JSON.parse(env.workerSettings(dir)).permissions.deny;
     assert.deepEqual(deny, [`Read(/${link}/secrets/**)`, `Read(/${secrets}/**)`, `Edit(/${link}/secrets/**)`, `Edit(/${secrets}/**)`]);
   } finally {
     process.env.JH_HARNESS_HOME = saved;

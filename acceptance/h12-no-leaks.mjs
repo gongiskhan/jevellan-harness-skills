@@ -9,8 +9,16 @@ import path from 'node:path';
 import { HARNESS, Journey, OWNER_HOME, REPO, SANDBOX, TOKEN_ASSIGNMENT, git, sh } from './lib.mjs';
 
 const j = new Journey('H12', 'No leaks, no runtime');
-const marker = path.join(HARNESS, 'run-start.marker');
-const runStart = fs.readFileSync(path.join(HARNESS, 'run-start.txt'), 'utf8').trim();
+// The run's start: the first build run's marker, or JH_RUN_START (an ISO time) for a later run on the same machine,
+// for which a marker file with that time is made in the harness folder.
+let marker = path.join(HARNESS, 'run-start.marker');
+let runStart = fs.readFileSync(path.join(HARNESS, 'run-start.txt'), 'utf8').trim();
+if (process.env.JH_RUN_START) {
+  runStart = new Date(process.env.JH_RUN_START).toISOString();
+  marker = path.join(HARNESS, `run-start-${runStart.replace(/[-:.]/g, '')}.marker`);
+  if (!fs.existsSync(marker)) fs.writeFileSync(marker, `${runStart}\n`);
+  fs.utimesSync(marker, new Date(runStart), new Date(runStart));
+}
 j.note(`run start ${runStart}`);
 
 // The secret values: every line of at least 8 characters of every file in the secrets folder, and the whole files.
@@ -58,7 +66,8 @@ const assignHits = [
   ...grepFiles(['-rIlF', '--exclude-dir=node_modules', '-e', TOKEN_ASSIGNMENT], undefined, places),
   ...grepFiles(['-IlF', '-e', TOKEN_ASSIGNMENT], undefined, repoFiles),
 ];
-j.check(`no "${TOKEN_ASSIGNMENT}" anywhere in those`, assignHits.length === 0, assignHits.slice(0, 10).join(', '));
+// The check is named without the literal it looks for, so its own record never matches it.
+j.check('no assignment of the OAuth token variable anywhere in those', assignHits.length === 0, assignHits.slice(0, 10).join(', '));
 const claudeLogs = path.join(HARNESS, 'claude-config', 'projects');
 if (fs.existsSync(claudeLogs)) {
   const transcriptHits = grepFiles(['-rIlF', '-f', '-'], patterns, [claudeLogs]);

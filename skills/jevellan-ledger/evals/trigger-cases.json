@@ -3,23 +3,25 @@
     "query": "The owner asked: \"Add a How to run section to the README listing the commands in package.json.\" Status shows no open task for it, and the brief is written to .jevellan/briefs/readme-how-to-run.md. Use the ledger skill to create the task.",
     "should_trigger": true,
     "role_phrase": true,
-    "context_skill": "jevellan-coordinator"
+    "context_role": "coordinator"
   },
   {
     "query": "The owner reported that invoice dates show in the wrong timezone. No open task covers it; the brief for a bug task is written to .jevellan/briefs/invoice-timezone.md. Use the ledger skill to create the task.",
     "should_trigger": true,
     "role_phrase": true,
-    "context_skill": "jevellan-coordinator"
+    "context_role": "coordinator"
   },
   {
     "query": "start.mjs printed {\"task\":\"T3K9QZ\",\"step\":1,\"session\":\"5ee0b89b-b1f6-4b68-9861-dd56d5efd8ef\",\"pid\":48211}. Use the ledger skill to wait for its report in the background.",
     "should_trigger": true,
-    "context_skill": "jevellan-runtime-claude"
+    "context_role": "runtime",
+    "context_for": "claude-subscription"
   },
   {
     "query": "Placement answered the workflow questions for T8QW2N with {\"needs_plan\": false, \"needs_docs\": true}, saved to .jevellan/briefs/T8QW2N-answers.json. Use the ledger skill to record the resolved steps.",
     "should_trigger": true,
-    "context_skill": "jevellan-workflow-feature"
+    "context_role": "workflow",
+    "context_for": "feature"
   },
   {
     "query": "Show me everything that happened to task T8QW2N so far, step by step, with its reports.",
@@ -39,7 +41,7 @@
     "should_trigger": true,
     "role_phrase": true,
     "held_out": true,
-    "context_skill": "jevellan-coordinator"
+    "context_role": "coordinator"
   },
   {
     "query": "The owner asked: \"Add a How to run section to the README listing the commands in package.json.\" Status shows no open task for it, and the brief is written to .jevellan/briefs/readme-how-to-run.md. Use the ledger skill to create the task.",
@@ -47,13 +49,13 @@
     "remove_role": "ledger",
     "expect_role_missing": "ledger",
     "role_phrase": true,
-    "context_skill": "jevellan-coordinator"
+    "context_role": "coordinator"
   },
   {
     "query": "Task T3K9QZ \"README: how to run\" is created (kind single, duty document) and has no worktree yet. Use the git skill to make the worktree.",
     "should_trigger": false,
     "role_phrase": true,
-    "context_skill": "jevellan-coordinator"
+    "context_role": "coordinator"
   },
   {
     "query": "Your step is duty document. Use the duty skill for document now and follow it.\n\n# Your step\n\nTask T3K9QZ: README: how to run\nKind: single. Step 1 of 1: document.\n\nAdd a How to run section to the README listing the commands in package.json, each with one line on what it does.\n\nStart the step now. End by writing .jevellan/report.json.",

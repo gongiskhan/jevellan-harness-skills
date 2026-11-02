@@ -7,7 +7,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { kindsUsed, parseSkillFile } from '../scripts/check-roles.mjs';
+import { kindsUsed, lintSharedLibs, parseSkillFile, tokenize } from '../scripts/check-roles.mjs';
 
 const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const script = path.join(repo, 'scripts', 'check-roles.mjs');
@@ -363,6 +363,87 @@ test('kindsUsed finds literals in strings, templates and substitutions, not in c
   ].join('\n');
   const kinds = kindsUsed(source).map((k) => `${k.kind}@${k.line}`);
   assert.deepEqual(kinds, ['step.inside@1', 'step.double@3', 'landing.template@4']);
+});
+
+test('helper copies that differ are listed as notices on stdout and never fail the lint', () => {
+  const helper = (text) => `// A helper each skill keeps its own copy of.\nexport const value = ${JSON.stringify(text)};\n`;
+  const root = fixture((f) => {
+    f['skills/jevellan-git/scripts/lib/helper.mjs'] = helper('a');
+    f['skills/jevellan-router/scripts/lib/helper.mjs'] = helper('b');
+    f['skills/jevellan-runtime-alpha/scripts/lib/helper.mjs'] = helper('a');
+    f['skills/jevellan-git/scripts/lib/same.mjs'] = helper('same');
+    f['skills/jevellan-router/scripts/lib/same.mjs'] = helper('same');
+    f['skills/jevellan-router/scripts/lib/nested/deep.mjs'] = helper('x');
+    f['skills/jevellan-runtime-alpha/scripts/lib/nested/deep.mjs'] = helper('y');
+    f['skills/jevellan-runtime-alpha/scripts/lib/alone.mjs'] = helper('alone');
+  });
+  const result = run(root, '--check');
+  assert.equal(result.status, 0, result.stderr);
+  const notices = result.stdout.split('\n').filter((l) => l.startsWith('notice: '));
+  assert.ok(notices.includes('notice: scripts/lib/helper.mjs differs between the 3 skills that keep a copy: version 1 in jevellan-git, jevellan-runtime-alpha; version 2 in jevellan-router'), notices.join('\n'));
+  assert.ok(notices.includes('notice: scripts/lib/nested/deep.mjs differs between the 2 skills that keep a copy: version 1 in jevellan-router; version 2 in jevellan-runtime-alpha'), notices.join('\n'));
+  assert.ok(!notices.some((l) => l.includes('same.mjs') || l.includes('alone.mjs')), 'identical copies and single files are not listed');
+  assert.match(result.stdout, /check-roles: 8 skills, 20 event kinds, clean/);
+  assert.equal(result.stderr, '');
+  // The function returns the lines; a repository without differing copies has none.
+  assert.ok(lintSharedLibs(root).every((l) => l.startsWith('notice: ')));
+  assert.deepEqual(lintSharedLibs(fixture(() => {}, { write: false })), []);
+});
+
+test('kindsUsed also reads the ledger.mjs record argument, appendLine and the objects appendChecked decides', () => {
+  const source = [
+    "callLedger(['record', 'step.paused', '--task', T]);",
+    "callLedger(['record', '--task', T]);",
+    "const isWrite = (c) => ['record', 'append'].includes(c) || ['append', 'show'].includes(c);",
+    "appendLine(root, 'warning', { task: T });",
+    "appendLine(root, kindVariable, { task: T });",
+    'appendChecked(root, T, (task) => {',
+    "  if (task.state === 'done') return null;",
+    "  return { kind: 'stepped', step: 1, data: { kind: 'feature' } };",
+    '});',
+    "appendChecked(root, T, () => ({ kind: 'arrowed', data: {} }));",
+    "const other = { kind: 'feature' };",
+  ].join('\n');
+  const kinds = kindsUsed(source).map((k) => `${k.kind}@${k.line}`);
+  assert.deepEqual(kinds.sort(), ['arrowed@10', 'step.paused@1', 'stepped@8', 'warning@4'].sort());
+});
+
+test('a template literal with substitutions carries its text pieces', () => {
+  const tokens = tokenize('const a = `${here}/../${x}/b`;');
+  const template = tokens.find((t) => t.type === 'template');
+  assert.deepEqual(template.parts, ['', '/../', '/b']);
+  assert.equal(template.value, null);
+});
+
+test('the kind after append or record is any literal but a flag or a command word, in .mjs, .cjs and .js files', () => {
+  const root = fixture((f) => {
+    f['skills/jevellan-git/scripts/odd.mjs'] = [
+      "run(['append', 'step-bogus', '--data', '{}']);",
+      "run(['record', 'step_x', '--task', T]);",
+      "run(['append', 'Task.X']);",
+      "run(['record', '--task', T]);",
+      "run(['record', 'note']);",
+      "const isWrite = (c) => ['record', 'append'].includes(c);",
+      '',
+    ].join('\n');
+    f['skills/jevellan-git/scripts/lib/old.cjs'] = "run(['append', 'notes']);\n";
+    f['skills/jevellan-git/hooks/old.js'] = "export const k = 'step.paused';\n";
+  }, { write: false });
+  const lines = expectProblem(root, 'skills/jevellan-git/scripts/odd.mjs:1: event kind "step-bogus" is not one of the 20 in KINDS');
+  assert.ok(lines.some((l) => l.startsWith('skills/jevellan-git/scripts/odd.mjs:2: event kind "step_x"')), lines.join('\n'));
+  assert.ok(lines.some((l) => l.startsWith('skills/jevellan-git/scripts/odd.mjs:3: event kind "Task.X"')), lines.join('\n'));
+  assert.ok(lines.some((l) => l.startsWith('skills/jevellan-git/scripts/lib/old.cjs:1: event kind "notes"')), lines.join('\n'));
+  assert.ok(lines.some((l) => l.startsWith('skills/jevellan-git/hooks/old.js:1: event kind "step.paused"')), lines.join('\n'));
+  assert.ok(!lines.some((l) => /"(--task|note|append)"/.test(l)), lines.join('\n'));
+  const kinds = kindsUsed("run(['append', 'step-bogus']); run(['record', 'Task.X']); run(['record', '-v']); run(['append', 'show']); run(['record', '']);").map((k) => k.kind);
+  assert.deepEqual(kinds, ['step-bogus', 'Task.X', '']);
+});
+
+test('a template token knows where its substitutions begin', () => {
+  const tokens = tokenize("const a = 'x' + `${here}/../${y}/b`;");
+  const at = tokens.findIndex((t) => t.type === 'template');
+  assert.equal(tokens[tokens[at].from].value, 'here');
+  assert.equal(tokens[tokens[at].from - 1].value, '+');
 });
 
 test('this repository is clean and docs/roles.md is current', () => {

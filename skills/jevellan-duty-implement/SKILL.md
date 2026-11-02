@@ -30,3 +30,7 @@ Status done when the change is committed and its tests pass. The summary says wh
 Status needs-decision when the task or the plan leaves a choice that belongs to the owner and the code cannot settle it, with two to four options. Status blocked when something outside the repository stops you (a missing service, credentials, a dependency you cannot install), with ownerCommands when the owner can unblock it; each cwd there is `worktree`, `checkout`, `home` or an absolute folder.
 
 Finish by writing .jevellan/report.json in your working folder, once, with: status (progress | done | blocked | needs-decision), summary (for the owner, in the owner's language, up to 4000 characters: what changed, what they can see or do, how to try it, remaining limitations), question and 2 to 4 options when status is needs-decision, testsRun {command, passed, summary} when you ran tests, changedFiles, screenshots [{path, caption}] under .jevellan/evidence/, limitations, ownerCommands [{command, cwd, why}] only when the owner must run something. Then end your turn.
+
+## Interface
+
+No scripts. Other skills read only this file: its frontmatter (`jh-duty`, `jh-needs`) when a step is placed, and its body, which a runtime that cannot load skills gives its worker inline.

@@ -1,0 +1,41 @@
+      16  ```                                                                                                                                            
+      17                                                                                                                                                 
+      18 +## How to run                                                                                                                                  
+      19 +                                                                                                                                               
+      20 +Every script in `package.json`:                                                                                                                
+      21 +                                                                                                                                               
+      22 +- `SANDBOX_DATA_DIR=.sandbox-data npm start` - runs `tsx src/web/server.ts` and starts the web server on 127.0.0.1, port `PORT` (default 4173).
+         + `SANDBOX_DATA_DIR` is required; see [Run the web pages](#run-the-web-pages).                                                                  
+      23 +- `TZ=UTC SANDBOX_DATA_DIR=.sandbox-data npm test` - runs `vitest run`, the unit tests, the way CI does (the invoice date test needs `TZ=UTC`).
+      24 +- `npm run test:browser` - runs `playwright test`, the browser tests; Playwright starts the server itself. Run `npx playwright install chromium
+         +` on first use.                                                                                                                                
+      25 +- `npm run lint` - runs `tsc --noEmit`, the type check.                                                                                             
+      26 +- `npm run check:changelog` - runs `node scripts/check-changelog.mjs`, which fails when the branch diff against `origin/main` does not touch `C
+         +HANGELOG.md`; needs an `origin` remote. See [Changelog](#changelog).                                                                           
+      27 +                                                                                                                                                    
+      28  ## Run the web pages                                                                                                                                
+      29                                                                                                                                                       
+      30  ```sh                                                                                                                                              
+  ⎿  (files that changed while this command ran, by the command or by another process; a convenience view, not a review or audit of the command)               
+                                                                                                                                                               
+  Thought for 6s                                                                                                                                               
+                                                                                                                                                             
+● T7TM90B, "Add a How to run section to the README", has landed on main as commit d08c6df (a fast-forward).                                                    
+                                                                                                                                                            
+  README.md now has a "How to run" section between "Setup" and "Run the web pages". It lists all five scripts: start, test, test:browser, lint and            
+  check:changelog. Each has the exact command to type, what it runs, and the env vars it needs. It links to the existing "Run the web pages" and "Changelog"
+  sections rather than repeating them. Those sections are unchanged. CHANGELOG.md has one new entry. I read the diff and it is consistent with the rest of the
+  README: the same SANDBOX_DATA_DIR, port 4173 and TZ=UTC.                                                                               
+                                                                                                                                                            
+  The landing check ran the unit tests, which passed. That doesn't prove much for a docs-only change. check:changelog was not part of it.                       
+                                                                                                                                                               
+  The change exists only on your local main. Nothing was pushed and no pull request was opened, because this project isn't set to push after landing. AGENTS.md
+  says to publish a pull request, so you'll need to push it or open the PR yourself.                                       
+
+✻ Baked for 16s · done 11:01 AM                                                        
+                                                                                                                                                              
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯                                                                             
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  jevellan-harness-sandbox | main | 7% | Opus 5.5@xhigh | 0 files
+  ⏵⏵ bypass permissions on (shift+tab to cycle) · ← 1 agent   

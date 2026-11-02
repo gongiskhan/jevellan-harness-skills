@@ -3,18 +3,18 @@
     "query": "Automation task T2KD8F \"Friday invoice export\" is created and its worktree is ready. Use the workflow skill for automation and follow its steps in order.",
     "should_trigger": true,
     "role_phrase": true,
-    "context_skill": "jevellan-coordinator"
+    "context_role": "coordinator"
   },
   {
     "query": "Automation task T6AU4M \"Monthly supplier statements\" is created and its worktree is ready. Use the workflow skill for automation and follow its steps in order.",
     "should_trigger": true,
     "role_phrase": true,
-    "context_skill": "jevellan-coordinator"
+    "context_role": "coordinator"
   },
   {
     "query": "Step 3 (verify) of automation task T2KD8F reported testsRun.passed false. Apply the automation workflow's retry rule.",
     "should_trigger": true,
-    "context_skill": "jevellan-coordinator"
+    "context_role": "coordinator"
   },
   {
     "query": "What are the steps of an automation task in this project, and which of them can be skipped?",
@@ -23,25 +23,25 @@
   {
     "query": "For automation task T2KD8F placement answered --questions with needs_plan false. Record the steps as the automation workflow says and go on with the first step that runs.",
     "should_trigger": true,
-    "context_skill": "jevellan-coordinator"
+    "context_role": "coordinator"
   },
   {
     "query": "land.mjs answered {\"route\":\"verify-then-land\"} with exit 6 for automation task T6AU4M. Add the extra verify step as the automation workflow says.",
     "should_trigger": true,
-    "context_skill": "jevellan-coordinator"
+    "context_role": "coordinator"
   },
   {
     "query": "Automation task T8RM3V \"Weekly overdue reminder preview\" is created and its worktree is ready. Use the workflow skill for automation and follow its steps in order.",
     "should_trigger": true,
     "role_phrase": true,
     "held_out": true,
-    "context_skill": "jevellan-coordinator"
+    "context_role": "coordinator"
   },
   {
     "query": "Automation task T6AU4M is created and its worktree is ready. Run it by its workflow, starting with what comes before step 1.",
     "should_trigger": true,
     "held_out": true,
-    "context_skill": "jevellan-coordinator"
+    "context_role": "coordinator"
   },
   {
     "query": "Automation task T2KD8F \"Friday invoice export\" is created and its worktree is ready. Use the workflow skill for automation and follow its steps in order.",
@@ -49,19 +49,19 @@
     "remove_role": "workflow",
     "expect_role_missing": "workflow",
     "role_phrase": true,
-    "context_skill": "jevellan-coordinator"
+    "context_role": "coordinator"
   },
   {
     "query": "Feature task T8QW2N \"CSV export on the invoices page\" is created and its worktree is ready. Use the workflow skill for feature and follow its steps in order.",
     "should_trigger": false,
     "role_phrase": true,
-    "context_skill": "jevellan-coordinator"
+    "context_role": "coordinator"
   },
   {
     "query": "Bug task T5HB7C \"Invoice dates shown in the wrong timezone\" is created and its worktree is ready. Use the workflow skill for bug and follow its steps in order.",
     "should_trigger": false,
     "role_phrase": true,
-    "context_skill": "jevellan-coordinator"
+    "context_role": "coordinator"
   },
   {
     "query": "Your step is duty automate. Use the duty skill for automate now and follow it.\n\n# Your step\n\nTask T2KD8F: Friday invoice export\nKind: automation. Step 2 of 3: automate.\n\nEvery Friday, export the week's invoices from the admin page as CSV and save the file under exports/.\n\nStep instructions:\nBuild the Playwright automation as scripts in the project's automation folder (project.json.automationDir, default automations/). Commit on the task branch.\n\nStart the step now. End by writing .jevellan/report.json.",

@@ -10,10 +10,20 @@
 // before the key is read, so the key goes only to the real API or to this machine.
 //
 //   node jev.mjs models [--json]     lists the models the key can use (a check that Jev answers)
+//   node jev.mjs decide [--json]     asks Jev the questions on stdin, {"state": "<JSON text>", "questions": {...}},
+//                                    with providers.json's Jev model, and prints {jevModel, answeredBy, answers, usage,
+//                                    latencyMs}: the public way for another skill to ask Jev (the git skill's landing)
+//
+// Every Jev failure (no key, authentication, network, timeout, an invalid request or response, a JH_JEV_URL off the
+// loopback interface, a state over the size limit) is exit 2 with "Jev: <message>" on stderr, and with --json
+// {"error": "Jev: <message>", "exitCode": 2} on stdout. A providers.json that cannot be used is exit 2 with its own
+// message. The key is never printed.
 
 import fs from 'node:fs';
 
 export const JEV_API = 'https://api.typesafe.ai/v1';
+/** The largest state Jev takes, in characters (Jev's contract; placement shortens its state to fit). */
+export const STATE_LIMIT = 60_000;
 const LOOPBACK = Object.freeze(['127.0.0.1', 'localhost', '[::1]']);
 const LOOPBACK_RULE = 'must be an http URL on 127.0.0.1, localhost or [::1] (it exists for tests, and the Jev key may only go to the real API or this machine)';
 
@@ -261,25 +271,67 @@ export function jevMessage(error) {
   return error instanceof JevError ? `Jev: ${error.message}` : `Jev: ${error?.message ?? error}`;
 }
 
-async function main(argv) {
-  const json = argv.includes('--json');
-  if (argv[0] !== 'models') {
-    process.stderr.write('usage: node jev.mjs models [--json]\n');
-    return 2;
+const USAGE = 'usage: node jev.mjs models [--json]\n       node jev.mjs decide [--json]   (stdin: {"state": "<JSON text>", "questions": {...}})';
+
+/**
+ * The decide command: one Jev call with providers.json's Jev settings. `input` is the stdin text. Returns what the
+ * command prints; every failure is a JevError (or the ProvidersError of an unusable providers.json).
+ */
+export async function decideCommand(input, { loadProviders, fetch: fetchImpl } = {}) {
+  let request;
+  try {
+    request = JSON.parse(input);
+  } catch {
+    throw new JevError('invalid-request', 'invalid request (stdin must be one JSON object {"state": "<JSON text>", "questions": {...}})');
   }
+  if (!isObject(request) || typeof request.state !== 'string' || !isObject(request.questions)) {
+    throw new JevError('invalid-request', 'invalid request (stdin must be one JSON object {"state": "<JSON text>", "questions": {...}})');
+  }
+  if (request.state.length > STATE_LIMIT) throw new JevError('state-too-large');
+  const load = loadProviders ?? (await import('./lib/providers-file.mjs')).loadProviders;
+  const config = load();
+  // Refuses a JH_JEV_URL off the loopback interface before the key is read.
+  const client = jevClient(config.jev, { home: config.ownerHome, fetch: fetchImpl });
+  const started = Date.now();
+  const response = await client.decide({ model: config.jev.model, state: request.state, questions: request.questions });
+  return { jevModel: config.jev.model, answeredBy: response.model, answers: response.answers, usage: response.usage, latencyMs: Date.now() - started };
+}
+
+async function modelsCommand(json) {
   const { loadProviders } = await import('./lib/providers-file.mjs');
   const config = loadProviders();
-  try {
-    const models = await jevClient(config.jev, { home: config.ownerHome }).models();
-    const listed = models.models.map((m) => m.name);
-    const out = { ok: listed.includes(config.jev.model), model: config.jev.model, models: listed };
-    if (!out.ok) Object.assign(out, { error: `Jev: the configured model ${config.jev.model} is not listed`, exitCode: 2 });
-    process.stdout.write(json ? `${JSON.stringify(out)}\n` : `Jev answered; models: ${listed.join(', ')}; configured: ${config.jev.model}${out.ok ? '' : ' (NOT LISTED)'}\n`);
-    return out.ok ? 0 : 2;
-  } catch (error) {
-    process.stderr.write(`${jevMessage(error)}\n`);
-    if (json) process.stdout.write(`${JSON.stringify({ ok: false, error: jevMessage(error), exitCode: 2 })}\n`);
+  const models = await jevClient(config.jev, { home: config.ownerHome }).models();
+  const listed = models.models.map((m) => m.name);
+  const out = { ok: listed.includes(config.jev.model), model: config.jev.model, models: listed };
+  if (!out.ok) Object.assign(out, { error: `Jev: the configured model ${config.jev.model} is not listed`, exitCode: 2 });
+  process.stdout.write(json ? `${JSON.stringify(out)}\n` : `Jev answered; models: ${listed.join(', ')}; configured: ${config.jev.model}${out.ok ? '' : ' (NOT LISTED)'}\n`);
+  return out.ok ? 0 : 2;
+}
+
+async function main(argv) {
+  const json = argv.includes('--json');
+  const [command, ...rest] = argv.filter((a) => a !== '--json');
+  if (command === '--help' || command === '-h' || command === 'help') {
+    process.stdout.write(`${USAGE}\n`);
+    return 0;
+  }
+  if (!['models', 'decide'].includes(command) || rest.length) {
+    process.stderr.write(`${USAGE}\n`);
+    if (json) process.stdout.write(`${JSON.stringify({ error: USAGE, exitCode: 2 })}\n`);
     return 2;
+  }
+  try {
+    if (command === 'models') return await modelsCommand(json);
+    const out = await decideCommand(fs.readFileSync(0, 'utf8'));
+    process.stdout.write(`${JSON.stringify(out)}\n`);
+    return 0;
+  } catch (error) {
+    // A Jev failure reads "Jev: <message>"; providers.json's own refusals keep their message. Exit 2 either way.
+    const message = error instanceof JevError ? jevMessage(error) : (error?.message ?? String(error));
+    const exitCode = error instanceof JevError ? 2 : Number.isInteger(error?.exitCode) ? error.exitCode : 1;
+    process.stderr.write(`${message}\n`);
+    if (json) process.stdout.write(`${JSON.stringify(command === 'models' ? { ok: false, error: message, exitCode } : { error: message, exitCode })}\n`);
+    return exitCode;
   }
 }
 

@@ -2,89 +2,88 @@
   "id": "H7",
   "title": "Three in parallel",
   "status": "passed",
-  "startedAt": "2026-11-02T01:10:59.358Z",
-  "finishedAt": "2026-11-02T01:10:59.474Z",
-  "elapsedMs": 672000,
+  "startedAt": "2026-11-02T11:35:19.598Z",
+  "finishedAt": "2026-11-02T11:44:01.266Z",
+  "elapsedMs": 521668,
   "passed": 10,
   "total": 10,
   "timings": {
-    "wall time, request to the last landing": 377162,
-    "task T67AEHV (README: how to run)": 66479,
-    "task TJTX078 (Unit test for the HTML escape helper)": 96439,
-    "task TKZD411 (Customers page: empty-state message)": 371386
+    "wall time, request to the last landing": 501726,
+    "task TYJMZ7Y (README: how to run)": 87031,
+    "task TW3G0NB (Unit test for an untested pure function )": 101356,
+    "task TYDWRBY (Customers page empty-state message with )": 407268
   },
   "notes": [
-    "re-check of the run of coordinator session f22e5ea0-346b-4ab0-8363-b8b3c181f339: the first evaluation picked the README task as the customers task (its brief mentions customers) and counted the read-only git remote -v as a slip; both checks were fixed",
-    "(1) README: how to run: Jev document claude-sonnet-5-5 medium via claude-second (p 0.71); Jevellan on 31 October: Opus medium",
-    "(2) Unit test for the HTML escape helper: Jev implement gpt-6-astra high via codex (p 0.51); Jevellan on 31 October: GPT medium",
-    "(3) Customers page: empty-state message: Jev plan claude-opus-5-5 high via claude-second (p 0.87); implement claude-opus-5-5 high via claude-second (p 0.73); verify claude-opus-5-5 high via claude-second (p 0.89); Jevellan on 31 October: GPT high",
-    "Skill invocations: jevellan-coordinator, jevellan-ledger, jevellan-git, jevellan-router, jevellan-runtime-claude, jevellan-runtime-codex, jevellan-workflow-feature",
-    "landing of T67AEHV: land {\"land\":0.98,\"verify-then-land\":0.01,\"ask-owner\":0.01}",
-    "landing of TJTX078: land {\"land\":0.98,\"verify-then-land\":0.02,\"ask-owner\":0}",
-    "landing of TKZD411: land {\"land\":0.98,\"verify-then-land\":0.02,\"ask-owner\":0}",
-    "coordinator's last reply: All three tasks are landed on main: - **README: how to run (T67AEHV)** - `aa08466`. Setup, run and test commands now work when copy-pasted, including the required `SANDBOX_DATA_DIR`, `TZ=UTC` for unit tests, and the Playwright browser install. - **Unit test for the HTML escape helper (TJTX078)** - `5e757bd`. `escape` moved unchanged into `src/web/html.ts`, with 4 tests in `src/web/html.test.ts`. - **Customers page: empty-state message (TKZD411)** - `b3bba11`. The table keeps its headers and show",
-    "elapsed: the run itself took 672 s (acceptance/out/h7.log, started 00:58:48Z); the re-check that rewrote this record took under a second"
+    "coordinator session 311871fa-13fe-4b87-8095-c1fdbccd8a04 in /home/ggomes/jevellan-projects/jevellan-harness-runs/h07-v020b-1793619319335/jevellan-harness-sandbox",
+    "(1) README: how to run: Jev document claude-sonnet-5-5 high via claude-main (p 0.70); Jevellan on 31 October: Opus medium",
+    "(2) Unit test for an untested pure function (escape): Jev implement gpt-6-astra high via codex (p 0.60); Jevellan on 31 October: GPT medium",
+    "(3) Customers page empty-state message with test: Jev plan claude-opus-5-5 high via claude-main (p 0.80); implement gpt-6-astra high via codex (p 0.53); verify claude-opus-5-5 high via claude-main (p 0.79); Jevellan on 31 October: GPT high",
+    "Skill invocations: jevellan-coordinator, jevellan-ledger, jevellan-git, jevellan-workflow-feature, jevellan-router, jevellan-runtime-claude, jevellan-runtime-codex",
+    "landing of TYJMZ7Y: land {\"land\":0.98,\"verify-then-land\":0.01,\"ask-owner\":0.01}",
+    "landing of TW3G0NB: land {\"land\":0.98,\"verify-then-land\":0.02,\"ask-owner\":0}",
+    "landing of TYDWRBY: land {\"land\":0.74,\"verify-then-land\":0.25,\"ask-owner\":0.01}",
+    "coordinator's last reply: All three tasks are on local main, and the ledger shows nothing left open. - **TYJMZ7Y \"README: how to run\"** landed as `5b3db2b`. The README commands now include the environment variables they need. - **TW3G0NB \"Unit test for an untested pure function (escape)\"** landed as `702bfa0`. `escape` is now in `src/web/html.ts` with 7 tests. - **TYDWRBY \"Customers page empty-state message with test\"** landed as `871b89e`. `/customers` shows \"No customers yet.\" when empty and the same table as before ot"
   ],
   "checks": [
     {
       "name": "the skills are installed",
       "ok": true,
       "detail": "",
-      "at": "2026-11-02T01:10:59.437Z"
+      "at": "2026-11-02T11:35:19.673Z"
     },
     {
       "name": "three tasks created",
       "ok": true,
-      "detail": "T67AEHV single document: README: how to run | TJTX078 single implement: Unit test for the HTML escape helper | TKZD411 feature: Customers page: empty-state message",
-      "at": "2026-11-02T01:10:59.459Z"
+      "detail": "TYJMZ7Y single document: README: how to run | TW3G0NB single implement: Unit test for an untested pure function (escape) | TYDWRBY feature: Customers page empty-state message with test",
+      "at": "2026-11-02T11:44:01.252Z"
     },
     {
       "name": "three worktrees",
       "ok": true,
       "detail": "",
-      "at": "2026-11-02T01:10:59.460Z"
+      "at": "2026-11-02T11:44:01.252Z"
     },
     {
       "name": "every started step was placed by Jev with probabilities first",
       "ok": true,
       "detail": "5 steps",
-      "at": "2026-11-02T01:10:59.460Z"
+      "at": "2026-11-02T11:44:01.252Z"
     },
     {
       "name": "the tasks ran in parallel (their steps overlapped in time)",
       "ok": true,
       "detail": "",
-      "at": "2026-11-02T01:10:59.460Z"
+      "at": "2026-11-02T11:44:01.252Z"
     },
     {
       "name": "three landings or asks",
       "ok": true,
-      "detail": "T67AEHV: task.landed, TJTX078: task.landed, TKZD411: task.landed",
-      "at": "2026-11-02T01:10:59.460Z"
+      "detail": "TYJMZ7Y: task.landed, TW3G0NB: task.landed, TYDWRBY: task.landed",
+      "at": "2026-11-02T11:44:01.252Z"
     },
     {
       "name": "screenshots for the customers task under its evidence folder",
       "ok": true,
-      "detail": "6 image files, 10 in reports: .jevellan/evidence/customers-empty-desktop.png, .jevellan/evidence/customers-empty-phone.png, .jevellan/evidence/customers-with-customers-desktop.png, .jevellan/evidence/customers-with-customers-phone.png, .jevellan/evidence/customers-empty-desktop.png, .jevellan/evidence/customers-empty-phone.png, .jevellan/evidence/customers-with-customers-desktop.png, .jevellan/evidence/customers-with-customers-phone.png, .jevellan/evidence/invoices-desktop.png, .jevellan/evidence/invoices-phone.png",
-      "at": "2026-11-02T01:10:59.461Z"
+      "detail": "10 image files, 12 in reports: .jevellan/evidence/customers-empty-desktop.png, .jevellan/evidence/customers-empty-phone.png, .jevellan/evidence/customers-populated-desktop.png, .jevellan/evidence/customers-populated-phone.png, .jevellan/evidence/customers-empty-missing-file-desktop.png, .jevellan/evidence/customers-empty-missing-file-phone.png, .jevellan/evidence/customers-empty-list-desktop.png, .jevellan/evidence/customers-empty-list-phone.png, .jevellan/evidence/customers-populated-desktop.png, .jevellan/evidence/customers-populated-phone.png, .jevellan/evidence/customers-empty-after-removal-desktop.png, .jevellan/evidence/customers-empty-after-removal-phone.png",
+      "at": "2026-11-02T11:44:01.253Z"
     },
     {
       "name": "zero slips",
       "ok": true,
       "detail": "",
-      "at": "2026-11-02T01:10:59.461Z"
+      "at": "2026-11-02T11:44:01.253Z"
     },
     {
       "name": "main moved by the landings",
       "ok": true,
       "detail": "",
-      "at": "2026-11-02T01:10:59.466Z"
+      "at": "2026-11-02T11:44:01.257Z"
     },
     {
       "name": "the project checkout is clean",
       "ok": true,
       "detail": "",
-      "at": "2026-11-02T01:10:59.474Z"
+      "at": "2026-11-02T11:44:01.266Z"
     }
   ]
 }

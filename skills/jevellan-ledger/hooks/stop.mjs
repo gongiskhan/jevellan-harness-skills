@@ -21,8 +21,8 @@ import { isMain, runHook, logLine } from '../scripts/lib/hook.mjs';
 import { appendEvent } from '../scripts/lib/ledger.mjs';
 import { gitLocate, projectPaths } from '../scripts/lib/project.mjs';
 import { LIMITS, cutText, fitReportLine, validateReport } from '../scripts/lib/report-schema.mjs';
+import { readReportFile, recordReport as appendReport } from '../scripts/lib/report-file.mjs';
 import { redactText } from '../scripts/lib/redact.mjs';
-import { compactTime } from '../scripts/lib/ids.mjs';
 
 export const MISSING_REASON =
   'End the step by writing .jevellan/report.json with status progress, done, blocked or needs-decision (see your duty skill).';
@@ -107,21 +107,6 @@ function findReport(cwd) {
   return reportCandidates(cwd).find((file) => fs.existsSync(file)) ?? null;
 }
 
-function archivePath(root, task, step, suffix = '') {
-  const dir = projectPaths(root).reports;
-  fs.mkdirSync(dir, { recursive: true });
-  return path.join(dir, `${task}-s${step}-${compactTime()}${suffix}.json`);
-}
-
-function moveFile(file, target) {
-  try {
-    fs.renameSync(file, target);
-  } catch (error) {
-    if (error.code !== 'EXDEV') throw error;
-    fs.copyFileSync(file, target);
-    fs.unlinkSync(file);
-  }
-}
 
 function endSession(root, { task, step, session }, status) {
   try {
@@ -135,11 +120,13 @@ function endSession(root, { task, step, session }, status) {
 // the file moved to that archive, then session.ended. Returns false when the ledger refused the line; then nothing
 // moved, and the turn is blocked with the reason while this turn's blocks last.
 function recordReport(root, ctx, turn, data, { file = null, suffix = '' } = {}) {
-  const { task, step, session } = ctx;
-  let target = null;
+  const { task, step } = ctx;
   try {
-    if (file) target = archivePath(root, task, step, suffix);
-    appendEvent(root, { kind: 'step.report', task, step, session, data: fitReportLine(file ? { ...data, reportFile: target } : data) });
+    appendReport(root, ctx, data, {
+      file,
+      suffix,
+      onMoveError: (error, from, to) => logLine(root, 'stop', `${task} s${step}: report recorded, but ${from} could not be moved to ${to}: ${error?.message ?? error}`),
+    });
   } catch (error) {
     const why = redactText(String(error?.message ?? error)).replace(/\s+/g, ' ');
     const { counts, countsFile } = turn;
@@ -154,13 +141,6 @@ function recordReport(root, ctx, turn, data, { file = null, suffix = '' } = {}) 
       logLine(root, 'stop', `${task} s${step}: ${data.status} report not recorded after ${MAX_UNRECORDED_BLOCKS} blocks${file ? `, ${file} left in place` : ''}: ${why}`);
     }
     return false;
-  }
-  if (file) {
-    try {
-      moveFile(file, target);
-    } catch (error) {
-      logLine(root, 'stop', `${task} s${step}: report recorded, but ${file} could not be moved to ${target}: ${error?.message ?? error}`);
-    }
   }
   endSession(root, ctx, data.status);
   return true;
@@ -228,19 +208,9 @@ export function stopHook(input, root) {
     return;
   }
 
-  let parsed;
-  let problem = null;
-  try {
-    parsed = JSON.parse(fs.readFileSync(file, 'utf8'));
-  } catch (error) {
-    problem = `report.json: is not valid JSON (${error.message})`;
-  }
-  let report = null;
-  if (!problem) {
-    const result = validateReport(parsed);
-    if (result.ok) report = result.report;
-    else problem = result.problem;
-  }
+  const read = readReportFile(file);
+  const problem = read?.problem ?? (read ? null : 'report.json: the file went away while it was read');
+  const report = problem ? null : read.data;
   if (problem) {
     if (counts.invalid < MAX_INVALID_BLOCKS) {
       counts.invalid += 1;
@@ -250,7 +220,7 @@ export function stopHook(input, root) {
       return;
     }
     const invalid = { status: 'blocked', summary: 'The report was not valid.', limitations: problem, synthesized: true };
-    if (!recordReport(root, ctx, turn, invalid, { file, suffix: '-invalid' })) return;
+    if (!recordReport(root, ctx, turn, invalid, { file: read ? file : null, suffix: '-invalid' })) return;
     reset();
     logLine(root, 'stop', `${task} s${step}: invalid report again, recorded blocked: ${problem}`);
     return;
