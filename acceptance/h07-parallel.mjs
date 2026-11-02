@@ -14,16 +14,31 @@ const dir = process.env.JH_H7_DIR || SANDBOX;
 const j = new Journey('H7', 'Three in parallel');
 const install = sh(NODE, [path.join(REPO, 'install.mjs'), dir, '--json']);
 j.check('the skills are installed', install.status === 0, install.stderr.trim());
-const startSeq = readLedger(dir).length;
-const mainBefore = git(dir, ['rev-parse', 'main']);
-if (coord.exists()) await coord.stop();
-const t0 = Date.now();
-const { session, transcript } = await coord.start(dir);
-j.note(`coordinator session ${session} in ${dir}`);
-await coord.send(REQUEST);
+// JH_H7_RECHECK='{"session": "...", "startSeq": N, "mainBefore": "..."}' evaluates a finished run again from its ledger
+// lines and transcript without a new coordinator run (used after a fix to the checks themselves).
+const recheck = process.env.JH_H7_RECHECK ? JSON.parse(process.env.JH_H7_RECHECK) : null;
+const startSeq = recheck ? recheck.startSeq : readLedger(dir).length;
+const mainBefore = recheck ? recheck.mainBefore : git(dir, ['rev-parse', 'main']);
+let t0 = Date.now();
+let session;
+let transcript;
+if (recheck) {
+  session = recheck.session;
+  transcript = coord.transcriptFile(dir, session);
+  t0 = Date.parse(readLedger(dir).slice(startSeq).find((e) => e.kind === 'task.created').t) - 60_000;
+  j.note(`re-check of the run of coordinator session ${session}: ${recheck.reason}`);
+} else {
+  if (coord.exists()) await coord.stop();
+  ({ session, transcript } = await coord.start(dir));
+  j.note(`coordinator session ${session} in ${dir}`);
+  await coord.send(REQUEST);
+}
 
 const ended = new Map();
-const deadline = Date.now() + 90 * 60 * 1000;
+const deadline = recheck ? 0 : Date.now() + 90 * 60 * 1000;
+if (recheck) {
+  for (const e of readLedger(dir).slice(startSeq)) if ((e.kind === 'task.landed' || e.kind === 'task.asked') && !ended.has(e.task)) ended.set(e.task, { kind: e.kind, at: Date.parse(e.t) });
+}
 let lastLen = 0;
 let lastProgress = Date.now();
 while (Date.now() < deadline) {
@@ -42,12 +57,14 @@ while (Date.now() < deadline) {
   if (tasks.length >= 3 && tasks.every((t) => ended.has(t))) break;
   if (Date.now() - lastProgress > 15 * 60 * 1000 && coord.analyse(transcript, dir).idle) break;
 }
-const wall = Date.now() - t0;
+const wall = recheck ? Math.max(...[...ended.values()].map((v) => v.at)) - Date.parse(readLedger(dir).slice(startSeq).find((e) => e.kind === 'task.created').t) : Date.now() - t0;
 j.time('wall time, request to the last landing', wall);
-await coord.waitIdle(transcript, dir, { timeoutMs: 300_000, quietMs: 15_000 });
+if (!recheck) await coord.waitIdle(transcript, dir, { timeoutMs: 300_000, quietMs: 15_000 });
 const report = coord.analyse(transcript, dir);
-fs.writeFileSync(path.join(REPO, 'acceptance', 'results', 'H7-screen.txt'), coord.capture(400));
-await coord.stop();
+if (!recheck) {
+  fs.writeFileSync(path.join(REPO, 'acceptance', 'results', 'H7-screen.txt'), coord.capture(400));
+  await coord.stop();
+}
 
 const events = readLedger(dir).slice(startSeq);
 const created = events.filter((e) => e.kind === 'task.created');
@@ -71,7 +88,7 @@ for (const c of created) {
   const end = ended.get(c.task);
   if (end) j.time(`task ${c.task} (${c.data.title.slice(0, 40)})`, end.at - Date.parse(c.t));
 }
-const customers = created.find((c) => /customer|empty/i.test(`${c.data.title} ${c.data.text}`));
+const customers = created.find((c) => /empty/i.test(c.data.title)) ?? created.find((c) => /customer/i.test(c.data.title));
 const customersWt = customers && worktrees.find((w) => w.task === customers.task)?.data.path;
 const reportsShots = customers ? events.filter((e) => e.task === customers.task && e.kind === 'step.report').flatMap((e) => e.data.screenshots ?? []) : [];
 const evidence = customersWt && fs.existsSync(path.join(customersWt, '.jevellan', 'evidence')) ? fs.readdirSync(path.join(customersWt, '.jevellan', 'evidence')).filter((f) => /\.(png|jpe?g|webp)$/i.test(f)) : [];

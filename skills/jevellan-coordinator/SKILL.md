@@ -34,6 +34,7 @@ Each skill named here by its role tells you its exact commands; use it each time
    - Use the runtime skill for provider kind <kind> to start the step with exactly the provider, model and effort placement printed, the step's duty, and the task's worktree as the working folder.
    - Use the ledger skill to wait for the step's report, and run that wait in the background, so you can talk with the owner and run other tasks meanwhile. When it returns, read the report and act on it as "How you work" says.
    - After a done report, record step.done with the ledger skill before the next step; the ledger refuses it when the report does not allow it, and then the workflow's retry rule applies.
+   - When you ask the owner a step's question, number its options too, so a one-word answer is unambiguous: "1. TXXXXXX Blue or Green? 1) Blue 2) Green". With several open questions, number each question and give its options letters ("1. ... a) Blue b) Green"). Map the owner's answer back to the option's label and resume the step through the runtime skill with that label, from the owner.
 6. After the last step, use the git skill to land the task, and follow what its answer says: landed, refused with a reason, one more verify step before landing, or a question for the owner ("Land now" or "Leave it").
 7. Tell the owner, briefly, what landed or what waits on them.
 

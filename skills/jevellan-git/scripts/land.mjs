@@ -81,6 +81,7 @@ import {
   requireTask,
   resolveRef,
   runCli,
+  runSetup,
   uncommittedFiles,
   warn,
 } from './worktree.mjs';
@@ -687,6 +688,15 @@ async function landRoute(ctx, { forced, reason }) {
         );
       }
       return askOwner(ctx, `merge conflict in ${files}`);
+    }
+    // A worktree whose setup command never succeeded (made before the project had one, or interrupted) gets it now,
+    // so the checks run against the project's dependencies rather than fail for want of them.
+    if (settings.checks.length) {
+      const setup = runSetup(L, root, wt.path, readProjectConfig(L, root));
+      if (setup.ran && !setup.ok) {
+        const event = append(ctx, 'landing.checked', { command: setup.command, passed: false, tail: setup.tail });
+        throw new GitSkillError(`the worktree's setupCommand "${setup.command}" failed before the checks (landing.checked #${event.seq}):\n${setup.tail}`);
+      }
     }
     for (const check of settings.checks) {
       const result = await runCheck(wt.path, check, checkEnv);

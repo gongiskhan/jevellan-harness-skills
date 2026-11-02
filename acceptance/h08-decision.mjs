@@ -26,7 +26,7 @@ await coord.waitIdle(transcript, dir, { timeoutMs: 300_000, quietMs: 10_000 });
 const screen = coord.capture(120);
 fs.writeFileSync(path.join(RESULTS_DIR, 'H8-screen-question.txt'), screen);
 const reply = coord.analyse(transcript, dir).lastText;
-j.check('the coordinator surfaced the question with numbered options', /Blue or Green\?/.test(reply) && /1[.)]\s*\S*\s*Blue|1[.)].*Blue/.test(reply) && /2[.)].*Green/.test(reply), reply.replace(/\s+/g, ' ').slice(0, 300));
+j.check('the coordinator surfaced the question with numbered options', /Blue or Green\?/.test(reply) && /(^|[\s(])(1[.)]|a\))\s*Blue/m.test(reply) && /(^|[\s(])(2[.)]|b\))\s*Green/m.test(reply), reply.replace(/\s+/g, ' ').slice(0, 300));
 const beforeAnswer = mine().length;
 await coord.send('1');
 const resumed = await until(() => mine().slice(beforeAnswer - 0).find((e) => e.kind === 'step.started' && e.task === task && e.data.resumed), { timeoutMs: 600_000, everyMs: 3000 });

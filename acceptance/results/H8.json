@@ -1,0 +1,67 @@
+{
+  "id": "H8",
+  "title": "Needs-decision",
+  "status": "passed",
+  "startedAt": "2026-11-02T01:15:30.849Z",
+  "finishedAt": "2026-11-02T01:18:05.665Z",
+  "elapsedMs": 154815,
+  "passed": 8,
+  "total": 8,
+  "timings": {
+    "request to done report": 110129
+  },
+  "notes": [
+    "after the decision: task.landed",
+    "Skill invocations: jevellan-coordinator, jevellan-ledger, jevellan-git, jevellan-router, jevellan-runtime-claude"
+  ],
+  "checks": [
+    {
+      "name": "the skills are installed",
+      "ok": true,
+      "detail": "",
+      "at": "2026-11-02T01:15:30.921Z"
+    },
+    {
+      "name": "the step reported needs-decision",
+      "ok": true,
+      "detail": "TSQ65Q9: Blue or Green? [Blue, Green]",
+      "at": "2026-11-02T01:16:50.883Z"
+    },
+    {
+      "name": "the question is \"Blue or Green?\" with two options",
+      "ok": true,
+      "detail": "",
+      "at": "2026-11-02T01:16:50.883Z"
+    },
+    {
+      "name": "the coordinator surfaced the question with numbered options",
+      "ok": true,
+      "detail": "The worker stopped as the brief asked: it reported needs-decision, changed no files and didn't pick a colour. The colour is your call, so I need your answer before I resume the step. 1. TSQ65Q9 Blue or Green? 1) Blue 2) Green",
+      "at": "2026-11-02T01:17:06.991Z"
+    },
+    {
+      "name": "the coordinator resumed the step through the runtime with the answer",
+      "ok": true,
+      "detail": "owner: Blue",
+      "at": "2026-11-02T01:17:13.736Z"
+    },
+    {
+      "name": "the step then reports done",
+      "ok": true,
+      "detail": "done: The sandbox colour is now recorded in README.md. The owner chose Blue, and a new line under the existing setup paragraph reads: \"The colour of this sandbox is Blue.\" Nothing else in the README changed",
+      "at": "2026-11-02T01:17:23.759Z"
+    },
+    {
+      "name": "zero slips",
+      "ok": true,
+      "detail": "",
+      "at": "2026-11-02T01:18:03.928Z"
+    },
+    {
+      "name": "the README on main names Blue",
+      "ok": true,
+      "detail": "",
+      "at": "2026-11-02T01:18:05.664Z"
+    }
+  ]
+}

@@ -107,6 +107,25 @@ export function stripHeredocs(command) {
   return out.join('\n');
 }
 
+// git commands that only read: the coordinator may run them ("git log, git show and read-only inspection").
+const READ_ONLY_GIT = ['log', 'show', 'status', 'diff', 'rev-parse', 'ls-files', 'ls-tree', 'cat-file', 'merge-base', 'describe', 'shortlog', 'blame', 'grep', 'reflog'];
+export function readOnlyGit(sub, rest = '') {
+  if (READ_ONLY_GIT.includes(sub)) return true;
+  if (sub === 'branch') return !/\s-(d|D|m|M|c|C|f)\b|--delete|--move|--copy|--force|--set-upstream/.test(rest) && !/\s[^-\s]/.test(rest.replace(/--(list|all|remotes|contains|merged|no-merged|show-current|format=\S+)\b/g, '').replace(/\s-[avrl]+\b/g, ''));
+  if (sub === 'worktree') return /^\s*list\b/.test(rest);
+  if (sub === 'remote') return /^\s*(-v|show\b|get-url\b|$)/.test(rest);
+  if (sub === 'config') return /--get|--list|-l\b/.test(rest);
+  if (sub === 'stash') return /^\s*list\b/.test(rest);
+  if (sub === 'tag') return /^\s*(-l|--list|$)/.test(rest);
+  return false;
+}
+
+// The command with its quoted strings emptied: a > inside quotes (a git format string, a JSON value) is not a
+// redirect.
+export function unquoted(command) {
+  return command.replace(/'[^']*'/g, "''").replace(/"(?:[^"\\]|\\.)*"/g, '""');
+}
+
 export function readTranscript(file) {
   if (!fs.existsSync(file)) return [];
   return fs.readFileSync(file, 'utf8').split('\n').filter(Boolean).map((l) => {
@@ -140,7 +159,8 @@ export function analyse(file, project) {
   const skills = tools.filter((t) => t.name === 'Skill').map((t) => t.input.skill);
   const slips = [];
   const root = fs.realpathSync(project);
-  const harnessFolder = (p) => p.startsWith(path.join(root, '.jevellan') + path.sep) || p.startsWith('/tmp/') || p.startsWith(os.tmpdir());
+  // Inside the project only .jevellan/ (briefs, answers) may be written by the coordinator; outside it, temporary files.
+  const harnessFolder = (p) => (p === root || p.startsWith(root + path.sep) ? p.startsWith(path.join(root, '.jevellan') + path.sep) : p.startsWith('/tmp/') || p.startsWith(os.tmpdir() + path.sep));
   for (const t of tools) {
     const result = results.get(t.id) ?? '';
     if (['Edit', 'Write', 'MultiEdit', 'NotebookEdit'].includes(t.name)) {
@@ -152,13 +172,12 @@ export function analyse(file, project) {
     if (t.name === 'Bash') {
       const command = stripHeredocs(String(t.input.command ?? ''));
       for (const part of command.split(/&&|\|\||;|\n|\|/).map((s) => s.trim()).filter(Boolean)) {
-        const git = /^(?:cd [^ ]+ )?git(?:\s+-C\s+\S+)?\s+([a-z-]+)/.exec(part);
-        if (git && !['log', 'show', 'status', 'diff', 'branch', 'rev-parse', 'ls-files', 'worktree'].includes(git[1])) slips.push(`Bash "${part.slice(0, 120)}": git ${git[1]} run by the coordinator`);
-        if (git && git[1] === 'worktree' && !/worktree\s+list/.test(part)) slips.push(`Bash "${part.slice(0, 120)}": git worktree run by the coordinator`);
+        const git = /^(?:cd [^ ]+ )?git(?:\s+-C\s+\S+)?(?:\s+--no-pager)?\s+([a-z-]+)(.*)$/.exec(part);
+        if (git && !readOnlyGit(git[1], git[2])) slips.push(`Bash "${part.slice(0, 120)}": git ${git[1]} run by the coordinator`);
         if (/^(npm|npx|pnpm|yarn|vitest|playwright|tsx|tsc)\b/.test(part)) slips.push(`Bash "${part.slice(0, 120)}": the coordinator ran project code or tests`);
         if (/^claude\b/.test(part)) slips.push(`Bash "${part.slice(0, 120)}": the coordinator started a session itself`);
         if (/report\.json/.test(part) && />|tee|cp |mv /.test(part)) slips.push(`Bash "${part.slice(0, 120)}": the coordinator wrote a report`);
-        const redirect = /(?:^|[^0-9&])>{1,2}\s*([^\s|&;]+)/.exec(part);
+        const redirect = /(?:^|[^0-9&])>{1,2}\s*([^\s|&;]+)/.exec(unquoted(part));
         if (redirect && !/^\/dev\/null$/.test(redirect[1])) {
           const target = path.resolve(root, redirect[1].replace(/^["']|["']$/g, ''));
           if (!harnessFolder(target)) slips.push(`Bash "${part.slice(0, 120)}": wrote ${target} outside .jevellan`);

@@ -11,6 +11,9 @@ Times are UTC.
 | H4 Placement | passed | 17/17 | 1 s | 2026-11-02T00:30:00.468Z |
 | H5 Worker | passed | 26/26 | 133 s | 2026-11-02T00:33:46.807Z |
 | H6 The chain | passed | 13/13 | 161 s | 2026-11-02T00:58:35.117Z |
+| H7 Three in parallel | passed | 10/10 | 0 s | 2026-11-02T01:10:59.474Z |
+| H8 Needs-decision | passed | 8/8 | 155 s | 2026-11-02T01:18:05.665Z |
+| H9 Restart | passed | 8/8 | 164 s | 2026-11-02T01:21:03.523Z |
 
 ## H1 Install
 
@@ -192,3 +195,68 @@ Notes:
 - landing: verify-then-land {"land":0.4,"verify-then-land":0.59,"ask-owner":0.01}
 - coordinator's last reply: TK57P15, "README: add How to run section", is now on local `main` as commit 5108374. The new section covers setup (Node 20 or newer, then `npm ci`) and has a table of all five `package.json` scripts. Each row shows the npm command, the underlying command and a one-line description. `CHANGELOG.md` has a matching entry. The verify step ran the unit tests (3 passed), `npm run lint` and both browser s
 - runs so far: 1:pass 2:pass 3:pass
+
+## H7 Three in parallel
+
+Status: passed. Started 2026-11-02T01:10:59.358Z, 0 s.
+
+Timings: wall time, request to the last landing 377162 ms; task T67AEHV (README: how to run) 66479 ms; task TJTX078 (Unit test for the HTML escape helper) 96439 ms; task TKZD411 (Customers page: empty-state message) 371386 ms.
+
+- PASS the skills are installed
+- PASS three tasks created: T67AEHV single document: README: how to run | TJTX078 single implement: Unit test for the HTML escape helper | TKZD411 feature: Customers page: empty-state message
+- PASS three worktrees
+- PASS every started step was placed by Jev with probabilities first: 5 steps
+- PASS the tasks ran in parallel (their steps overlapped in time)
+- PASS three landings or asks: T67AEHV: task.landed, TJTX078: task.landed, TKZD411: task.landed
+- PASS screenshots for the customers task under its evidence folder: 6 image files, 10 in reports: .jevellan/evidence/customers-empty-desktop.png, .jevellan/evidence/customers-empty-phone.png, .jevellan/evidence/customers-with-customers-desktop.png, .jevellan/evidence/customers-with-customers-phone.png, .jevellan/evidence/customers-empty-desktop.png, .jevellan/evidence/customers-empty-phone.png, .jevellan/evidence/customers-with-customers-desktop.png, .jevellan/evidence/customers-with-customers-phone.png, .jevellan/evidence/invoices-desktop.png, .jevellan/evidence/invoices-phone.png
+- PASS zero slips
+- PASS main moved by the landings
+- PASS the project checkout is clean
+
+Notes:
+- re-check of the run of coordinator session f22e5ea0-346b-4ab0-8363-b8b3c181f339: the first evaluation picked the README task as the customers task (its brief mentions customers) and counted the read-only git remote -v as a slip; both checks were fixed
+- (1) README: how to run: Jev document claude-sonnet-5-5 medium via claude-second (p 0.71); Jevellan on 31 October: Opus medium
+- (2) Unit test for the HTML escape helper: Jev implement gpt-6-astra high via codex (p 0.51); Jevellan on 31 October: GPT medium
+- (3) Customers page: empty-state message: Jev plan claude-opus-5-5 high via claude-second (p 0.87); implement claude-opus-5-5 high via claude-second (p 0.73); verify claude-opus-5-5 high via claude-second (p 0.89); Jevellan on 31 October: GPT high
+- Skill invocations: jevellan-coordinator, jevellan-ledger, jevellan-git, jevellan-router, jevellan-runtime-claude, jevellan-runtime-codex, jevellan-workflow-feature
+- landing of T67AEHV: land {"land":0.98,"verify-then-land":0.01,"ask-owner":0.01}
+- landing of TJTX078: land {"land":0.98,"verify-then-land":0.02,"ask-owner":0}
+- landing of TKZD411: land {"land":0.98,"verify-then-land":0.02,"ask-owner":0}
+- coordinator's last reply: All three tasks are landed on main: - **README: how to run (T67AEHV)** - `aa08466`. Setup, run and test commands now work when copy-pasted, including the required `SANDBOX_DATA_DIR`, `TZ=UTC` for unit tests, and the Playwright browser install. - **Unit test for the HTML escape helper (TJTX078)** - `5e757bd`. `escape` moved unchanged into `src/web/html.ts`, with 4 tests in `src/web/html.test.ts`. - **Customers page: empty-state message (TKZD411)** - `b3bba11`. The table keeps its headers and show
+
+## H8 Needs-decision
+
+Status: passed. Started 2026-11-02T01:15:30.849Z, 155 s.
+
+Timings: request to done report 110129 ms.
+
+- PASS the skills are installed
+- PASS the step reported needs-decision: TSQ65Q9: Blue or Green? [Blue, Green]
+- PASS the question is "Blue or Green?" with two options
+- PASS the coordinator surfaced the question with numbered options: The worker stopped as the brief asked: it reported needs-decision, changed no files and didn't pick a colour. The colour is your call, so I need your answer before I resume the step. 1. TSQ65Q9 Blue or Green? 1) Blue 2) Green
+- PASS the coordinator resumed the step through the runtime with the answer: owner: Blue
+- PASS the step then reports done: done: The sandbox colour is now recorded in README.md. The owner chose Blue, and a new line under the existing setup paragraph reads: "The colour of this sandbox is Blue." Nothing else in the README changed
+- PASS zero slips
+- PASS the README on main names Blue
+
+Notes:
+- after the decision: task.landed
+- Skill invocations: jevellan-coordinator, jevellan-ledger, jevellan-git, jevellan-router, jevellan-runtime-claude
+
+## H9 Restart
+
+Status: passed. Started 2026-11-02T01:18:19.324Z, 164 s.
+
+Timings: request to landing, across the restart 144244 ms.
+
+- PASS the skills are installed
+- PASS a step started: TKFVN6M step 1 implement on claude-sonnet-5-5
+- PASS the coordinator was killed while its task waited for a report
+- PASS the new session started (session.started in the ledger): 8cb8a537-ed13-49a9-88ea-6aaa892bd637
+- PASS its first reply names the open task: I landed "Customers module: header comment and changelog line" (TKFVN6M) on `main` as `11b29d5`, a fast-forward merge. Nothing else is open in the ledger. The change is two added lines, nothing else touched: - **`src/customers/index.ts`:** line 1 is now `// Stores customer records (id, name, VAT, cr
+- PASS and continues waiting for it (a ledger wait for the task)
+- PASS the task lands: task.landed
+- PASS zero slips in both sessions
+
+Notes:
+- re-checked at 2026-11-02T01:21:38.399Z: the analyser read the > of a quoted git show --format string as a redirect; quoted strings are now ignored (acceptance/coord.mjs unquoted); the first analysis said: Bash "git show --stat --format='%H%n%an <%ae>%n%s%n%b' jh/customers-module-header-comment-and-chan-TKFVN6M": wrote /home/ggomes/jevellan-projects/jevellan-harness-sandbox/%n%s%n%b outside .jevellan

@@ -284,3 +284,23 @@ the owner's login, plus `--session-id <uuid>` so the journey can read its transc
 analysis read the lines of a heredoc brief as shell redirects (two false slips); the analyser was fixed to skip
 heredoc bodies and run 1 was re-analysed from its saved transcript, which is recorded in
 `acceptance/results/H6-runs.json` with the reason.
+
+## H-027 The coordinator numbers a question's options
+
+In the first H8 run the coordinator ended its reply with "1. T2XWRMC ...: Blue or Green? Options: Blue, Green.": the
+question numbered, as the brief's body says ("those questions, numbered, each with its task and options"), but not its
+options, so the owner's "1" could mean the question or the first option (it happened to resume with Blue). H8 asks for
+numbered options, so the coordinator body's "Running a task" section now says to number the options of a step's
+question ("1) Blue 2) Green"), to letter them when several questions are open, and to map the owner's answer back to
+the option's label before resuming the step from the owner. H8 was run again on a fresh baseline clone after the
+change, because the sandbox's README already carried the first run's line.
+
+## H-028 Landing runs a worktree's missing setup before its checks
+
+In the first H8 run the sandbox's project.json still lacked `setupCommand` (the H1 journey adds it, but H1 had not run
+again since H-023), so the document step's worktree had no dependencies and the landing check `npm test` failed with
+"Cannot find package 'vitest'". The coordinator handled it on its own (an extra verify step that installed and tested,
+then a second landing), but the cause was the setup. `land.mjs` now runs the project's `setupCommand` in the
+worktree before the checks whenever `.jevellan/setup.done` is missing (a worktree made before the project had a setup
+command, or one whose setup failed), records a failure as a failed `landing.checked`, and the sandbox's project.json
+has `"setupCommand": "npm ci"`.
