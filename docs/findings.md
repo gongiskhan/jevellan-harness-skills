@@ -168,3 +168,19 @@ through the Stop hook, `step.done` passed its guard, and `land.mjs` asked Jev (l
   landing again without any input. Its output file is read with `cat` of the task's output file.
 - In zsh, a tmux target written `=jh-coord:` on a command line is equals expansion ("jh-coord: not found"); it must be
   quoted. The journeys pass it to tmux without a shell.
+
+## 2026-11-02 Codex 0.153.4 under the Codex runtime (phase 6, P6 smoke and H10)
+
+- `codex exec --json` prints `{"type":"thread.started","thread_id":...}`, `{"type":"turn.started"}`,
+  `{"type":"item.completed","item":{"type":"agent_message"|...}}` and `{"type":"turn.completed","usage":{input_tokens,
+  cached_input_tokens, cache_write_input_tokens, output_tokens, reasoning_output_tokens}}`. A prompt of `-` is read from
+  stdin. `-c model_reasoning_effort=low|medium|high` and `--dangerously-bypass-approvals-and-sandbox` are accepted
+  together with `-C`, `-m gpt-6-astra`.
+- `codex exec resume --json -m <model> -c model_reasoning_effort=<e> --dangerously-bypass-approvals-and-sandbox
+  <thread id> -`, run with the worktree as its working directory, continued the same thread (P6: resume to report 15 s).
+- A single investigate step placed on GPT (the owner's `~/.codex` login, "Logged in using ChatGPT") reported through
+  `.jevellan/report.json`, which the runner recorded as `step.report` and archived: 20 s (P6, effort low) and 25 s (H10,
+  effort medium) from start to report. The Codex probe of `providers.mjs check` reported the account ready with 1% of
+  its weekly window used.
+- In H7, Jev placed the unit test task on `gpt-6-astra` high via codex (p 0.51); the coordinator started it with the
+  Codex runtime skill and it landed after its checks passed.

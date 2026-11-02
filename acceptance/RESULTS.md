@@ -14,6 +14,7 @@ Times are UTC.
 | H7 Three in parallel | passed | 10/10 | 0 s | 2026-11-02T01:10:59.474Z |
 | H8 Needs-decision | passed | 8/8 | 155 s | 2026-11-02T01:18:05.665Z |
 | H9 Restart | passed | 8/8 | 164 s | 2026-11-02T01:21:03.523Z |
+| H10 Codex | passed | 9/9 | 26 s | 2026-11-02T01:22:55.032Z |
 
 ## H1 Install
 
@@ -260,3 +261,24 @@ Timings: request to landing, across the restart 144244 ms.
 
 Notes:
 - re-checked at 2026-11-02T01:21:38.399Z: the analyser read the > of a quoted git show --format string as a redirect; quoted strings are now ignored (acceptance/coord.mjs unquoted); the first analysis said: Bash "git show --stat --format='%H%n%an <%ae>%n%s%n%b' jh/customers-module-header-comment-and-chan-TKFVN6M": wrote /home/ggomes/jevellan-projects/jevellan-harness-sandbox/%n%s%n%b outside .jevellan
+
+## H10 Codex
+
+Status: passed. Started 2026-11-02T01:22:29.477Z, 26 s.
+
+Timings: task to report 25281 ms.
+
+- PASS codex login status says logged in: Logged in using ChatGPT
+- PASS the skills are installed
+- PASS the installed policy was edited for the journey
+- PASS the policy is restored byte for byte
+- PASS Jev placed the step on GPT via codex: gpt-6-astra via codex (p 1)
+- PASS the step ran on codex exec: codex
+- PASS the Codex thread id is the native session id: 01a199d9-d40c-79a0-a95f-e20d73007884
+- PASS its report was recorded by the runtime parent: The invoice total is computed by invoiceTotalCents in src/invoices/index.ts:3. It reduces the invoice lines from an initial sum of 0, adding lineTotalCents(line) for each line.  Line calculation is in
+- PASS the single investigate task is done
+
+Notes:
+- worktree /home/ggomes/.jevellan-harness/worktrees/jevellan-harness-sandbox/h10-where-is-the-invoice-total-computed-TM32GJ7
+- step 1 investigate: gpt-6-astra medium via codex
+-   report: done - The invoice total is computed by invoiceTotalCents in src/invoices/index.ts:3. It reduces the invoice lines from an initial sum of 0, adding lineTotalCents(line

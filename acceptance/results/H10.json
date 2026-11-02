@@ -1,0 +1,74 @@
+{
+  "id": "H10",
+  "title": "Codex",
+  "status": "passed",
+  "startedAt": "2026-11-02T01:22:29.477Z",
+  "finishedAt": "2026-11-02T01:22:55.032Z",
+  "elapsedMs": 25555,
+  "passed": 9,
+  "total": 9,
+  "timings": {
+    "task to report": 25281
+  },
+  "notes": [
+    "worktree /home/ggomes/.jevellan-harness/worktrees/jevellan-harness-sandbox/h10-where-is-the-invoice-total-computed-TM32GJ7",
+    "step 1 investigate: gpt-6-astra medium via codex",
+    "  report: done - The invoice total is computed by invoiceTotalCents in src/invoices/index.ts:3. It reduces the invoice lines from an initial sum of 0, adding lineTotalCents(line"
+  ],
+  "checks": [
+    {
+      "name": "codex login status says logged in",
+      "ok": true,
+      "detail": "Logged in using ChatGPT",
+      "at": "2026-11-02T01:22:29.547Z"
+    },
+    {
+      "name": "the skills are installed",
+      "ok": true,
+      "detail": "",
+      "at": "2026-11-02T01:22:29.622Z"
+    },
+    {
+      "name": "the installed policy was edited for the journey",
+      "ok": true,
+      "detail": "",
+      "at": "2026-11-02T01:22:29.623Z"
+    },
+    {
+      "name": "the policy is restored byte for byte",
+      "ok": true,
+      "detail": "",
+      "at": "2026-11-02T01:22:54.968Z"
+    },
+    {
+      "name": "Jev placed the step on GPT via codex",
+      "ok": true,
+      "detail": "gpt-6-astra via codex (p 1)",
+      "at": "2026-11-02T01:22:54.970Z"
+    },
+    {
+      "name": "the step ran on codex exec",
+      "ok": true,
+      "detail": "codex",
+      "at": "2026-11-02T01:22:54.971Z"
+    },
+    {
+      "name": "the Codex thread id is the native session id",
+      "ok": true,
+      "detail": "01a199d9-d40c-79a0-a95f-e20d73007884",
+      "at": "2026-11-02T01:22:54.971Z"
+    },
+    {
+      "name": "its report was recorded by the runtime parent",
+      "ok": true,
+      "detail": "The invoice total is computed by invoiceTotalCents in src/invoices/index.ts:3. It reduces the invoice lines from an initial sum of 0, adding lineTotalCents(line) for each line.\n\nLine calculation is in",
+      "at": "2026-11-02T01:22:54.972Z"
+    },
+    {
+      "name": "the single investigate task is done",
+      "ok": true,
+      "detail": "",
+      "at": "2026-11-02T01:22:54.972Z"
+    }
+  ]
+}
