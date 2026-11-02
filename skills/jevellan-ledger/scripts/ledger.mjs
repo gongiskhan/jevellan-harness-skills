@@ -127,6 +127,77 @@ function taskCreate(argv) {
 
 // ---- append --------------------------------------------------------------------------------------------------
 
+function parseJsonArg(text, flag) {
+  try {
+    return JSON.parse(text);
+  } catch (error) {
+    throw new LedgerError(`${flag} is not JSON: ${error.message}`);
+  }
+}
+
+function readArgFile(file, flag) {
+  try {
+    return fs.readFileSync(file === '-' ? 0 : file, 'utf8');
+  } catch (error) {
+    throw new LedgerError(`cannot read ${flag} ${file}: ${error.code ?? error.message}`);
+  }
+}
+
+// A workflow file ({name, steps: [{duty, when?, instructions, onFail?}]}) and placement's answers to its questions
+// become the task.workflow data: ordinals 1..n in file order, onFail.goto as an ordinal (a duty name goes to the
+// nearest earlier step with that duty), and skipped = the steps whose when is jev:<id> and whose answer is false.
+export function resolveWorkflow(file, answers = {}, info = null) {
+  if (!file || !Array.isArray(file.steps) || file.steps.length === 0) throw new LedgerError('the workflow file has no steps');
+  const steps = file.steps.map((s, index) => ({
+    ordinal: index + 1,
+    duty: s.duty,
+    instructions: String(s.instructions ?? ''),
+    when: s.when ?? null,
+    onFail: null,
+    _onFail: s.onFail ?? null,
+  }));
+  for (const s of steps) {
+    const fail = s._onFail;
+    delete s._onFail;
+    if (!fail) continue;
+    let goto = fail.goto;
+    if (typeof goto === 'string') {
+      const earlier = steps.filter((t) => t.ordinal < s.ordinal && t.duty === goto);
+      if (!earlier.length) throw new LedgerError(`step ${s.ordinal}: onFail goes to "${goto}", which no earlier step is`);
+      goto = earlier[earlier.length - 1].ordinal;
+    }
+    s.onFail = { goto, maxLoops: fail.maxLoops };
+  }
+  const questions = {};
+  const skipped = [];
+  for (const s of steps) {
+    const rule = /^jev:([A-Za-z0-9_.:-]+)$/.exec(s.when ?? '');
+    if (s.when && !rule) throw new LedgerError(`step ${s.ordinal}: when "${s.when}" is not jev:<question>`);
+    if (!rule) continue;
+    const answer = answers[rule[1]];
+    if (typeof answer !== 'boolean') throw new LedgerError(`step ${s.ordinal} depends on ${rule[1]}; give placement's answer in --answers`);
+    questions[rule[1]] = answer;
+    if (answer === false) skipped.push(s.ordinal);
+  }
+  if (info?.created?.data?.kind === 'single') throw new LedgerError('a single task has no workflow file; use --add-step for an extra step');
+  return { steps, skipped, questions, source: file.name ?? null };
+}
+
+// The current steps (a single task's one step, or the recorded workflow) plus one more at the next ordinal: the
+// extra verify step of verify-then-land.
+export function addStep(info, extra) {
+  if (!extra || !ledgerDuties().includes(extra.duty)) throw new LedgerError(`--add-step needs {"duty", "instructions"} with a duty of ${ledgerDuties().join(', ')}`);
+  const created = info.created.data ?? {};
+  const line = [...info.events].reverse().find((e) => e.kind === 'task.workflow');
+  const base = line?.data ?? { steps: [{ ordinal: 1, duty: created.duty, instructions: '', when: null, onFail: null }], skipped: [], questions: {} };
+  const next = Math.max(...base.steps.map((s) => s.ordinal)) + 1;
+  return { ...base, steps: [...base.steps, { ordinal: next, duty: extra.duty, instructions: String(extra.instructions ?? ''), when: null, onFail: null }], added: next };
+}
+
+function ledgerDuties() {
+  return DUTIES;
+}
+
 function validateHandData(kind, data, step, info) {
   const need = (cond, message) => {
     if (!cond) throw new LedgerError(`${kind}: ${message}`);
@@ -154,7 +225,10 @@ function validateHandData(kind, data, step, info) {
       }
       need(Array.isArray(data.skipped ?? []), 'data.skipped must be a list of ordinals');
       for (const ordinal of data.skipped ?? []) need(seen.has(ordinal), `skipped step ${ordinal} is not in steps`);
-      need(info.created.data?.kind !== 'single', 'a single task has no workflow');
+      if (info.created.data?.kind === 'single') {
+        const first = data.steps.find((s) => s.ordinal === 1);
+        need(first && first.duty === info.created.data.duty, `a single task's workflow keeps step 1 as its ${info.created.data.duty} step`);
+      }
       break;
     }
     case 'step.done':
@@ -211,6 +285,10 @@ function append(argv) {
     step: { type: 'string' },
     session: { type: 'string' },
     data: { type: 'string' },
+    'data-file': { type: 'string' },
+    'from-workflow': { type: 'string' },
+    answers: { type: 'string' },
+    'add-step': { type: 'string' },
     force: { type: 'boolean' },
     json: { type: 'boolean' },
   });
@@ -219,14 +297,14 @@ function append(argv) {
   if (!HAND_KINDS.includes(kind)) {
     throw new LedgerError(`${kind} is written by the skills' scripts and hooks, not by hand; a session appends only ${HAND_KINDS.join(', ')}`);
   }
-  let data = {};
-  if (values.data !== undefined) {
-    try {
-      data = JSON.parse(values.data);
-    } catch (error) {
-      throw new LedgerError(`--data is not JSON: ${error.message}`);
-    }
+  const given = ['data', 'data-file', 'from-workflow', 'add-step'].filter((k) => values[k] !== undefined);
+  if (given.length > 1) throw new LedgerError(`give one of --${given.join(', --')}`);
+  if ((values['from-workflow'] !== undefined || values['add-step'] !== undefined) && kind !== 'task.workflow') {
+    throw new LedgerError('--from-workflow and --add-step are for task.workflow only');
   }
+  let data = {};
+  if (values.data !== undefined) data = parseJsonArg(values.data, '--data');
+  if (values['data-file'] !== undefined) data = parseJsonArg(readArgFile(values['data-file'], '--data-file'), '--data-file');
   if (!data || typeof data !== 'object' || Array.isArray(data)) throw new LedgerError('--data must be a JSON object');
   const step = values.step === undefined ? undefined : Number(values.step);
   if (step !== undefined && !(Number.isInteger(step) && step > 0)) throw new LedgerError('--step must be a positive integer');
@@ -237,6 +315,11 @@ function append(argv) {
     if (values.task === undefined) throw new LedgerError(`${kind} needs --task`);
     info = requireTask(events, values.task);
   }
+  if (values['from-workflow'] !== undefined) {
+    const answers = values.answers === undefined ? {} : parseJsonArg(values.answers.trim().startsWith('{') ? values.answers : readArgFile(values.answers, '--answers'), '--answers');
+    data = resolveWorkflow(parseJsonArg(readArgFile(values['from-workflow'], '--from-workflow'), '--from-workflow'), answers, info);
+  }
+  if (values['add-step'] !== undefined) data = addStep(info, parseJsonArg(values['add-step'], '--add-step'));
   validateHandData(kind, data, step, info);
   if (['step.done', 'step.failed'].includes(kind) && data.ordinal === undefined) data.ordinal = step;
   if (kind === 'step.retrying' && data.ordinal === undefined) data.ordinal = step;

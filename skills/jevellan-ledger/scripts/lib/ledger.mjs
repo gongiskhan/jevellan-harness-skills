@@ -217,7 +217,7 @@ export function stepView(taskEvents, ordinal, resetSeq = 0) {
 function workflowSteps(info) {
   const workflow = [...info.events].reverse().find((e) => e.kind === 'task.workflow');
   const created = info.created.data ?? {};
-  if (created.kind === 'single') {
+  if (created.kind === 'single' && !workflow) {
     return { steps: [{ ordinal: 1, duty: created.duty }], skipped: [], resolved: true };
   }
   if (!workflow) return { steps: [], skipped: [], resolved: false };
@@ -313,7 +313,8 @@ export function projectTask(info, { alive = pidAlive } = {}) {
     result.landedAt = landed.event.t;
     return result;
   }
-  if (meta.kind === 'single' && currentReport?.data?.status === 'done') {
+  const extended = events.some((e) => e.kind === 'task.workflow') || Boolean(decided);
+  if (meta.kind === 'single' && !extended && currentReport?.data?.status === 'done') {
     const writes = !READ_ONLY_DUTIES.includes(meta.duty);
     const changed = Array.isArray(currentReport.data.changedFiles) && currentReport.data.changedFiles.length > 0;
     if (!(writes && changed)) {

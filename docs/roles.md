@@ -8,20 +8,46 @@ edit it by hand: change the skill, run the command again and commit the result. 
 
 | Skill | Role | Covers | Description |
 | --- | --- | --- | --- |
+| jevellan-duty-answer | duty | duty: answer; needs: none | Duty answer. Use when this session is running a task step whose duty is answer. Answers from general knowledge, with no repository access. End by writing the report file. |
+| jevellan-duty-automate | duty | duty: automate; needs: repo-write, shell, browser | Duty automate. Use when this session is running a task step whose duty is automate. Builds Playwright automations with a dry-run flag and evidence. End by writing the report file. |
+| jevellan-duty-converse | duty | duty: converse; needs: none | Duty converse. Use when this session is running a task step whose duty is converse. Holds one conversation turn in the coordinator's voice. End by writing the report file. |
+| jevellan-duty-document | duty | duty: document; needs: repo-write | Duty document. Use when this session is running a task step whose duty is document. Changes documentation files only. End by writing the report file. |
+| jevellan-duty-implement | duty | duty: implement; needs: repo-write, shell | Duty implement. Use when this session is running a task step whose duty is implement. Changes the code on the task branch and commits. End by writing the report file. |
+| jevellan-duty-investigate | duty | duty: investigate; needs: repo-read | Duty investigate. Use when this session is running a task step whose duty is investigate. Reads code or docs and answers with file and line references. End by writing the report file. |
+| jevellan-duty-plan | duty | duty: plan; needs: repo-read | Duty plan. Use when this session is running a task step whose duty is plan. Writes plan.md at the worktree root, read-only otherwise. End by writing the report file. |
+| jevellan-duty-verify | duty | duty: verify; needs: repo-write, shell, browser | Duty verify. Use when this session is running a task step whose duty is verify. Runs the tests and browser journeys and saves evidence. End by writing the report file. |
+| jevellan-git | git | - | Git. Use when a task needs its worktree created or removed, or when a finished task must be landed on the project's default branch. Landing is guarded: it refuses when steps are not done, the tree is dirty or the checks fail. |
 | jevellan-ledger | ledger | - | Ledger. Use when a session must create a task, record or read what happened to a task, wait for a step's report, or show status. The ledger is the only durable state; its hooks record sessions automatically. |
+| jevellan-router | placement | - | Placement. Use when a session must decide which model, effort and provider a task step should run on, or must answer a workflow question about a task. Runs a script that asks Jev; never choose yourself. |
 | jevellan-runtime-claude | runtime | provider kinds: claude-subscription, claude-endpoint | Runtime for Claude providers (kinds claude-subscription and claude-endpoint). Use when a session must start, resume, stop or check a task step on a Claude provider chosen by placement. |
+| jevellan-workflow-automation | workflow | task kind: automation | Workflow automation. Use when the coordinator is about to run a task of kind automation: it gives the ordered steps, their duties and instructions, and the retry rule. |
+| jevellan-workflow-bug | workflow | task kind: bug | Workflow bug. Use when the coordinator is about to run a task of kind bug: it gives the ordered steps, their duties and instructions, and the retry rule. |
+| jevellan-workflow-feature | workflow | task kind: feature | Workflow feature. Use when the coordinator is about to run a task of kind feature: it gives the ordered steps, their duties and instructions, and the retry rule. |
 
 ## Roles
 
 - coordinator: no skill installed
-- placement: no skill installed
+- placement: `jevellan-router`
 - runtime: `jevellan-runtime-claude`
 - ledger: `jevellan-ledger`
-- git: no skill installed
-- duty: no skill installed
-- workflow: no skill installed
+- git: `jevellan-git`
+- duty: `jevellan-duty-answer`, `jevellan-duty-automate`, `jevellan-duty-converse`, `jevellan-duty-document`, `jevellan-duty-implement`, `jevellan-duty-investigate`, `jevellan-duty-plan`, `jevellan-duty-verify`
+- workflow: `jevellan-workflow-automation`, `jevellan-workflow-bug`, `jevellan-workflow-feature`
 
 ## Role phrases each body uses
 
+- `jevellan-duty-answer`: none
+- `jevellan-duty-automate`: none
+- `jevellan-duty-converse`: none
+- `jevellan-duty-document`: none
+- `jevellan-duty-implement`: none
+- `jevellan-duty-investigate`: none
+- `jevellan-duty-plan`: none
+- `jevellan-duty-verify`: none
+- `jevellan-git`: none
 - `jevellan-ledger`: none
+- `jevellan-router`: "the ledger skill"
 - `jevellan-runtime-claude`: "the ledger skill"
+- `jevellan-workflow-automation`: "the placement skill", "the ledger skill", "the git skill", "the runtime skill for"
+- `jevellan-workflow-bug`: "the placement skill", "the ledger skill", "the git skill", "the runtime skill for"
+- `jevellan-workflow-feature`: "the placement skill", "the ledger skill", "the git skill", "the runtime skill for"

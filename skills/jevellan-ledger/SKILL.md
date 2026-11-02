@@ -34,13 +34,17 @@ step.message.
   `--timeout S`). Run it in the background and carry on with other work.
 - Besides note and step.message, the workflow's bookkeeping is appended by hand, each refused when it does not fit
   the ledger:
-  - the resolved steps: `append task.workflow --task T --data '{"steps":[...],"skipped":[...],"questions":{...}}'`
+  - the resolved steps, built by the script from a workflow file and placement's answers:
+    `append task.workflow --task T --from-workflow <workflow.json> --answers <file or JSON>`; one more step at the
+    next ordinal (the extra verify step of verify-then-land, also for a single task):
+    `append task.workflow --task T --force --add-step '{"duty":"verify","instructions":"..."}'`
   - a done step: `append step.done --task T --step N` (refused unless the step's last report is done with no failing
     tests)
   - a failure: `append step.failed --task T --step N --data '{"reason":"..."}'`
   - a retry: `append step.retrying --task T --step N --data '{"attempt":1,"gotoOrdinal":2,"reason":"..."}'` (refused
     beyond the step's maxLoops)
   - a message to a step: `append step.message --task T --step N --data '{"direction":"owner","text":"..."}'`
+- `--data-file F` (`-` for stdin) may replace `--data` whenever the JSON holds apostrophes or is long.
 - Every command accepts `--json`. Exit codes: 0 ok, 2 refused with the reason on stderr, 3 not found.
 - Tasks, worktrees, workflows, placements, starts, reports and landings are written by the scripts and hooks of the
   skills that own them; `append` refuses those kinds.

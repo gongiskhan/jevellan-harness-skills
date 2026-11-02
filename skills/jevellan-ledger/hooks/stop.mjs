@@ -22,6 +22,18 @@ export const MISSING_REASON =
   'End the step by writing .jevellan/report.json with status progress, done, blocked or needs-decision (see your duty skill).';
 const MAX_MISSING_BLOCKS = 2;
 const MAX_INVALID_BLOCKS = 1;
+const NO_TOOL_DUTIES = ['answer', 'converse'];
+
+// The last fenced ```json block of a text, parsed, or null.
+export function lastJsonBlock(text) {
+  const blocks = [...String(text).matchAll(/```json\s*\n([\s\S]*?)\n?```/g)];
+  if (!blocks.length) return null;
+  try {
+    return JSON.parse(blocks[blocks.length - 1][1]);
+  } catch {
+    return null;
+  }
+}
 
 function counterFile(root, session) {
   return path.join(projectPaths(root).locks, `stop-${String(session).replace(/[^A-Za-z0-9_-]/g, '_')}.count`);
@@ -89,6 +101,23 @@ export function stopHook(input, root) {
   const reset = () => writeCounts(countsFile, { promptId: counts.promptId, missing: 0, invalid: 0 });
 
   const file = findReport(cwd);
+  // answer and converse run with no tools in one turn (brief 5.6): their report is the fenced json block that ends
+  // the answer, or, without a valid block, the answer itself as a done report (the skills brief section 5's rule).
+  if (!file && NO_TOOL_DUTIES.includes(process.env.JH_DUTY)) {
+    const answer = String(input.last_assistant_message ?? '');
+    const block = lastJsonBlock(answer);
+    const result = block ? validateReport(block) : null;
+    if (result?.ok) {
+      record(root, ctx, { ...result.report, reportFile: null, fromAnswer: true });
+      logLine(root, 'stop', `${task} s${step}: report ${result.report.status} taken from the answer's json block`);
+    } else {
+      const text = answer.replace(/```json[\s\S]*```\s*$/, '').trim() || 'The answer was empty.';
+      record(root, ctx, { status: 'done', summary: text.length > 4000 ? `${text.slice(0, 3999)}…` : text, synthesized: true, limitations: result ? result.problem : 'no json report block at the end of the answer' });
+      logLine(root, 'stop', `${task} s${step}: no valid report block, recorded the answer as done`);
+    }
+    reset();
+    return;
+  }
   if (!file) {
     if (counts.missing < MAX_MISSING_BLOCKS) {
       counts.missing += 1;

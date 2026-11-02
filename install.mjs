@@ -31,7 +31,9 @@ export const HOOK_MARKER = 'jevellan-ledger/hooks/';
 export const POST_TOOL_MATCHER = 'Bash|Edit|Write|MultiEdit|NotebookEdit';
 export const SESSION_START_MATCHERS = ['startup', 'resume', 'compact'];
 export const HOOK_TIMEOUT = 10;
-export const EXCLUDE_LINES = ['.claude/', '.jevellan/', 'plan.md'];
+// '.claude' without a trailing slash: it must also match the .claude symlink in a task worktree, which '.claude/'
+// (directories only) does not.
+export const EXCLUDE_LINES = ['.claude', '.jevellan/', 'plan.md'];
 export const START_LINE = (project) =>
   `Open a Claude Code session in ${project} and ask it to do something; the coordinator skill takes it from there.`;
 
@@ -417,16 +419,20 @@ export function detectProject(project) {
 
 // ---- step 5: .git/info/exclude -------------------------------------------------------------------------------
 
-function excludeKey(line) {
+// A line counts as present when it equals the pattern with an optional leading "/"; a trailing "/" counts only for
+// patterns that have one (".claude/" does not cover the worktree's .claude symlink, ".claude" does).
+function excludeKey(line, keepSlash = false) {
   let value = line.replace(/\r$/, '').trim();
   if (value.startsWith('/')) value = value.slice(1);
-  if (value.endsWith('/')) value = value.slice(0, -1);
+  if (!keepSlash && value.endsWith('/')) value = value.slice(0, -1);
   return value;
 }
 
 export function missingExcludeLines(text, wanted = EXCLUDE_LINES) {
-  const present = new Set(text.split('\n').map(excludeKey));
-  return wanted.filter((line) => !present.has(excludeKey(line)));
+  const lines = text.split('\n');
+  const loose = new Set(lines.map((l) => excludeKey(l)));
+  const exact = new Set(lines.map((l) => excludeKey(l, true)));
+  return wanted.filter((line) => (line.endsWith('/') ? !loose.has(excludeKey(line)) : !exact.has(excludeKey(line, true))));
 }
 
 // ---- the run -------------------------------------------------------------------------------------------------

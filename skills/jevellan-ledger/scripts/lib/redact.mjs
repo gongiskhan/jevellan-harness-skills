@@ -70,7 +70,12 @@ function current() {
   return cache.values;
 }
 
-const SECRET_ASSIGNMENT = /\b([A-Z][A-Z0-9_]*(?:TOKEN|KEY|SECRET|PASSWORD|PASSWD|AUTH)[A-Z0-9_]*)=("[^"]*"|'[^']*'|[^\s"']+)/g;
+const ASSIGNMENT = /\b([A-Z][A-Z0-9_]*)=("[^"]*"|'[^']*'|[^\s"']+)/g;
+const SECRET_WORDS = new Set(['TOKEN', 'TOKENS', 'KEY', 'KEYS', 'APIKEY', 'SECRET', 'SECRETS', 'PASSWORD', 'PASSWD', 'PASS', 'AUTH', 'CREDENTIAL', 'CREDENTIALS', 'PAT']);
+// A name says it holds a secret when one of its underscore-separated words is a secret word (GIT_AUTHOR_NAME is not).
+export function secretName(name) {
+  return name.split('_').some((word) => SECRET_WORDS.has(word));
+}
 const BEARER = /\b(Bearer)\s+[A-Za-z0-9._~+/=-]{16,}/g;
 
 export function redactText(text, values = current()) {
@@ -79,7 +84,7 @@ export function redactText(text, values = current()) {
   for (const value of values) {
     if (out.includes(value)) out = out.split(value).join(MASK);
   }
-  out = out.replace(SECRET_ASSIGNMENT, (_, name) => `${name}:${MASK}`);
+  out = out.replace(ASSIGNMENT, (whole, name) => (secretName(name) ? `${name}:${MASK}` : whole));
   out = out.replace(BEARER, (_, word) => `${word} ${MASK}`);
   return out;
 }

@@ -1,0 +1,95 @@
+#!/usr/bin/env node
+// Resumes a step's session with a message, detached, and returns at once.
+//
+//   node resume.mjs --task T --step N --message "<text>" [--from owner|coordinator] [--json]
+//
+// The message reaches the worker as "From the owner: <text>" or "From the coordinator: <text>" (default
+// coordinator), through `claude -p --resume <session>` with the same provider, model, effort, permissions and system
+// prompt append as the step's start. Refused (exit 2) while the step runs, before it ever started, after it is done,
+// and after 20 continues of one placement. The ledger gets step.message and a new step.started with the same
+// nativeSessionId.
+
+import fs from 'node:fs';
+import path from 'node:path';
+import { spawn } from 'node:child_process';
+import { parseArgs } from 'node:util';
+import {
+  MAX_CONTINUES,
+  RuntimeError,
+  archiveStaleReport,
+  claudeArgs,
+  currentView,
+  ledger,
+  loadTask,
+  logsDir,
+  providerFor,
+  rootFor,
+  workerEnv,
+  worktreeOf,
+} from './lib/step.mjs';
+import { resumeMessage } from './lib/prompt.mjs';
+import { pidAlive } from './lib/proc.mjs';
+import { isEntry, main } from './lib/cli.mjs';
+import { projectLib } from './lib/step.mjs';
+
+export async function resume(argv) {
+  const { values } = parseArgs({
+    args: argv,
+    options: { task: { type: 'string' }, step: { type: 'string' }, message: { type: 'string' }, from: { type: 'string' }, json: { type: 'boolean' } },
+    strict: true,
+  });
+  if (!values.task) throw new RuntimeError('--task is required');
+  const step = Number(values.step);
+  if (!(Number.isInteger(step) && step > 0)) throw new RuntimeError('--step must be a positive integer');
+  const message = (values.message ?? '').trim();
+  if (!message) throw new RuntimeError('--message is required');
+  const from = values.from ?? 'coordinator';
+  if (!['owner', 'coordinator'].includes(from)) throw new RuntimeError('--from must be owner or coordinator');
+
+  const root = projectLib.projectRoot(process.cwd()) ?? rootFor(process.cwd());
+  const info = loadTask(root, values.task);
+  const view = currentView(info, step);
+  const started = view.started;
+  if (!started) throw new RuntimeError(`step ${step} of ${values.task} has not started; start it with start.mjs`);
+  if (started.data?.runtime !== 'claude') throw new RuntimeError(`step ${step} runs on the ${started.data?.runtime} runtime; resume it with that runtime's skill`);
+  if (!view.end && pidAlive(started.data?.pid)) throw new RuntimeError(`step ${step} of ${values.task} is running (pid ${started.data.pid}); wait for its report first`);
+  if (view.done) throw new RuntimeError(`step ${step} of ${values.task} is done`);
+  // At most 20 continues per placement: the turns since the latest placement of this step.
+  const placed = [...info.events].reverse().find((e) => e.kind === 'task.placed' && e.data?.step === step);
+  const turns = info.events.filter((e) => e.kind === 'step.started' && e.step === step && e.seq > (placed?.seq ?? 0)).length;
+  if (turns > MAX_CONTINUES) throw new RuntimeError(`step ${step} was resumed ${turns - 1} times since its placement; tell the owner instead of resuming again`);
+
+  const d = started.data;
+  const provider = providerFor(d.provider, d.model, d.effort);
+  const session = d.nativeSessionId;
+  const cwd = d.cwd;
+  const wt = worktreeOf(info);
+  if (wt && path.resolve(wt.path) !== path.resolve(cwd)) throw new RuntimeError(`the task's worktree moved to ${wt.path}; the step's session ran in ${cwd}`);
+  if (!fs.existsSync(cwd)) throw new RuntimeError(`the step's folder ${cwd} is gone (archived?)`);
+  const logs = logsDir();
+  const appendFile = path.join(logs, `${session}.append.md`);
+  if (!fs.existsSync(appendFile)) throw new RuntimeError(`the step's system prompt file ${appendFile} is missing`);
+  const env = workerEnv({ provider, task: values.task, step, duty: d.duty, project: root, session });
+  archiveStaleReport(root, cwd, values.task, step);
+
+  ledger.appendEvent(root, { kind: 'step.message', task: values.task, step, session, data: { direction: from, text: message } });
+  const logFile = path.join(logs, `${session}.log`);
+  const log = fs.openSync(logFile, 'a', 0o600);
+  const args = claudeArgs({ duty: d.duty, session, resume: true, model: d.model, effort: d.effort, appendFile, prompt: resumeMessage(from, message) });
+  const child = spawn(process.env.JH_CLAUDE_BIN || 'claude', args, { cwd, env, detached: true, stdio: ['ignore', log, log] });
+  fs.closeSync(log);
+  if (!child.pid) throw new RuntimeError('claude did not start');
+  child.on('error', () => {});
+  child.unref();
+  ledger.appendEvent(root, {
+    kind: 'step.started',
+    task: values.task,
+    step,
+    session,
+    data: { ordinal: step, duty: d.duty, runtime: 'claude', provider: d.provider, model: d.model, effort: d.effort, cwd, nativeSessionId: session, pid: child.pid, logFile, resumed: true },
+  });
+  const out = { task: values.task, step, session, pid: child.pid, from, logFile };
+  return { out, text: `Resumed ${values.task} step ${step} in session ${session} (pid ${child.pid}). Use the ledger skill to wait for its report.` };
+}
+
+if (isEntry(import.meta.url)) main(resume);

@@ -133,3 +133,98 @@ changes; an unparsable settings.json is refused untouched, because Claude Code s
 `-p` mode and the ledger would stop without a word. `devCommand` falls back to `npm start` when there is no `dev`
 script (the sandbox has only `start`). A hook path containing quotes, `$`, backticks, backslashes or newlines is
 refused for a full install.
+
+## H-014 What every worker's --settings carries
+
+Besides `claudeMdExcludes` (H-001), the worker settings set `attribution` to `{"commit": "", "pr": "", "sessionUrl":
+false}`. Claude Code 2.1.316 adds an attribution trailer to commits by default (`includeCoAuthoredBy` is the deprecated
+form of the same setting); the owner's rule is no attribution anywhere, and the worker rules alone would leave it to
+the model to remember.
+
+## H-015 Placement details
+
+- `route.mjs --task-file F` reads only the task id from the file (its `task` or `id` field) and the task's lines from
+  the ledger, so a stale file cannot give Jev a stale state; `--task T` is the same without the file.
+- The state sent to Jev and stored passes through the ledger's redactor first.
+- Provider kinds by need: a duty with no needs (answer, converse) runs on claude-subscription, claude-endpoint or
+  openai-compatible; any other on claude-subscription, claude-endpoint or codex-subscription; then only the kinds an
+  installed runtime skill lists in `jh-kinds`. The ranking keeps the reference's exclusion reasons and adds
+  login-unknown, not-probed and not-configured. A provider with a missing or stale probe (12 hours) is probed before the
+  menu is built (`checkProviders({only, jev: false})`).
+- Every Jev decision is also written to `.jevellan/decisions/<task>-s<step>-<time>.json` (placement), `<task>-...`
+  (workflow questions) and `<task>-landing-<time>.json` (landing): the state text, the questions, the answers, the
+  usage and the latency. The ledger line names the file (`decisionFile`), because a 60 000-character state does not
+  fit the 64 KB line rule next to everything else; the evals replay these files.
+- `--owner <provider>/<model>/<effort>` records an owner placement (`source: "owner"`, no Jev call), for when the
+  owner says where a step runs.
+- The reference's owner rules file (rules.json) and visible tmux steps are not ported.
+
+## H-016 Provider probe details
+
+`providers.mjs check` reports Jev ready only when the key file is present, non-empty and mode 600 and the configured
+model is listed (ported from the reference's checkJev). `JH_ANTHROPIC_URL` and `JH_JEV_URL` (test servers) are accepted
+only for loopback addresses, so a token can only go to the real API or to this machine. The Codex probe never starts
+`codex app-server` when the `CODEX_HOME` folder is missing (it would write state there), passes only the base
+environment plus HOME and CODEX_HOME, and never forces a token refresh. Codex is reported "no runtime" until the Codex
+runtime skill is installed (phase 6).
+
+## H-017 Worktree and landing details
+
+- `.claude` is excluded without a trailing slash: git matches `.claude/` against directories only, so the `.claude`
+  symlink of every task worktree showed as untracked, a worker's `git add -A` would have committed it and landing
+  would have refused the tree as dirty. install.mjs and worktree.mjs both write `.claude`.
+- `project.json` `defaultBranch` is required by both git scripts (exit 2 naming the file); nothing guesses the branch
+  people ship from. Invalid project.json fields refuse before any Jev call.
+- A `landing.decided` stays open until a `landing.checked`, `task.asked` or `task.landed` follows it: an open
+  verify-then-land with no verify step started after it answers exit 6 again without Jev; once such a step has
+  `step.done`, the land route runs without asking Jev again (the skills run's D-046).
+- A merge conflict on the land route becomes ask-owner; under `--force` it is exit 2 with the instructions for an
+  implement step that merges the target and resolves the conflict, which the coordinator runs before landing again
+  (the skills run's D-076, kept simple: the script never starts a step).
+- A child task lands into its parent's branch in the parent's worktree (D-048). The fast-forward happens in the
+  worktree that has the target checked out, after checking the touched files are clean there, else with
+  `push . <branch>:<target>`; up to three rounds when the target moves meanwhile.
+- `worktree.mjs archive` moves the worktree with `git worktree move` under `~/.jevellan-harness/archive/worktrees/`,
+  keeps the branch, refuses while a step's process is alive, and appends `step.stopped` when the task has not landed.
+
+## H-018 The workflow is recorded by the script, not written by hand
+
+The coordinator does not compose the steps JSON. `ledger.mjs append task.workflow --task T --from-workflow
+<workflow.json> --answers <placement's --questions output>` numbers the steps 1..n in file order, turns `onFail.goto`
+into an ordinal (a duty name goes to the nearest earlier step with that duty), computes `skipped` from the `when:
+jev:<id>` rules and the answers, and refuses a missing answer. `--add-step '{"duty","instructions"}'` (with `--force`
+when a workflow exists) appends the extra verify step of verify-then-land at the next ordinal; it also works for a
+`single` task, whose workflow then keeps step 1 as its own step. `--data-file F` (or `-`) replaces `--data` for JSON
+with apostrophes. A single task with a recorded workflow or a landing decision is done only when it lands. The three
+workflow.json files carry `onFail.goto` as ordinals (feature verify to 2, bug verify to 1, automation verify to 2).
+
+## H-019 Which assignments the redactor masks
+
+A `NAME=value` assignment is masked when one of the name's underscore-separated words is TOKEN(S), KEY(S), APIKEY,
+SECRET(S), PASSWORD, PASSWD, PASS, AUTH, CREDENTIAL(S) or PAT. Matching the word inside the name masked
+`GIT_AUTHOR_NAME` and `GIT_AUTHOR_EMAIL` (AUTHOR contains AUTH).
+
+## H-020 answer and converse: one turn, no tools, the report from the answer
+
+Brief 5.6 runs answer and converse on the Claude runtime with `--max-turns 1` and `--tools ""`. Such a session can
+neither invoke its duty skill nor write `.jevellan/report.json`. So the runtime puts the duty skill's body in the
+system prompt append instead of the "use the duty skill" sentence, and the Stop hook, for these two duties only, takes
+the report from the fenced json block that ends the answer (`last_assistant_message` in the hook input); without a
+valid block it records the answer itself as a done report, marked synthesized, as the skills brief's section 5 did for
+its llm runtime. These duties are never blocked.
+
+## H-021 Read-only duties may write their report file
+
+Brief 5.3 gives investigate and plan `--permission-mode dontAsk --tools Read,Glob,Grep,WebSearch,WebFetch,Skill`, which
+has no tool that can write `.jevellan/report.json`. The runtime adds Write and Edit to `--tools` and pre-approves only
+`Write(./.jevellan/report.json)` and `Edit(./.jevellan/report.json)` (plus `./plan.md` for plan) with `--allowedTools`,
+together with Read, Glob, Grep, WebSearch, WebFetch and Skill; in dontAsk mode every other write is denied. Verified in
+phase 3 (findings).
+
+## H-022 A step starts only where placement put it
+
+`start.mjs` refuses (exit 2) unless the step has a `task.placed` line newer than its latest start (or than the retry
+that reset it) naming exactly the provider, model and effort it was given, refuses a step that is running, done, or
+of another duty than the recorded workflow says, and refuses a task without a worktree for every duty that may touch
+files. `resume.mjs` reuses the start's provider, model, effort and session, and refuses beyond 20 resumes since the
+step's latest placement.

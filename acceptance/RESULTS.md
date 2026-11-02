@@ -8,6 +8,7 @@ Times are UTC.
 | H1 Install | failed | 21/22 | 3 s | 2026-11-01T23:45:24.276Z |
 | H2 Ledger | passed | 24/24 | 6 s | 2026-11-01T23:46:02.475Z |
 | H3 Hooks | passed | 14/14 | 23 s | 2026-11-01T23:47:07.319Z |
+| H4 Placement | passed | 17/17 | 1 s | 2026-11-02T00:30:00.468Z |
 
 ## H1 Install
 
@@ -95,3 +96,31 @@ Timings: worker without a report 5318 ms; worker with a valid report 5177 ms; wo
 
 Notes:
 - H3 worktrees: h3-TXEKJC8, h3-TH4461C, h3-T1VHKWM under /home/ggomes/.jevellan-harness/worktrees/jevellan-harness-sandbox
+
+## H4 Placement
+
+Status: passed. Started 2026-11-02T00:29:59.283Z, 1 s.
+
+Timings: placement 456 ms.
+
+- PASS the current skills are installed in the sandbox: changed 16 paths
+- PASS task created
+- PASS worktree created through the git skill: {   "branch": "jh/h4-which-port-does-the-web-server-listen-TNPNHC1",   "path": "/home/ggomes/.jevellan-harness/worktrees/jevellan-harness-sandbox/h4-which-port-does-the-web-server-listen-TNPNHC1",   "base": "main",   "baseCommit": "43e279e35241d6cd27192f49ca2d7ef56369c55d" }
+- PASS the worktree has the .claude link and an evidence folder
+- PASS the worktree is clean in git
+- PASS route.mjs exits 0 with provider, model, effort, kind, probabilities, latencyMs, policyHash: {"provider":"claude-second","model":"claude-haiku-5-5","effort":"low","kind":"claude-subscription","probabilities":{"model":{"claude-opus-5-5":0.4,"claude-fable-5-1":0.02,"claude-sonnet-5-5":0.16,"claude-haiku-5-5":0.42},"effort":{"low":0.4,"medium":0.4,"high":0.2,"xhigh":0,"max":0},"provider":{"claude-second":0.98,"claude-main":0.02}},"latencyMs":319,"policyHash":"41e7c31f47d42591cebbe449cde583f1
+- PASS the decision carries probabilities for the model question: {"model":{"claude-opus-5-5":0.4,"claude-fable-5-1":0.02,"claude-sonnet-5-5":0.16,"claude-haiku-5-5":0.42},"effort":{"low":0.4,"medium":0.4,"high":0.2,"xhigh":0,"max":0},"provider":{"claude-second":0.98,"claude-main":0.02}}
+- PASS task.placed is in the ledger with source jev and a decision file: {"step":1,"duty":"investigate","provider":"claude-second","model":"claude-haiku-5-5","effort":"low","kind":"claude-subscription","probabilities":{"model":{"claude-opus-5-5":0.4,"claude-fable-5-1":0.02,"claude-sonnet-5-5":0.16,"claude-haiku-5-5":0.42},"effort":{"low":0.4,"medium":0.4,"high":0.2,"xhig
+- PASS with the key file renamed, route.mjs exits 2 "Jev: no key configured": Jev: no key configured
+- PASS nothing was appended for the refused placement
+- PASS the key file is back with mode 600
+- PASS providers.json is restored byte for byte
+- PASS with claude-main over its ceiling the decision names claude-second: {"provider":"claude-second","model":"claude-haiku-5-5","effort":"low","kind":"claude-subscription","probabilities":{"model":{"claude-opus-5-5":0.09,"claude-fable-5-1":0.01,"claude-sonnet-5-5":0.03,"claude-haiku-5-5":0.87},"effort":{"low":0.7,"medium":0.21,"high":0.09,"xhigh":0,"max":0}},"latencyMs":
+- PASS the menu Jev saw excludes claude-main: claude-second
+- PASS worktree archived through the git skill: {   "archived": true,   "already": false,   "from": "/home/ggomes/.jevellan-harness/worktrees/jevellan-harness-sandbox/h4-which-port-does-the-web-server-listen-TNPNHC1",   "to": "/home/ggomes/.jevellan-harness/archive/worktrees/jevellan-harness-sandbox/h4-which-port-does-the-web-server-listen-TNPNHC
+- PASS the H4 task is no longer open
+- PASS the sandbox checkout stays clean
+
+Notes:
+- Jev placed the investigate step on claude-haiku-5-5 low via claude-second (model p 0.42), 319 ms
+- claude-main weekly 79%, ceiling set to 78% for the check

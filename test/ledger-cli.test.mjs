@@ -335,12 +335,12 @@ describe('task.workflow', () => {
     });
   }
 
-  test('a single task has no workflow', () => {
+  test('a single task may only extend its one step (the extra verify step of verify-then-land)', () => {
     const root = makeRepo();
     const s = new TaskScript(root, { kind: 'single', duty: 'answer' });
     const r = workflow(root, s.task, { steps: [steps[1]] });
     assert.equal(r.status, 2);
-    assert.match(r.stderr, /a single task has no workflow/);
+    assert.match(r.stderr, /keeps step 1 as its answer step/);
   });
 
   test('accepted once; a second workflow is refused without --force and replaces the first with it', () => {

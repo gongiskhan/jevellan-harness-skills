@@ -16,7 +16,7 @@ const INSTALL = path.join(ROOT, 'install.mjs');
 const SKILLS = path.join(ROOT, 'skills');
 const SCRATCH = process.env.JH_TEST_TMPDIR || os.tmpdir();
 const OWNER_HOME = os.userInfo().homedir;
-const EXCLUDE = ['.claude/', '.jevellan/', 'plan.md'];
+const EXCLUDE = ['.claude', '.jevellan/', 'plan.md'];
 const POST_TOOL_MATCHER = 'Bash|Edit|Write|MultiEdit|NotebookEdit';
 
 // Git that reads neither the machine's nor the user's configuration, so fixtures are the same everywhere.
@@ -533,7 +533,7 @@ test('the exclude lines count as present in another spelling, and the file is cr
   assert.equal(fs.existsSync(path.join(bare, '.git', 'info')), false);
   const second = run(box, [bare, '--skills-only', '--json']);
   assert.equal(second.status, 0, second.stderr);
-  assert.equal(fs.readFileSync(path.join(bare, '.git', 'info', 'exclude'), 'utf8'), '.claude/\n.jevellan/\nplan.md\n');
+  assert.equal(fs.readFileSync(path.join(bare, '.git', 'info', 'exclude'), 'utf8'), '.claude\n.jevellan/\nplan.md\n');
 });
 
 test('a project path that cannot be quoted in a hook command is refused for a full install', () => {
