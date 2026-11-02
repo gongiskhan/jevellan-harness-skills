@@ -228,3 +228,14 @@ that reset it) naming exactly the provider, model and effort it was given, refus
 of another duty than the recorded workflow says, and refuses a task without a worktree for every duty that may touch
 files. `resume.mjs` reuses the start's provider, model, effort and session, and refuses beyond 20 resumes since the
 step's latest placement.
+
+## H-023 A worktree's setup command
+
+A fresh worktree has no installed dependencies, so neither a worker nor the landing checks could run the sandbox's
+tests there. `project.json` gains `setupCommand`, detected by install.mjs from the lockfile (`npm ci` for
+package-lock.json, `pnpm install --frozen-lockfile`, `yarn install --frozen-lockfile`, `npm install` for a
+package.json without a lockfile, else none). `worktree.mjs create` runs it once in the new worktree with the owner's
+environment (no provider or Jev values), writes its output to `<worktree>/.jevellan/setup.log`, and leaves
+`.jevellan/setup.done` on success; a failure is exit 2 after the worktree is recorded, and the next create of the same
+task runs the setup again. The sandbox's project.json, written before this decision, got `"setupCommand": "npm ci"`
+from the H1 journey. (The skills run had the same need, its D-039.)

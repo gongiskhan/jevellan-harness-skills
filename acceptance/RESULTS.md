@@ -9,6 +9,7 @@ Times are UTC.
 | H2 Ledger | passed | 24/24 | 6 s | 2026-11-01T23:46:02.475Z |
 | H3 Hooks | passed | 14/14 | 23 s | 2026-11-01T23:47:07.319Z |
 | H4 Placement | passed | 17/17 | 1 s | 2026-11-02T00:30:00.468Z |
+| H5 Worker | passed | 26/26 | 133 s | 2026-11-02T00:33:46.807Z |
 
 ## H1 Install
 
@@ -124,3 +125,39 @@ Timings: placement 456 ms.
 Notes:
 - Jev placed the investigate step on claude-haiku-5-5 low via claude-second (model p 0.42), 319 ms
 - claude-main weekly 79%, ceiling set to 78% for the check
+
+## H5 Worker
+
+Status: passed. Started 2026-11-02T00:31:34.032Z, 133 s.
+
+Timings: placement 443 ms; start to report 86664 ms; resume to report 35143 ms; stop 456 ms.
+
+- PASS task created
+- PASS worktree created
+- PASS placed by Jev: {"provider":"claude-second","model":"claude-opus-5-5","effort":"max","kind":"claude-subscription","probabilities":{"model":{"claude-opus-5-5":0.51,"claude-fable-5-1":0.12,"claude-sonnet-5-5":0.01,"claude-haiku-5-5":0.36},"effort":{"low":0.02,"medium":0.16,"high":0.24,"xhigh":0.11,"max":0.47},"provid
+- PASS start.mjs returns at once with a session and a pid: 72 ms 
+- PASS step.started has the model, effort, pid and native session id
+- PASS wait returns the report with exit 0: 0 {   "kind": "step.report",   "task": "TXFXKG5",   "step": 1,   "seq": 35,   "status": "done",   "summary": "Answer: the empty-field error is decided in src/web/app.ts:19. The exact message is \"Enter both a name and a VAT number.\" (including the full stop).\n\nThe line that decides it (src/web/app.
+- PASS the report says done and answers the question: Answer: the empty-field error is decided in src/web/app.ts:19. The exact message is "Enter both a name and a VAT number." (including the full stop).  The line that decides it (src/web/app.ts:19): `if (!name || !vat) { html(400, page('Customers', customersBody(await store.list(), { name, vat, error: 
+- PASS the report came from the file, archived by the hook
+- PASS the transcript shows the Skill tool invoking the investigate duty: ["jevellan-duty-investigate"]
+- PASS the native transcript is named by the session id: /home/ggomes/.jevellan-harness/claude-config/projects/-home-ggomes--jevellan-harness-worktrees-jevellan-harness-sandbox-h5-where-does-the-customers-page-produce-TXFXKG5/21983069-9d88-462b-b161-62a17c1ded00.jsonl
+- PASS the read-only worker wrote only its report file: ["/home/ggomes/.jevellan-harness/worktrees/jevellan-harness-sandbox/h5-where-does-the-customers-page-produce-TXFXKG5/.jevellan/report.json"]
+- PASS the worktree has no change
+- PASS the system prompt append was accepted (the worker followed the duty line)
+- PASS resume.mjs continues the same session id: {   "task": "TXFXKG5",   "step": 1,   "session": "21983069-9d88-462b-b161-62a17c1ded00",   "pid": 526508,   "from": "coordinator",   "logFile": "/home/ggomes/.jevellan-harness/logs/21983069-9d88-462b-
+- PASS the resumed turn reported through the hook: 0 Answer: the empty-field error is decided in src/web/app.ts:19. The exact message is "Enter both a name and a VAT number." (including the full stop). I checked again this turn and the lines below have 
+- PASS two step.started lines share the native session id
+- PASS the message was recorded as step.message from the coordinator
+- PASS the resumed turn ran in the same conversation: 21983069-9d88-462b-b161-62a17c1ded00
+- PASS status.mjs says alive while the turn runs: {"task":"TXFXKG5","step":1,"state":"alive","pid":527551,"session":"21983069-9d88-462b-b161-62a17c1ded00","startedAt":"2026-11-02T00:33:36.514Z","model":"claude-opus-5-5","effort":"max","provider":"claude-second","ended":null,"lastLine":"result: success This step was already finished, and nothing has changed since the last turn. I checked again and the lines I cited haven't moved: - **Where it's decided:** `src/web/app.ts:19`, with the check `if (!na"}
+- PASS stop.mjs ends the turn and marks step.stopped: {   "task": "TXFXKG5",   "step": 1,   "pid": 527551,   "how": "SIGTERM",   "seq": 44 } 
+- PASS the worker process is gone
+- PASS status.mjs says exited after the stop
+- PASS the task is stopped in the projection
+- PASS read-only tools: notes.txt was refused
+- PASS read-only tools: .jevellan/report.json was allowed: Only the second write worked.  - **`notes.txt`:** Failed. The Write tool was denied permission because Claude Code is running in don't-ask mode. I didn't try another way to create it. - **`.jevellan/r
+- PASS worktree archived
+
+Notes:
+- placement: claude-opus-5-5 max via claude-second (claude-subscription)

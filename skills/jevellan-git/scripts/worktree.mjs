@@ -462,6 +462,36 @@ function setUpWorktree(root, wtPath, warnings) {
   if (!pointsAt || !samePath(pointsAt, target)) warnings.push(`${link} exists and is not a link to ${target}; it was left as it is`);
 }
 
+// The project's setupCommand (project.json, for example "npm ci") runs once in a new worktree, so workers and the
+// landing checks find the project's dependencies there. Its output goes to <worktree>/.jevellan/setup.log; success
+// leaves .jevellan/setup.done, so a later create of the same task runs it again only when it never succeeded.
+export function runSetup(L, root, wtPath, config) {
+  const command = typeof config.setupCommand === 'string' ? config.setupCommand.trim() : '';
+  if (!command) return { ran: false };
+  const done = path.join(wtPath, '.jevellan', 'setup.done');
+  if (fs.existsSync(done)) return { ran: false, already: true };
+  const owner = L.project.ownerHome();
+  const env = { HOME: owner };
+  for (const key of ['PATH', 'USER', 'LANG', 'TERM', 'SHELL', 'TMPDIR']) if (process.env[key]) env[key] = process.env[key];
+  Object.assign(env, identityEnv(gitIdentity(root, owner)));
+  const browsers = path.join(owner, '.cache', 'ms-playwright');
+  if (fs.existsSync(browsers)) env.PLAYWRIGHT_BROWSERS_PATH = browsers;
+  const logFile = path.join(wtPath, '.jevellan', 'setup.log');
+  const t0 = Date.now();
+  const r = spawnSync('sh', ['-c', command], { cwd: wtPath, env, encoding: 'utf8', timeout: 15 * 60 * 1000, maxBuffer: 64 * 1024 * 1024 });
+  fs.writeFileSync(logFile, `$ ${command}\n${r.stdout ?? ''}${r.stderr ?? ''}`);
+  if (r.status !== 0) {
+    return { ran: true, ok: false, command, exitCode: r.status, logFile, tail: L.redact.redactText(`${r.stdout ?? ''}${r.stderr ?? ''}`.slice(-1500)) };
+  }
+  fs.writeFileSync(done, `${new Date().toISOString()} ${command} (${Date.now() - t0} ms)\n`);
+  return { ran: true, ok: true, command, ms: Date.now() - t0, logFile };
+}
+
+function setupOutcome(setup, wtPath) {
+  if (!setup.ran || setup.ok) return null;
+  return new GitSkillError(`the worktree ${wtPath} is ready but its setupCommand "${setup.command}" failed (exit ${setup.exitCode}); see ${setup.logFile}:\n${setup.tail}`);
+}
+
 async function create(argv) {
   const { values } = parse(argv, { task: { type: 'string' }, base: { type: 'string' }, json: { type: 'boolean' } });
   const L = await ledgerRole();
@@ -474,7 +504,10 @@ async function create(argv) {
     if (!present(existing.path)) {
       throw new GitSkillError(`task ${task}'s worktree ${existing.path} no longer exists (archived or moved); its branch ${existing.branch} stays. Nothing was created`);
     }
-    const out = { path: existing.path, branch: existing.branch, base: existing.base ?? null, baseCommit: existing.baseCommit ?? null };
+    const setup = runSetup(L, root, existing.path, readProjectConfig(L, root));
+    const failed = setupOutcome(setup, existing.path);
+    if (failed) throw failed;
+    const out = { path: existing.path, branch: existing.branch, base: existing.base ?? null, baseCommit: existing.baseCommit ?? null, ...(setup.ran ? { setup: setup.command } : {}) };
     print(values.json, out, out.path);
     return 0;
   }
@@ -536,7 +569,10 @@ async function create(argv) {
     },
   });
   for (const w of warnings) warn(`warning: ${w}`);
-  print(values.json, data, finalPath);
+  const setup = runSetup(L, root, finalPath, readProjectConfig(L, root));
+  const failed = setupOutcome(setup, finalPath);
+  if (failed) throw failed;
+  print(values.json, setup.ran ? { ...data, setup: { command: setup.command, ms: setup.ms } } : data, finalPath);
   return 0;
 }
 

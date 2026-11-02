@@ -125,3 +125,24 @@ SessionStart about 58 ms (max 69), all inside the 300 ms budget; most of it is N
 appending 50 lines each through the library took about 295 ms with `seq` contiguous; through the command line about
 4.3 s. A lock left by a dead pid was taken over in 0.7 ms. `ledger.mjs wait` returned between 43 and 438 ms after
 the report line was written.
+
+## 2026-11-02 The Claude runtime in `claude -p` (phase 3, journey H5)
+
+Checked by `acceptance/h05-worker.mjs` on the sandbox: a single investigate task, placed by the real Jev on
+`claude-opus-5-5` effort `max` via claude-second, started with the installed `start.mjs`.
+
+- `--append-system-prompt-file <file>` is accepted by `claude -p` in 2.1.316 and its text reaches the model: the
+  worker followed the append's "Use the duty skill for investigate now" and its first tool call was the Skill tool
+  with `{"skill": "jevellan-duty-investigate"}`.
+- `--effort max` with `--model claude-opus-5-5` is accepted.
+- `--session-id <uuid>` names the conversation: the stream's session id and the transcript file
+  `~/.jevellan-harness/claude-config/projects/<worktree path with non-alphanumerics as "->/<uuid>.jsonl` both carry it.
+  `claude -p --resume <uuid> -- "From the coordinator: Continue."` continued the same conversation (same session id in
+  the stream) and its report reached the ledger through the Stop hook like the first turn's.
+- The read-only tool set of H-021 works: in `--permission-mode dontAsk` with `--tools
+  Read,Glob,Grep,WebSearch,WebFetch,Skill,Write,Edit` and `--allowedTools Read Glob Grep WebSearch WebFetch Skill
+  "Write(./.jevellan/report.json)" "Edit(./.jevellan/report.json)"`, a worker told to write `notes.txt` and then the
+  report got the first refused ("denied permission because Claude Code is running in don't-ask mode") and the second
+  written. The investigate worker wrote only its report file and left the worktree clean.
+- Times: placement 443 ms; start to report 87 s (Opus at max effort); resume to report 35 s; `stop.mjs` ended a running
+  turn with SIGTERM to the process group in 456 ms, and the projection then showed the task stopped.

@@ -184,6 +184,7 @@ test('a fresh install writes every skill, the three hooks with absolute Node pat
     defaultBranch: 'main',
     testCommand: 'npm test',
     devCommand: 'npm run dev',
+    setupCommand: 'npm install',
     riskyPaths: [],
     checks: [],
     pushAfterLanding: false,

@@ -408,6 +408,7 @@ export function detectProject(project) {
       defaultBranch,
       testCommand: has('test') ? 'npm test' : null,
       devCommand: has('dev') ? 'npm run dev' : has('start') ? 'npm start' : null,
+      setupCommand: setupCommandFor(project),
       riskyPaths: [],
       checks: [],
       pushAfterLanding: false,
@@ -433,6 +434,16 @@ export function missingExcludeLines(text, wanted = EXCLUDE_LINES) {
   const loose = new Set(lines.map((l) => excludeKey(l)));
   const exact = new Set(lines.map((l) => excludeKey(l, true)));
   return wanted.filter((line) => (line.endsWith('/') ? !loose.has(excludeKey(line)) : !exact.has(excludeKey(line, true))));
+}
+
+// What makes a fresh worktree ready to run the project's commands (H-023): the lockfile's install, or none.
+export function setupCommandFor(project) {
+  const has = (file) => fs.existsSync(path.join(project, file));
+  if (has('pnpm-lock.yaml')) return 'pnpm install --frozen-lockfile';
+  if (has('yarn.lock')) return 'yarn install --frozen-lockfile';
+  if (has('package-lock.json')) return 'npm ci';
+  if (has('package.json')) return 'npm install';
+  return null;
 }
 
 // ---- the run -------------------------------------------------------------------------------------------------

@@ -32,6 +32,7 @@ j.check('install on a fresh clone exits 0', fresh.status === 0, fresh.stderr.tri
 const freshProject = JSON.parse(fs.readFileSync(path.join(clone, '.jevellan', 'project.json'), 'utf8'));
 j.check('project.json detects testCommand npm test', freshProject.testCommand === 'npm test', freshProject.testCommand);
 j.check('project.json detects devCommand npm start (no dev script)', freshProject.devCommand === 'npm start', freshProject.devCommand);
+j.check('project.json detects setupCommand npm ci (package-lock.json)', freshProject.setupCommand === 'npm ci', freshProject.setupCommand);
 j.check('project.json defaultBranch main, pushAfterLanding false, retentionDays 3', freshProject.defaultBranch === 'main' && freshProject.pushAfterLanding === false && freshProject.retentionDays === 3, JSON.stringify(freshProject));
 
 const first = sh(NODE, [INSTALL, SANDBOX, '--json']);
@@ -75,10 +76,11 @@ j.check('--skills-only writes the exclude lines', exclude2.includes('.jevellan/'
 // The sandbox's tests need TZ and SANDBOX_DATA_DIR (H-002).
 const projectFile = path.join(SANDBOX, '.jevellan', 'project.json');
 const project = JSON.parse(fs.readFileSync(projectFile, 'utf8'));
-if (project.testCommand !== SANDBOX_TEST_COMMAND) {
+if (project.testCommand !== SANDBOX_TEST_COMMAND || project.setupCommand !== 'npm ci') {
   project.testCommand = SANDBOX_TEST_COMMAND;
+  project.setupCommand = 'npm ci';
   fs.writeFileSync(projectFile, `${JSON.stringify(project, null, 2)}\n`);
-  j.note(`set the sandbox testCommand to "${SANDBOX_TEST_COMMAND}" (H-002)`);
+  j.note(`set the sandbox testCommand to "${SANDBOX_TEST_COMMAND}" (H-002) and setupCommand to "npm ci" (H-023), written once before H-023 existed`);
 }
 
 // The hooks fire in a real session after the install (a settings file that fails validation is ignored silently).
