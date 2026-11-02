@@ -271,3 +271,20 @@ the environment by a small script, never on a command line.
   project; the claim keeps a mixed one correct.
 - The init event of 2.1.316 also lists built-in plugins (`cc-plugin-agents-md`, `cc-plugin-telemetry`,
   `cc-plugin-plugin-authoring`).
+- From GitHub, after 0.2.0 was pushed (fresh temporary HOME folders): `claude plugin marketplace add
+  gongiskhan/jevellan-harness-skills` writes `extraKnownMarketplaces.jevellan-harness-skills.source = {source:
+  "github", repo}` and clones the repository to `~/.claude/plugins/marketplaces/jevellan-harness-skills/` (where the
+  README points for `install.mjs --project-only`); `claude plugin install jevellan-harness@jevellan-harness-skills
+  --scope user` copies the plugin to `~/.claude/plugins/cache/jevellan-harness-skills/jevellan-harness/0.2.0/`, and
+  sessions load it from there. From that copy the git skill's `worktree.mjs create` found the ledger by role (no
+  `.claude` link made), the Claude runtime's command line carries `--plugin-dir <that copy>`, and a session in a
+  project set up with `--project-only` lists the 17 skills and runs the hooks. `claude plugin details` reports the
+  plugin's always-on cost as about 1,556 tokens per session (the skill descriptions).
+- Pinning: `claude plugin marketplace add gongiskhan/jevellan-harness-skills#v0.2.0` records `"ref": "v0.2.0"` in the
+  source and checks the marketplace out at the tag; installing from it gives 0.2.0. `#v0.1.0` fails ("Marketplace file
+  not found ... .claude-plugin/marketplace.json"): that tag predates the plugin.
+- Auto-update: `"autoUpdate": true` on the marketplace's entry in `extraKnownMarketplaces` is accepted (the settings
+  stay valid; the `claude plugin` commands work), but no CLI command shows it, and an entry written there by hand
+  before any add is not picked up by the `claude plugin` commands ("Plugin not found in marketplace"). The update pass
+  itself runs only in an interactive session, up to ten minutes after the first message (documentation), and was not
+  observed here.
