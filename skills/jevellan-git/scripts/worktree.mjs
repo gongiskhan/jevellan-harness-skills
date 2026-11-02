@@ -13,8 +13,9 @@
 // no credential helper); a failed fetch is only a warning, because the local branch is still a valid base. The base
 // ref is the local branch, else origin/<base>. Then
 //   git worktree add --no-track -b jh/<slug>-<T> <harness home>/worktrees/<project>/<slug>-<T> <base commit>
-// followed by .jevellan/evidence/ inside the worktree, a .claude symlink to the project's .claude (so a worker in the
-// worktree sees the same skills and hooks), the exclude lines in <git common dir>/info/exclude, and task.worktree
+// followed by .jevellan/evidence/ inside the worktree, a .claude symlink to the project's .claude when these skills
+// run from the project's .claude/skills (so a worker in the worktree sees the same skills and hooks; skills that came
+// with a Claude Code plugin reach workers through --plugin-dir and make no link), the exclude lines in <git common dir>/info/exclude, and task.worktree
 // {branch, path, base, baseCommit}. A worktree already registered at the path on the task branch (a create that was
 // interrupted before its ledger line) is finished and recorded instead of refused. A branch that exists without it,
 // or a folder at the path that git does not know, refuses (exit 2): nothing is reused that this script did not make.
@@ -54,6 +55,7 @@ import { compactTime, isTaskId, slugify } from './lib/ids.mjs';
 import { acquire, pidAlive } from './lib/lock.mjs';
 import { redactText } from './lib/redact.mjs';
 import { LedgerCallError, NOT_FOUND, appendChecked, readTask } from './lib/ledger-client.mjs';
+import { runsFromProject } from './lib/roles.mjs';
 
 export const SKILL_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 export const DEFAULT_ARCHIVE_REASON = 'left by the owner';
@@ -451,10 +453,14 @@ function baseRefOf(root, base) {
   return null;
 }
 
-// The .jevellan/evidence/ folder and the .claude link inside a worktree. A .claude that is already there (a project
-// that tracks one) is left alone, with a warning.
-function setUpWorktree(root, wtPath, warnings) {
+// The .jevellan/evidence/ folder and, for an installation into the project, the .claude link inside a worktree. A
+// .claude that is already there (a project that tracks one) is left alone, with a warning.
+function setUpWorktree(root, wtPath, warnings, { linkClaude = runsFromProject(root) } = {}) {
   fs.mkdirSync(path.join(wtPath, '.jevellan', 'evidence'), { recursive: true });
+  // The link is how a session in the worktree finds skills an installation put in <project>/.claude/skills (and the
+  // hooks in its settings). Skills that came with a Claude Code plugin reach the worker through --plugin-dir instead
+  // (H-038), and then the worktree gets no link.
+  if (!linkClaude) return;
   const link = path.join(wtPath, '.claude');
   const target = path.join(root, '.claude');
   let stat = null;

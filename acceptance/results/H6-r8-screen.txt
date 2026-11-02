@@ -1,0 +1,41 @@
+      15  npm ci                                                                                                                                                
+      16  ```                                                                                                                                      
+      17                                                                                                                                                       
+      18 +## How to run                                                                                                                                        
+      19 +                                                                                                                                                   
+      20 +Every script in `package.json`, as the exact command to type:                                                                                         
+      21 +                                                                                                                                               
+      22 +- `SANDBOX_DATA_DIR=.sandbox-data npm start`: starts the web server (`tsx src/web/server.ts`). `SANDBOX_DATA_DIR` is required, see "Run the web
+         + pages".                                                                                                                                       
+      23 +- `TZ=UTC SANDBOX_DATA_DIR=.sandbox-data npm test`: runs the unit tests once (`vitest run`). Needs `TZ=UTC` and `SANDBOX_DATA_DIR`, see "Test".
+      24 +- `npm run test:browser`: runs the Playwright browser tests (`playwright test`). Run `npx playwright install chromium` before the first run, se       
+         +e "Test".                                                                                                                                            
+      25 +- `npm run lint`: type checks the project (`tsc --noEmit`).                                                                                    
+      26 +- `npm run check:changelog`: fails if the change does not touch `CHANGELOG.md` (`node scripts/check-changelog.mjs`). Needs an `origin` remote, 
+         +see "Changelog".                                                                                                                                      
+      27 +                                                                                                                                               
+      28  ## Run the web pages                                                                                                                              
+      29                                                                                                                                                 
+      30  ```sh                                                                                                                                                 
+  ⎿  (files that changed while this command ran, by the command or by another process; a convenience view, not a review or audit of the command)         
+                                                                                                                                                               
+  Thought for 4s                                                                                                                                         
+
+● Your README now has a "How to run" section: TBFZ450 landed on main as commit 79c1aaa, a fast-forward merge.                                            
+                                                                                                                                                               
+  The section sits between "Setup" and "Run the web pages". It lists all five package.json scripts with their exact commands, and says what setup each one     
+  needs. CHANGELOG.md has a matching entry.                                                                                                                    
+                                                                                                                                                            
+  The verify step ran the unit tests (9 passed) and the type check, which passed. It skipped the browser tests because no page changed. It also didn't run     
+  check:changelog, which needs an origin remote. The diff does touch CHANGELOG.md, though, so that check should pass in CI.
+                                                                                                                                                            
+  The merge is local only: nothing was pushed and no pull request was opened, because this project isn't set to push after landing. AGENTS.md says work goes   
+  through a pull request, so if you want this change on GitHub, you'll need to push main or open a PR from the task branch.                                 
+
+✻ Baked for 11s · done 12:49 PM                                                             
+                                                                                                                                                              
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯                                                                             
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  jevellan-harness-sandbox | main | 8% | Opus 5.5@xhigh | 0 files
+  ⏵⏵ bypass permissions on (shift+tab to cycle) · ← 1 agent   

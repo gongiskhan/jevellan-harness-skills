@@ -1,0 +1,15 @@
+{
+  "name": "jevellan-harness-skills",
+  "description": "One plugin: the jevellan harness skills (coordinator, placement, runtimes, ledger, git, duties, workflows) and the ledger hooks.",
+  "owner": {
+    "name": "gongiskhan",
+    "url": "https://github.com/gongiskhan"
+  },
+  "plugins": [
+    {
+      "name": "jevellan-harness",
+      "source": "./",
+      "description": "The jevellan harness skills and the ledger's three hooks, as one Claude Code plugin."
+    }
+  ]
+}

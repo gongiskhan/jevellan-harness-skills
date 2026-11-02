@@ -231,3 +231,43 @@ Codex CLI 0.153.4, supported and used: `exec --json`, `-C`, `-m`, `-c key=value`
 
 Journeys (acceptance/RESULTS.md): H1 to H10 and H12 pass; H11 is blocked by section 10's limit of three improvement
 rounds per skill with 15 of 17 skills at or above the thresholds (H-030).
+
+## 2026-11-02 Distribution as a Claude Code plugin (0.2.0, Claude Code 2.1.316)
+
+Verified on dev-madrid in temporary HOME folders (each its own `~/.claude`), with a Claude subscription token passed in
+the environment by a small script, never on a command line.
+
+- Layout: the repository root is the plugin root. `.claude-plugin/plugin.json` (name `jevellan-harness`, version from
+  `package.json`), `skills/` and `hooks/hooks.json` load from the standard layout without naming them in the manifest
+  (naming them would be a second registration). `claude plugin validate .` passes with two warnings: no icon, and (until
+  it was added) no marketplace description. There is no `package-lock.json` at the root on purpose: with a lockfile,
+  Claude Code runs npm in the plugin's cache folder at install.
+- `claude --plugin-dir .` (cwd the repository) and `claude --plugin-dir <repo>` from a project: the init event lists the
+  plugin as `jevellan-harness@inline`, version 0.2.0, and 17 skills named `jevellan-harness:<skill>`; in a project set
+  up for the harness the SessionStart hook prints the coordinator line, and the Stop hook runs (exit 0).
+- `claude plugin marketplace add <local path>` adds `jevellan-harness-skills` to the user settings
+  (`extraKnownMarketplaces.<name>.source = {source: "directory", path}`); `claude plugin install
+  jevellan-harness@jevellan-harness-skills --scope user` adds `enabledPlugins`. A directory-source plugin loads in place
+  (the session lists the plugin's path as the marketplace folder, so edits apply at the next session); a copy is also
+  written to `~/.claude/plugins/cache/<marketplace>/<plugin>/<version>/`. A session in a project set up with
+  `install.mjs --project-only` then has the 17 skills and the hooks with no `.claude` folder in the project.
+- Hooks: `hooks/hooks.json` with the exec form (`"command": "node"`, `"args": ["${CLAUDE_PLUGIN_ROOT}/..."]`) works;
+  `${CLAUDE_PLUGIN_ROOT}` is substituted in `args` and also set in the hook's environment. `node` is the first one on
+  the session's PATH, with no login shell, in the exec and the shell form alike: with Node 20.19.4 first on PATH a
+  probe hook ran v20.19.4. So a plugin's hooks need Node 22.13 or later first on PATH; the SessionStart hook says so
+  in the session when it runs on an older Node, and every hook logs it to `.jevellan/hooks.log`. Workers are not
+  affected: the runtime puts Node 22's folder first on their PATH.
+- A worker's own `CLAUDE_CONFIG_DIR` hides the owner's user-scope plugins: a session with an empty config folder in a
+  HOME where the plugin is installed lists no plugin, no skill and runs no hook. With `--plugin-dir <plugin root>` the
+  same session has them. A real worker started by the runtime from the plugin folder (single investigate step,
+  claude-haiku-5-5 low, claude-second) listed `jevellan-harness@inline` and the 17 skills, invoked
+  `jevellan-harness:jevellan-duty-investigate` through the Skill tool, its PostToolUse hook wrote `session.event` and its
+  Stop hook recorded the done report and `session.ended`; its worktree had no `.claude` link (H-038).
+- Two registrations of the same hook both run: in a project installed with `install.mjs` while the plugin is enabled at
+  user scope, the session lists 34 skills (17 from the project, 17 namespaced) and every SessionStart, PostToolUse and
+  Stop event started two hook processes in parallel with the same input (Claude Code deduplicates identical commands
+  only within settings files, and the two commands differ). With the claim of H-039 the ledger got one
+  `session.started` and one `session.event`, and `hooks.log` named each skipped duplicate. Use one installation per
+  project; the claim keeps a mixed one correct.
+- The init event of 2.1.316 also lists built-in plugins (`cc-plugin-agents-md`, `cc-plugin-telemetry`,
+  `cc-plugin-plugin-authoring`).

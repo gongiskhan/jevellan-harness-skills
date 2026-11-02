@@ -75,7 +75,7 @@ j.check('SessionStart printed the task ledger to the worker', Boolean(ssA?.stdou
 const tb = newTask('write a valid report');
 const wb = makeWorktree(tb);
 const reportText = '{"status":"done","summary":"H3 valid report test: nothing changed.","changedFiles":[]}';
-const rb = await runWorker(tb, wb, `Create the file .jevellan/report.json in the current folder with exactly this content and nothing else, then end your turn:\n${reportText}`, { readOnly: false });
+const rb = await runWorker(tb, wb, `Use the Write tool to create the file .jevellan/report.json in the current folder with exactly this content and nothing else, then end your turn:\n${reportText}`, { readOnly: false });
 j.time('worker with a valid report', rb.ms);
 const reportB = taskEvents(tb).find((e) => e.kind === 'step.report');
 j.check('the valid report is in the ledger as step.report', reportB?.data?.status === 'done' && !reportB?.data?.synthesized, JSON.stringify(reportB?.data));
@@ -83,7 +83,8 @@ j.check('the report file was archived under the project reports folder', Boolean
 j.check('the worktree no longer has report.json', !fs.existsSync(path.join(wb, '.jevellan', 'report.json')));
 const writeEvents = taskEvents(tb).filter((e) => e.kind === 'session.event');
 j.check('PostToolUse recorded the Write with the file path', writeEvents.some((e) => e.data.tool === 'Write' && e.data.summary.endsWith('.jevellan/report.json')), JSON.stringify(writeEvents.map((e) => e.data)));
-j.check('PostToolUse lines carry no file contents', !readLedger(SANDBOX).some((e) => e.kind === 'session.event' && JSON.stringify(e.data).includes('nothing changed')));
+// This run's lines only: the sandbox's ledger is append-only and keeps every earlier run's.
+j.check('PostToolUse lines carry no file contents', !taskEvents(tb).some((e) => e.kind === 'session.event' && JSON.stringify(e.data).includes('nothing changed')));
 
 // (c) invalid report
 const tc = newTask('write an invalid report');

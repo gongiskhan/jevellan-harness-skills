@@ -7,7 +7,7 @@
 // - Anywhere else: nothing.
 
 import fs from 'node:fs';
-import { isMain, runHook } from '../scripts/lib/hook.mjs';
+import { isMain, nodeTooOld, runHook } from '../scripts/lib/hook.mjs';
 import { appendEvent, findTask, readEvents } from '../scripts/lib/ledger.mjs';
 import { projectPaths } from '../scripts/lib/project.mjs';
 import { oneLine } from '../scripts/lib/format.mjs';
@@ -30,6 +30,7 @@ export function sessionStartHook(input, root) {
   }
   if (!fs.existsSync(paths.dir)) return;
   const out = [COORDINATOR_LINE];
+  if (nodeTooOld()) out.push(`The harness's hooks ran with Node ${process.version} (${process.execPath}); they need Node 22.13 or later first on PATH. Tell the owner.`);
   if (fs.existsSync(paths.ledger)) {
     const lines = briefLines(statusView(root));
     out.push(`Open work in this project's ledger:${lines.length ? '' : ' none.'}`);

@@ -2,9 +2,9 @@
   "id": "H12",
   "title": "No leaks, no runtime",
   "status": "passed",
-  "startedAt": "2026-11-02T11:36:27.424Z",
-  "finishedAt": "2026-11-02T11:36:28.403Z",
-  "elapsedMs": 978,
+  "startedAt": "2026-11-02T12:52:12.639Z",
+  "finishedAt": "2026-11-02T12:52:16.261Z",
+  "elapsedMs": 3622,
   "passed": 13,
   "total": 13,
   "timings": {},
@@ -17,79 +17,79 @@
       "name": "secret values loaded for the search",
       "ok": true,
       "detail": "3 values from 3 files",
-      "at": "2026-11-02T11:36:27.427Z"
+      "at": "2026-11-02T12:52:12.642Z"
     },
     {
       "name": "no secret value in the ledgers, logs, evidence, reports, decisions, worktrees, acceptance outputs or the repository",
       "ok": true,
       "detail": "",
-      "at": "2026-11-02T11:36:27.637Z"
+      "at": "2026-11-02T12:52:13.698Z"
     },
     {
       "name": "no assignment of the OAuth token variable anywhere in those",
       "ok": true,
       "detail": "",
-      "at": "2026-11-02T11:36:27.787Z"
+      "at": "2026-11-02T12:52:13.914Z"
     },
     {
       "name": "no secret value in the workers' native transcripts",
       "ok": true,
       "detail": "",
-      "at": "2026-11-02T11:36:27.823Z"
+      "at": "2026-11-02T12:52:14.089Z"
     },
     {
       "name": "grep -rn \"jv \\|~/.jv\\|jevellan-hub\" skills/ finds nothing",
       "ok": true,
       "detail": "",
-      "at": "2026-11-02T11:36:27.830Z"
+      "at": "2026-11-02T12:52:14.115Z"
     },
     {
       "name": "the sandbox tracks no .claude or .jevellan file",
       "ok": true,
       "detail": "",
-      "at": "2026-11-02T11:36:27.834Z"
+      "at": "2026-11-02T12:52:14.119Z"
     },
     {
       "name": "the sandbox checkout is clean",
       "ok": true,
       "detail": "",
-      "at": "2026-11-02T11:36:27.842Z"
+      "at": "2026-11-02T12:52:14.129Z"
     },
     {
       "name": "~/.jv has no modification newer than this run's start",
       "ok": true,
       "detail": "",
-      "at": "2026-11-02T11:36:28.205Z"
+      "at": "2026-11-02T12:52:15.672Z"
     },
     {
       "name": "the live sandbox has no file modified after this run's start",
       "ok": true,
       "detail": "",
-      "at": "2026-11-02T11:36:28.225Z"
+      "at": "2026-11-02T12:52:15.871Z"
     },
     {
       "name": "the live sandbox is still at 43e279e",
       "ok": true,
       "detail": "43e279e35241d6cd27192f49ca2d7ef56369c55d",
-      "at": "2026-11-02T11:36:28.228Z"
+      "at": "2026-11-02T12:52:15.875Z"
     },
     {
       "name": "~/dev/jevellan-skills has no file modified after this run's start",
       "ok": true,
       "detail": "",
-      "at": "2026-11-02T11:36:28.263Z"
+      "at": "2026-11-02T12:52:16.102Z"
     },
     {
       "name": "the tmux session jv-build is the one created before this run, never re-created",
       "ok": true,
       "detail": "created 2026-11-01T11:10:46.000Z",
-      "at": "2026-11-02T11:36:28.269Z"
+      "at": "2026-11-02T12:52:16.107Z"
     },
     {
       "name": "no script of this repository names the jv-build session",
       "ok": true,
       "detail": "",
-      "at": "2026-11-02T11:36:28.403Z"
+      "at": "2026-11-02T12:52:16.260Z"
     }
   ]
 }

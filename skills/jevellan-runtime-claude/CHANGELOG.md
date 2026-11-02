@@ -27,3 +27,5 @@ Changes made by the trigger-eval improvement loop (brief section 10); `evals/RES
   step's worktree, instead of naming the owner's home: nothing from outside the project instructs a worker.
   `workerSettings(cwd)` and `claudeArgs({..., cwd})` take the step's worktree.
 - SKILL.md ends with an "## Interface" section listing the four scripts.
+- A worker loads the Claude Code plugin these skills came with (`--plugin-dir`, from `pluginRoot()` in `roles.mjs`):
+  its own configuration folder holds none of the owner's plugins (H-038).

@@ -1,0 +1,13 @@
+{
+  "name": "jevellan-harness",
+  "version": "0.2.0",
+  "description": "Seventeen skills that turn a Claude Code session into a coordinator: tasks in an append-only ledger, steps placed by Jev and run as their own sessions, results landed through a guarded script.",
+  "author": {
+    "name": "gongiskhan",
+    "url": "https://github.com/gongiskhan"
+  },
+  "homepage": "https://github.com/gongiskhan/jevellan-harness-skills",
+  "repository": "https://github.com/gongiskhan/jevellan-harness-skills",
+  "license": "MIT",
+  "keywords": ["coordinator", "ledger", "worktrees", "placement", "landing"]
+}

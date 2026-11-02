@@ -39,6 +39,57 @@ example `npm ci`), `checks` (the landing checks; empty means the test command), 
 `pushAfterLanding` (false by default) and `retentionDays`. Check the detected values once; a project whose tests need
 an environment writes it into `testCommand`.
 
+## Install as a plugin (Claude Code, auto-updated)
+
+For Claude Code the repository is also a plugin with its own one-plugin marketplace, installed once per machine and
+updated with each release; `install.mjs` (above) stays for Cursor and Codex, and for a project that should carry the
+skills itself. Use one of the two in a project, not both (if both are there, every hook still records each event
+once, docs/decisions.md H-039, but the session lists every skill twice).
+
+```
+claude plugin marketplace add gongiskhan/jevellan-harness-skills
+claude plugin install jevellan-harness@jevellan-harness-skills --scope user
+```
+
+Then turn on auto-update for that marketplace: in Claude Code, `/plugin`, Marketplaces, `jevellan-harness-skills`,
+Enable auto-update; or in `~/.claude/settings.json`:
+
+```json
+{
+  "extraKnownMarketplaces": {
+    "jevellan-harness-skills": {
+      "source": { "source": "github", "repo": "gongiskhan/jevellan-harness-skills" },
+      "autoUpdate": true
+    }
+  }
+}
+```
+
+Claude Code then refreshes the marketplace in the background and installs a new release when `version` in
+`.claude-plugin/plugin.json` changes; the running session keeps the old one until the next start or `/reload-plugins`.
+A client machine that must stay on one release pins the marketplace to its tag instead, and gets no updates:
+
+```
+claude plugin marketplace add gongiskhan/jevellan-harness-skills#v0.2.0
+```
+
+(v0.2.0 is the first tag that carries the plugin; v0.1.0 predates it.) The skills appear namespaced
+(`jevellan-harness:jevellan-coordinator`, ...) and work the same: they find each other by role inside the plugin's
+folder. The ledger's hooks come with the plugin and run with the `node` first on PATH, so Node 22.13 or later must be
+first on PATH for Claude Code (the SessionStart hook says so in the session when it is not). Workers the runtime
+starts load the plugin themselves (`--plugin-dir`), since they run with the harness's own Claude configuration folder.
+
+The plugin brings the skills and hooks, not a project's settings. Set each project up once, with Node 22, from the
+marketplace's copy of this repository:
+
+```
+node ~/.claude/plugins/marketplaces/jevellan-harness-skills/install.mjs <project path> --project-only
+```
+
+It writes `<project>/.jevellan/project.json` with the detected commands and adds `.jevellan/` and `plan.md` to
+`.git/info/exclude`; it copies no skills and writes no `.claude` folder. The machine's `~/.jevellan-harness/` is set
+up as for `install.mjs`. To try a checkout without installing it: `claude --plugin-dir <checkout>`.
+
 ## First run
 
 Open a Claude Code session in the project and ask it to do something. The SessionStart hook tells the session that
@@ -130,7 +181,8 @@ own tests alone, the repository suites, the role lint and the decoupling lint.
 ## Repository
 
 - `skills/`: the seventeen skills. `docs/roles.md` lists them with their roles.
-- `install.mjs`, `providers.example.json`.
+- `install.mjs`, `providers.example.json`; `.claude-plugin/` (the plugin and its marketplace) and `hooks/hooks.json`
+  (the plugin's hooks).
 - `scripts/check-roles.mjs` (the role lint), `scripts/check-decoupling.mjs` (the decoupling lint),
   `scripts/test-skills.mjs` (each skill's own tests, alone), `scripts/run-trigger-evals.mjs` (trigger evals, results in
   `evals/RESULTS.md`).

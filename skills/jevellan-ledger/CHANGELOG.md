@@ -30,6 +30,9 @@ and never import its `scripts/lib/`. The description is unchanged; the body gain
 - The ledger's own tests moved into `test/` in this skill (with their own `test/helpers.mjs`) and pass with only this
   skill's folder present (`node scripts/test-skills.mjs --skill <this skill>` from the repository root); new tests
   cover record, `--if-last-seq`, events, the show views and take-report.
+- A hook registered twice (the plugin and a project's settings) handles each event once: `runHook` claims the event
+  first (docs/decisions.md H-039). The hooks log a Node older than 22.13, and the SessionStart hook says it in the
+  session; a plugin's hooks run with the `node` first on PATH.
 
 ## Trigger evals round 1, 2026-11-02
 

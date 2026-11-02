@@ -421,6 +421,29 @@ test('--skills-only writes the skills and the exclude lines only', () => {
   assert.equal(text.stdout.includes('coordinator skill'), false);
 });
 
+test('--project-only sets the project up for the plugin: project.json and two exclude lines, no skills, hooks or .claude', () => {
+  const box = sandbox();
+  const project = makeRepo(box, 'plugin-client', { pkg: { scripts: { test: 'x', dev: 'y' } } });
+  const result = run(box, [project, '--project-only', '--json']);
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(result.json.projectOnly, true);
+  assert.equal(result.json.projectJsonWritten, true);
+  assert.equal(result.json.settingsChanged, false);
+  assert.deepEqual(result.json.skillsCopied, []);
+  assert.deepEqual(result.json.excludeLinesAdded, ['.jevellan/', 'plan.md']);
+  assert.equal(fs.existsSync(path.join(project, '.claude')), false, 'nothing of .claude');
+  const config = JSON.parse(fs.readFileSync(path.join(project, '.jevellan', 'project.json'), 'utf8'));
+  assert.equal(config.defaultBranch, 'main');
+  assert.equal(config.testCommand, 'npm test');
+  const again = run(box, [project, '--project-only', '--json']);
+  assert.deepEqual(again.json.changed, [], 'a second run changes nothing');
+  const text = run(box, [project, '--project-only']);
+  assert.match(text.stdout, /come from the jevellan-harness plugin/);
+  const both = run(box, [project, '--project-only', '--skills-only']);
+  assert.equal(both.status, 2);
+  assert.match(both.stderr, /not both/);
+});
+
 test('a settings.json that does not parse, or is not an object, is refused and left untouched', () => {
   for (const content of ['{ "hooks": ', '[]', '{"hooks": []}', '{"hooks": {"Stop": {}}}', '']) {
     const box = sandbox();

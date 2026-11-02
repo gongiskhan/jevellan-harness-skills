@@ -108,7 +108,7 @@
       {
         "id": "H1 Install",
         "before": "passed, 23/23, 3 s (one-turn session in the sandbox 3 s)",
-        "after": "passed, 23/23, 3 s (one-turn session in the sandbox 3 s)"
+        "after": "passed, 23/23, 5 s (one-turn session in the sandbox 4 s)"
       },
       {
         "id": "H2 Ledger",
@@ -118,22 +118,22 @@
       {
         "id": "H3 Hooks",
         "before": "passed, 14/14, 25 s (worker without a report 6 s; worker with a valid report 6 s; worker with an invalid report 10 s)",
-        "after": "passed, 14/14, 49 s (worker without a report 26 s; worker with a valid report 6 s; worker with an invalid report 12 s)"
+        "after": "passed, 14/14, 44 s (worker without a report 16 s; worker with a valid report 6 s; worker with an invalid report 19 s)"
       },
       {
         "id": "H4 Placement",
         "before": "passed, 17/17, 3 s (placement 1 s)",
-        "after": "passed, 17/17, 5 s (placement 1 s)"
+        "after": "passed, 17/17, 6 s (placement 1 s)"
       },
       {
         "id": "H5 Worker",
         "before": "passed, 26/26, 323 s (placement 0 s; start to report 278 s; resume to report 31 s; stop 1 s)",
-        "after": "passed, 26/26, 389 s (placement 1 s; start to report 252 s; resume to report 119 s; stop 1 s)"
+        "after": "passed, 26/26, 57 s (placement 1 s; start to report 29 s; resume to report 13 s; stop 1 s)"
       },
       {
         "id": "H6 The chain",
         "before": "passed, 13/13, 175 s (request to landing 155 s)",
-        "after": "passed, 13/13, 115 s (request to landing 95 s)"
+        "after": "passed, 13/13, 149 s (request to landing 125 s)"
       },
       {
         "id": "H7 Three in parallel",
@@ -163,7 +163,7 @@
       {
         "id": "H12 No leaks, no runtime",
         "before": "passed, 13/13, 2 s",
-        "after": "passed, 13/13, 1 s"
+        "after": "passed, 13/13, 4 s"
       }
     ]
   },
@@ -173,6 +173,7 @@
     "H6: three runs in a row on fresh baseline clones (runs 5, 6 and 7 of H6-runs.json), each a single document task landed with zero slips, 95 to 115 s from request to landing.",
     "H7: the first run (kept as results/H7-0.2.0-run1.json) failed 8/10. Two tasks landed; the README task's extra verify step ran the project's whole check set, including npm run check:changelog, which diffs against origin/main, and the clones have no remote (clone-sandbox.mjs removes it, the sandbox never had one), so the check could not pass; the ledger refused step.done for the failing check and the coordinator asked the owner with numbered options, which the journey (counting only task.landed and task.asked lines) waited on until its deadline. One slip was a read-only git check-ignore that the slip analyser did not know. Changes: clones get refs/remotes/origin/main as a symbolic ref to their own main (what CI compares a branch with), and check-ignore joined the analyser's read-only git commands. The second run, on a fresh clone, passed 10/10.",
     "H11: the trigger evals were not run again (docs/decisions.md H-035: no description changed; the Interface sections are appended last and left out of the placement and landing policies). The journey reads the recorded measurement and stays blocked by section 10's round limit, with the reason recorded for the first run (JH_H11_BLOCK_REASON).",
-    "H12: the check for the OAuth variable's assignment was named after the very string it searches for, so its own record (H12.json, RESULTS.md) matched it on any second run; it now has a name without the literal, and the first run after the rename still saw the old record, the second passed 13/13. JH_RUN_START (09:22:51Z, the time of this task's message) dates the checks on the other run's folders, which the other run may legitimately have changed since the first build run."
+    "H12: the check for the OAuth variable's assignment was named after the very string it searches for, so its own record (H12.json, RESULTS.md) matched it on any second run; it now has a name without the literal, and the first run after the rename still saw the old record, the second passed 13/13. JH_RUN_START (09:22:51Z, the time of this task's message) dates the checks on the other run's folders, which the other run may legitimately have changed since the first build run.",
+    "After the plugin change (hook claims, --plugin-dir for workers, the worktree link only for an installation in the project), H1, H3, H4, H5 and H6 ran again on the final 0.2.0 code: H1, H4, H5 and H6 passed (H6 run 8 on a fresh clone). H3's valid-report worker wrote its file with a shell printf instead of the Write tool, so the two checks that assume a Write event failed; no tool call lacked its hook. The prompt now names the Write tool, and the no-file-contents check reads only this run's task (the sandbox's append-only ledger keeps the earlier run's printf line). Then 14/14."
   ]
 }

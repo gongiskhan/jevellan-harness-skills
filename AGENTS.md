@@ -24,6 +24,10 @@ deterministically, plain Node scripts next to it.
 ## Layout
 
 - `skills/<name>/SKILL.md` with frontmatter `name`, `description` (starting with the role word) and `jh-role`.
+- `.claude-plugin/plugin.json` and `.claude-plugin/marketplace.json`: the repository is also a Claude Code plugin and
+  its one-plugin marketplace; `hooks/hooks.json` registers the ledger's hooks for the plugin. Bump `version` in
+  `package.json` and `plugin.json` together for a release (a test checks they match); never add a `package-lock.json`
+  at the root (Claude Code would run npm in the plugin cache).
 - `skills/<name>/scripts/*.mjs`, the deterministic parts; `skills/jevellan-ledger/hooks/*.mjs`, the three hooks.
 - `skills/<name>/test/` holds the skill's own `node --test` suites, run with only that skill present
   (`scripts/test-skills.mjs`); `test/` holds the suites of several skills together, the installer and the lints.

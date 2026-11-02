@@ -19,6 +19,16 @@ Decoupling over efficiency (docs/decisions.md H-031 to H-036, AGENTS.md, docs/de
 - Trigger cases name the calling skill by role (`context_role`).
 - `acceptance/timings.mjs` and the before-and-after section of `acceptance/RESULTS.md`; every journey run again.
 
+Distribution as a Claude Code plugin (H-037 to H-039, README "Install as a plugin", docs/findings.md):
+
+- `.claude-plugin/plugin.json` (`jevellan-harness`), `.claude-plugin/marketplace.json` (`jevellan-harness-skills`, the
+  repository root as its one plugin) and `hooks/hooks.json` (the ledger's three hooks through `${CLAUDE_PLUGIN_ROOT}`,
+  run with the `node` first on PATH). `install.mjs` stays; `install.mjs --project-only` sets up a project for the plugin.
+- Workers started by the Claude runtime load the plugin with `--plugin-dir` when the skills came with it; the git skill
+  links `.claude` into a worktree only for skills installed in the project.
+- Each hook handles an event once even when registered twice (plugin and project settings); the hooks name a Node older
+  than 22.13.
+
 ## 0.1.0 - 2026-11-02
 
 The first release: seventeen skills that turn a Claude Code session into a coordinator, with Jev placement, steps

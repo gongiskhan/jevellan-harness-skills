@@ -142,10 +142,11 @@ function fakeSkill(skills, folder, role, word, script, source) {
 const deadPid = () => spawnSync(process.execPath, ['-e', '']).pid;
 
 // A project with one commit and .jevellan/project.json, a skills folder with a copy of this skill and the fakes
-// asked for, and the helpers to drive them.
-function setup({ ledger = true, placement = true, config = {} } = {}) {
+// asked for, and the helpers to drive them. inProject puts the skills folder at <project>/.claude/skills, where an
+// installation into the project puts it.
+function setup({ ledger = true, placement = true, config = {}, inProject = false } = {}) {
   const base = tempDir('jh-git-alone-');
-  const skills = path.join(base, 'skills');
+  const skills = inProject ? path.join(base, 'project', '.claude', 'skills') : path.join(base, 'skills');
   fs.cpSync(SKILL_DIR, path.join(skills, SKILL_NAME), { recursive: true });
   const ledgerState = path.join(base, 'ledger-state.json');
   const placementState = path.join(base, 'placement-state.json');
@@ -155,8 +156,10 @@ function setup({ ledger = true, placement = true, config = {} } = {}) {
   if (placement) fakeSkill(skills, 'fake-placement', 'placement', 'Placement', 'jev.mjs', FAKE_PLACEMENT);
 
   const root = path.join(base, 'project');
-  fs.mkdirSync(root);
+  fs.mkdirSync(root, { recursive: true });
   git(root, 'init', '-q', '-b', 'main');
+  // An installation never commits the skills: install.mjs excludes .claude.
+  if (inProject) fs.appendFileSync(path.join(root, '.git', 'info', 'exclude'), '.claude\n');
   commit(root, { 'README.md': '# fixture\n' }, 'init');
   writeJson(path.join(root, '.jevellan', 'project.json'), { name: 'project', defaultBranch: 'main', checks: [], pushAfterLanding: false, ...config });
   const gitconfig = path.join(base, 'gitconfig');
@@ -271,6 +274,17 @@ const lastOf = (ctx, id, kind) => ctx.ledger.events(id).filter((e) => e.kind ===
 // ---- worktree.mjs ------------------------------------------------------------------------------------------------
 
 describe('worktree.mjs alone', () => {
+  test('skills installed in the project (<project>/.claude/skills) link .claude into the worktree', () => {
+    const ctx = setup({ inProject: true });
+    ctx.ledger.task('T1AAAAB');
+    const r = ctx.run('worktree.mjs', ['create', '--task', 'T1AAAAB', '--json']);
+    assert.equal(r.status, 0, r.stderr);
+    const link = path.join(r.json().path, '.claude');
+    assert.ok(fs.lstatSync(link).isSymbolicLink());
+    assert.equal(fs.realpathSync(link), fs.realpathSync(path.join(ctx.root, '.claude')));
+    assert.equal(git(r.json().path, 'status', '--porcelain').trim(), '', 'the link is excluded');
+  });
+
   test('create reads the task, makes the worktree and records task.worktree with --if-last-seq; a second create records nothing', () => {
     const ctx = setup();
     ctx.ledger.task('T1AAAAA');
@@ -280,7 +294,7 @@ describe('worktree.mjs alone', () => {
     const where = path.join(ctx.harness, 'worktrees', 'project', name);
     assert.deepEqual(r.json(), { branch: `jh/${name}`, path: where, base: 'main', baseCommit: sha(ctx.root, 'main') });
     assert.equal(git(where, 'symbolic-ref', '--short', 'HEAD').trim(), `jh/${name}`);
-    assert.ok(fs.lstatSync(path.join(where, '.claude')).isSymbolicLink());
+    assert.equal(fs.existsSync(path.join(where, '.claude')), false, 'skills outside the project make no .claude link');
     assert.ok(fs.statSync(path.join(where, '.jevellan', 'evidence')).isDirectory());
     const exclude = fs.readFileSync(path.join(ctx.root, '.git', 'info', 'exclude'), 'utf8').split('\n');
     for (const line of ['.jevellan/', 'plan.md', '.claude']) assert.ok(exclude.includes(line), line);

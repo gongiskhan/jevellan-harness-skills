@@ -38,6 +38,26 @@ describe('claudeArgs', () => {
     assert.deepEqual(argv.slice(argv.indexOf('--output-format'), argv.indexOf('--output-format') + 3), ['--output-format', 'stream-json', '--verbose']);
   });
 
+  test('with the skills installed alone no plugin is loaded; skills that came with a plugin load it with --plugin-dir', async () => {
+    assert.equal(claudeArgs({ ...base, duty: 'implement' }).includes('--plugin-dir'), false, 'this copy is not inside a plugin');
+    const argv = claudeArgs({ ...base, duty: 'investigate', plugin: '/plugins/cache/jh/0.2.0' });
+    assert.equal(argv[argv.indexOf('--plugin-dir') + 1], '/plugins/cache/jh/0.2.0');
+    assert.ok(argv.indexOf('--plugin-dir') < argv.indexOf('--'), 'before the prompt');
+    // pluginRoot: the folder holding the skills folder, when it carries .claude-plugin/plugin.json.
+    const { pluginRoot, runsFromProject } = await import('../scripts/lib/roles.mjs');
+    const plugin = tempDir('jh-plugin-');
+    fs.mkdirSync(path.join(plugin, 'skills'), { recursive: true });
+    assert.equal(pluginRoot(path.join(plugin, 'skills')), null);
+    fs.mkdirSync(path.join(plugin, '.claude-plugin'));
+    fs.writeFileSync(path.join(plugin, '.claude-plugin', 'plugin.json'), '{"name":"p"}');
+    assert.equal(pluginRoot(path.join(plugin, 'skills')), plugin);
+    // runsFromProject: the skills folder is <project>/.claude/skills.
+    const project = tempDir('jh-proj-');
+    fs.mkdirSync(path.join(project, '.claude', 'skills'), { recursive: true });
+    assert.equal(runsFromProject(project, path.join(project, '.claude', 'skills')), true);
+    assert.equal(runsFromProject(project, path.join(plugin, 'skills')), false);
+  });
+
   test('read-only and plan duties write only their report (and plan.md); tool-less duties get one turn', () => {
     let argv = claudeArgs({ ...base, duty: 'investigate' });
     assert.equal(argv[argv.indexOf('--permission-mode') + 1], 'dontAsk');

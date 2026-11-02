@@ -466,3 +466,38 @@ scan's folders outside `roles.mjs`, another skill's folder name anywhere, root m
 under `evals/` may quote `.claude/settings.json` (a near-miss trigger case quotes what an owner might type), and an
 own test under `test/` may import its copied skill by a computed path (`test-skills.mjs` runs it with no sibling
 present).
+
+## H-037 Distribution as a Claude Code plugin, next to install.mjs
+
+The repository is also a Claude Code plugin and a one-plugin marketplace, so the owner can install it once per machine
+and have it updated: `.claude-plugin/plugin.json` (name `jevellan-harness`, the version of `package.json`, author
+gongiskhan), `.claude-plugin/marketplace.json` (marketplace `jevellan-harness-skills`, its one plugin at `./`), and
+`hooks/hooks.json` registering the ledger's three hooks through `${CLAUDE_PLUGIN_ROOT}/skills/jevellan-ledger/hooks/`.
+`install.mjs` stays for Cursor, Codex and anyone who wants the skills inside a project. The plugin version is set (not
+left to the commit), so auto-update moves a machine only when a release changes it; `test/plugin.test.mjs` keeps it
+equal to `package.json`. A plugin's hooks run with the `node` first on the session's PATH (verified: no login shell,
+no way to name a binary short of a machine-specific path), so Node 22.13 or later must be first on PATH; the hooks
+name an older Node in `hooks.log` and the SessionStart hook says it in the session. The plugin brings skills and hooks
+but not a project's settings: `install.mjs <project> --project-only` writes `.jevellan/project.json` and the exclude
+lines `.jevellan/` and `plan.md` (no `.claude`, which the plugin never creates).
+
+## H-038 Workers load the plugin themselves; the worktree link only for an installation in the project
+
+A worker runs with the harness's own `CLAUDE_CONFIG_DIR` (H-001), which holds none of the owner's plugins, so a worker
+of a plugin installation would have neither the duty skills nor the Stop hook. The Claude runtime now passes
+`--plugin-dir <plugin root>` when its skills came with a plugin (`pluginRoot()` in `roles.mjs`: the folder holding the
+skills folder carries `.claude-plugin/plugin.json`). The git skill links `.claude` into a worktree only when the
+skills run from the project's own `.claude/skills` (`runsFromProject()`), which is the only case where a session in
+the worktree needs the link to find them. Both are decided by where the running skills are, so a machine never mixes
+the two ways for one task.
+
+## H-039 A hook registered twice handles each event once
+
+Claude Code runs a hook once per registration and deduplicates only identical commands within settings files; a
+project installed with `install.mjs` on a machine with the plugin enabled runs each ledger hook twice, in parallel,
+with the same input. For the Stop hook that is a correctness problem (the second run finds the report already moved
+and blocks the worker), for the others duplicate lines. `runHook` now claims each event first: a file under
+`.jevellan/locks/hooks/` named after the hook, its input and the transcript's size, made with O_EXCL; the second run
+finds it and exits, logging why. A claim older than 30 s belongs to an earlier identical event and is taken over;
+claims older than ten minutes are swept. Only calls that name their transcript are claimed (every Claude Code call
+does), and nothing is claimed outside a project set up for the harness, so the hooks still write nothing elsewhere.

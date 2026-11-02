@@ -4,7 +4,7 @@ import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
-import { spawnSync } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { HARNESS_HOME, LEDGER_SKILL, NODE, TaskScript, addWorktree, childEnv, git, ledgerFile, ledgerText, makeRepo, readLedger, runHook, tempDir, writeJson } from './helpers.mjs';
 import { oneLine } from '../scripts/lib/format.mjs';
 import { MAX_LINE } from '../scripts/lib/ledger.mjs';
@@ -15,7 +15,19 @@ const COORDINATOR = "This project's work runs through the coordinator skill: use
 const LIMIT_MS = 1000;
 
 const timings = [];
+// Claude Code's transcript grows between two events of a session, and the hooks tell a new event from the same event
+// delivered twice by it; each call here is a new event, so the test's transcript gets a line first.
+const transcripts = new Map();
+function transcriptFor(t) {
+  if (!transcripts.has(t.name)) transcripts.set(t.name, path.join(tempDir('jh-transcript-'), 'transcript.jsonl'));
+  return transcripts.get(t.name);
+}
 function hook(t, name, input, options) {
+  if (input && typeof input === 'object' && 'transcript_path' in input) {
+    const file = transcriptFor(t);
+    fs.appendFileSync(file, '{}\n');
+    input = { ...input, transcript_path: file };
+  }
   const r = runHook(name, input, options);
   timings.push({ name, test: t.name, ms: r.ms });
   t.diagnostic(`${name} hook: ${r.ms.toFixed(0)} ms`);
@@ -673,4 +685,81 @@ test('hook wall times', (t) => {
     const median = sorted[Math.floor(sorted.length / 2)];
     t.diagnostic(`${name} hook wall time over ${list.length} runs: median ${median.toFixed(0)} ms, max ${sorted.at(-1).toFixed(0)} ms`);
   }
+});
+
+// ---- one event, two registrations ---------------------------------------------------------------------------------
+
+// Runs the same hook twice at once with the same input, as Claude Code does when the plugin and a project's settings
+// both register it.
+function twice(name, input, { cwd, env = {} }) {
+  const one = () => new Promise((resolve) => {
+    const child = spawn(NODE, [path.join(LEDGER_SKILL, 'hooks', `${name}.mjs`)], { cwd, env: childEnv(env), stdio: ['pipe', 'pipe', 'pipe'] });
+    let stdout = '';
+    child.stdout.on('data', (chunk) => {
+      stdout += chunk;
+    });
+    child.on('close', (status) => resolve({ status, stdout }));
+    child.stdin.end(JSON.stringify(input));
+  });
+  return Promise.all([one(), one()]);
+}
+
+describe('a hook registered twice', () => {
+  test('a Stop event delivered twice at once records one report and blocks nobody', async () => {
+    const root = makeRepo();
+    const s = new TaskScript(root);
+    s.started(1);
+    const { env, session } = worker(root, s);
+    writeJson(reportPath(root), { status: 'done', summary: 'Reported once.' });
+    const transcript = path.join(tempDir('jh-transcript-'), 'transcript.jsonl');
+    fs.writeFileSync(transcript, '{}\n');
+    const runs = await twice('stop', { ...stopInput(root, session), transcript_path: transcript }, { cwd: root, env });
+    assert.deepEqual(runs.map((r) => r.status), [0, 0]);
+    assert.deepEqual(runs.map((r) => r.stdout), ['', ''], 'neither run blocks the worker');
+    assert.equal(reports(root).length, 1, 'one step.report');
+    assert.equal(readLedger(root).filter((e) => e.kind === 'session.ended').length, 1);
+    assert.match(fs.readFileSync(path.join(root, '.jevellan', 'hooks.log'), 'utf8'), /handled by another registration of this hook; skipped/);
+  });
+
+  test('a PostToolUse event delivered twice at once writes one line; the next tool call writes its own', async () => {
+    const root = makeRepo();
+    const transcript = path.join(tempDir('jh-transcript-'), 'transcript.jsonl');
+    fs.writeFileSync(transcript, '{}\n');
+    const input = { session_id: 'coord-dup', cwd: root, hook_event_name: 'PostToolUse', tool_name: 'Bash', tool_use_id: 'toolu_1', tool_input: { command: 'ls' }, transcript_path: transcript };
+    await twice('post-tool', input, { cwd: root });
+    assert.equal(readLedger(root).filter((e) => e.kind === 'session.event').length, 1);
+    fs.appendFileSync(transcript, '{}\n');
+    await twice('post-tool', { ...input, tool_use_id: 'toolu_2' }, { cwd: root });
+    assert.equal(readLedger(root).filter((e) => e.kind === 'session.event').length, 2);
+  });
+
+  test('an identical event after the claim has expired is a new event', async () => {
+    const root = makeRepo();
+    const transcript = path.join(tempDir('jh-transcript-'), 'transcript.jsonl');
+    fs.writeFileSync(transcript, '{}\n');
+    const input = { session_id: 'coord-late', cwd: root, hook_event_name: 'PostToolUse', tool_name: 'Edit', tool_use_id: 'toolu_9', tool_input: { file_path: 'a.txt' }, transcript_path: transcript };
+    await twice('post-tool', input, { cwd: root });
+    const claims = path.join(root, '.jevellan', 'locks', 'hooks');
+    const old = new Date(Date.now() - 60000);
+    for (const name of fs.readdirSync(claims)) fs.utimesSync(path.join(claims, name), old, old);
+    await twice('post-tool', input, { cwd: root });
+    assert.equal(readLedger(root).filter((e) => e.kind === 'session.event').length, 2);
+  });
+
+  test('outside a project set up for the harness nothing is claimed and nothing is written', async () => {
+    const root = makeRepo({ installed: false });
+    const transcript = path.join(tempDir('jh-transcript-'), 'transcript.jsonl');
+    fs.writeFileSync(transcript, '{}\n');
+    await twice('post-tool', { session_id: 'x', cwd: root, tool_name: 'Bash', tool_use_id: 't', tool_input: { command: 'ls' }, transcript_path: transcript }, { cwd: root });
+    assert.equal(fs.existsSync(path.join(root, '.jevellan')), false);
+  });
+});
+
+test('the hooks name a Node older than 22.13 (they run with the node first on PATH)', async () => {
+  const { nodeTooOld } = await import('../scripts/lib/hook.mjs');
+  assert.equal(nodeTooOld('20.19.4'), true);
+  assert.equal(nodeTooOld('22.12.9'), true);
+  assert.equal(nodeTooOld('22.13.0'), false);
+  assert.equal(nodeTooOld('22.23.2'), false);
+  assert.equal(nodeTooOld('24.1.0'), false);
 });

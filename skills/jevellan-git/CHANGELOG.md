@@ -20,3 +20,5 @@
   "Jev: invalid response", as before.
 - Own tests in `test/`, run with only this skill present (`node scripts/test-skills.mjs --skill jevellan-git`), with
   fake ledger and placement skills.
+- `worktree.mjs create` links `.claude` into a worktree only when the skills run from the project's own
+  `.claude/skills`; skills that came with a plugin reach workers through `--plugin-dir` (H-038).

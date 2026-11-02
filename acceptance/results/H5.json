@@ -2,176 +2,176 @@
   "id": "H5",
   "title": "Worker",
   "status": "passed",
-  "startedAt": "2026-11-02T10:50:49.857Z",
-  "finishedAt": "2026-11-02T10:57:18.881Z",
-  "elapsedMs": 389023,
+  "startedAt": "2026-11-02T12:46:39.213Z",
+  "finishedAt": "2026-11-02T12:47:36.597Z",
+  "elapsedMs": 57383,
   "passed": 26,
   "total": 26,
   "timings": {
-    "placement": 637,
-    "start to report": 252210,
-    "resume to report": 119224,
-    "stop": 682
+    "placement": 717,
+    "start to report": 28504,
+    "resume to report": 13494,
+    "stop": 693
   },
   "notes": [
-    "placement: claude-opus-5-5 max via claude-second (claude-subscription)"
+    "placement: claude-opus-5-5 medium via claude-main (claude-subscription)"
   ],
   "checks": [
     {
       "name": "task created",
       "ok": true,
       "detail": "",
-      "at": "2026-11-02T10:50:49.925Z"
+      "at": "2026-11-02T12:46:39.283Z"
     },
     {
       "name": "worktree created",
       "ok": true,
       "detail": "",
-      "at": "2026-11-02T10:50:51.617Z"
+      "at": "2026-11-02T12:46:41.237Z"
     },
     {
       "name": "placed by Jev",
       "ok": true,
-      "detail": "{\"provider\":\"claude-second\",\"model\":\"claude-opus-5-5\",\"effort\":\"max\",\"kind\":\"claude-subscription\",\"probabilities\":{\"model\":{\"gpt-6-astra\":0.27,\"claude-opus-5-5\":0.6,\"claude-fable-5-1\":0.11,\"claude-sonnet-5-5\":0.01,\"claude-haiku-5-5\":0.01},\"effort\":{\"low\":0.01,\"medium\":0.2,\"high\":0.1,\"xhigh\":0.06,\"ma",
-      "at": "2026-11-02T10:50:52.254Z"
+      "detail": "{\"provider\":\"claude-main\",\"model\":\"claude-opus-5-5\",\"effort\":\"medium\",\"kind\":\"claude-subscription\",\"probabilities\":{\"model\":{\"gpt-6-astra\":0.41,\"claude-opus-5-5\":0.45,\"claude-fable-5-1\":0.13,\"claude-sonnet-5-5\":0,\"claude-haiku-5-5\":0.01},\"effort\":{\"low\":0.02,\"medium\":0.33,\"high\":0.26,\"xhigh\":0.08,\"m",
+      "at": "2026-11-02T12:46:41.954Z"
     },
     {
       "name": "start.mjs returns at once with a session and a pid",
       "ok": true,
-      "detail": "312 ms ",
-      "at": "2026-11-02T10:50:52.566Z"
+      "detail": "373 ms ",
+      "at": "2026-11-02T12:46:42.328Z"
     },
     {
       "name": "step.started has the model, effort, pid and native session id",
       "ok": true,
       "detail": "",
-      "at": "2026-11-02T10:50:52.568Z"
+      "at": "2026-11-02T12:46:42.331Z"
     },
     {
       "name": "wait returns the report with exit 0",
       "ok": true,
-      "detail": "0 {\n  \"kind\": \"step.report\",\n  \"task\": \"TWJDR1K\",\n  \"step\": 1,\n  \"seq\": 335,\n  \"status\": \"done\",\n  \"summary\": \"Short answer: in the current code, nothing produces that error. The customers page has no new-customer form, so no file or line checks for an empty field and there is no message text to quote",
-      "at": "2026-11-02T10:55:04.464Z"
+      "detail": "0 {\n  \"kind\": \"step.report\",\n  \"task\": \"T6Y7T0V\",\n  \"step\": 1,\n  \"seq\": 397,\n  \"status\": \"done\",\n  \"summary\": \"Short answer: nowhere. In this version of the app, the customers page has no form for adding a new customer. It does not check for empty fields and never shows an error about an empty field. ",
+      "at": "2026-11-02T12:47:10.460Z"
     },
     {
       "name": "the report says done and answers the question",
       "ok": true,
-      "detail": "Short answer: in the current code, nothing produces that error. The customers page has no new-customer form, so no file or line checks for an empty field and there is no message text to quote. This worktree is identical to main (commit 11b29d5).\n\nWhat the customers page does today (read from the cod",
-      "at": "2026-11-02T10:55:04.464Z"
+      "detail": "Short answer: nowhere. In this version of the app, the customers page has no form for adding a new customer. It does not check for empty fields and never shows an error about an empty field. So there is no file, line or message text to point to.\n\nWhat the customers page actually does:\n- src/web/serv",
+      "at": "2026-11-02T12:47:10.460Z"
     },
     {
       "name": "the report came from the file, archived by the hook",
       "ok": true,
       "detail": "",
-      "at": "2026-11-02T10:55:04.464Z"
+      "at": "2026-11-02T12:47:10.460Z"
     },
     {
       "name": "the transcript shows the Skill tool invoking the investigate duty",
       "ok": true,
       "detail": "[\"jevellan-duty-investigate\"]",
-      "at": "2026-11-02T10:55:04.469Z"
+      "at": "2026-11-02T12:47:10.462Z"
     },
     {
       "name": "the native transcript is named by the session id",
       "ok": true,
-      "detail": "/home/ggomes/.jevellan-harness/claude-config/projects/-home-ggomes--jevellan-harness-worktrees-jevellan-harness-sandbox-h5-where-does-the-customers-page-produce-TWJDR1K/32c992ea-7426-47af-8222-95405afda60b.jsonl",
-      "at": "2026-11-02T10:55:04.469Z"
+      "detail": "/home/ggomes/.jevellan-harness/claude-config/projects/-home-ggomes--jevellan-harness-worktrees-jevellan-harness-sandbox-h5-where-does-the-customers-page-produce-T6Y7T0V/f3fd1a67-5a55-4684-86cf-2b7ddb4678da.jsonl",
+      "at": "2026-11-02T12:47:10.462Z"
     },
     {
       "name": "the read-only worker wrote only its report file",
       "ok": true,
-      "detail": "[\"/home/ggomes/.jevellan-harness/worktrees/jevellan-harness-sandbox/h5-where-does-the-customers-page-produce-TWJDR1K/.jevellan/report.json\"]",
-      "at": "2026-11-02T10:55:04.469Z"
+      "detail": "[\"/home/ggomes/.jevellan-harness/worktrees/jevellan-harness-sandbox/h5-where-does-the-customers-page-produce-T6Y7T0V/.jevellan/report.json\"]",
+      "at": "2026-11-02T12:47:10.462Z"
     },
     {
       "name": "the worktree has no change",
       "ok": true,
       "detail": "",
-      "at": "2026-11-02T10:55:04.474Z"
+      "at": "2026-11-02T12:47:10.467Z"
     },
     {
       "name": "the system prompt append was accepted (the worker followed the duty line)",
       "ok": true,
       "detail": "",
-      "at": "2026-11-02T10:55:04.474Z"
+      "at": "2026-11-02T12:47:10.467Z"
     },
     {
       "name": "resume.mjs continues the same session id",
       "ok": true,
-      "detail": "{\n  \"task\": \"TWJDR1K\",\n  \"step\": 1,\n  \"session\": \"32c992ea-7426-47af-8222-95405afda60b\",\n  \"pid\": 2306396,\n  \"from\": \"coordinator\",\n  \"logFile\": \"/home/ggomes/.jevellan-harness/logs/32c992ea-7426-47af",
-      "at": "2026-11-02T10:55:04.959Z"
+      "detail": "{\n  \"task\": \"T6Y7T0V\",\n  \"step\": 1,\n  \"session\": \"f3fd1a67-5a55-4684-86cf-2b7ddb4678da\",\n  \"pid\": 2683556,\n  \"from\": \"coordinator\",\n  \"logFile\": \"/home/ggomes/.jevellan-harness/logs/f3fd1a67-5a55-4684",
+      "at": "2026-11-02T12:47:10.874Z"
     },
     {
       "name": "the resumed turn reported through the hook",
       "ok": true,
-      "detail": "0 Short answer: today's customers page has no new-customer form, so nothing on main produces that error. The error lived in form code that was later removed from main. In that code, the decision is at s",
-      "at": "2026-11-02T10:57:03.698Z"
+      "detail": "0 Short answer: nowhere. In this version of the app, the customers page has no form for adding a new customer. It does not check for empty fields and never shows an error about an empty field. So there ",
+      "at": "2026-11-02T12:47:23.961Z"
     },
     {
       "name": "two step.started lines share the native session id",
       "ok": true,
       "detail": "",
-      "at": "2026-11-02T10:57:03.700Z"
+      "at": "2026-11-02T12:47:23.965Z"
     },
     {
       "name": "the message was recorded as step.message from the coordinator",
       "ok": true,
       "detail": "",
-      "at": "2026-11-02T10:57:03.702Z"
+      "at": "2026-11-02T12:47:23.968Z"
     },
     {
       "name": "the resumed turn ran in the same conversation",
       "ok": true,
-      "detail": "32c992ea-7426-47af-8222-95405afda60b",
-      "at": "2026-11-02T10:57:03.705Z"
+      "detail": "f3fd1a67-5a55-4684-86cf-2b7ddb4678da",
+      "at": "2026-11-02T12:47:23.969Z"
     },
     {
       "name": "status.mjs says alive while the turn runs",
       "ok": true,
-      "detail": "{\"task\":\"TWJDR1K\",\"step\":1,\"state\":\"alive\",\"pid\":2309826,\"session\":\"32c992ea-7426-47af-8222-95405afda60b\",\"startedAt\":\"2026-11-02T10:57:04.056Z\",\"model\":\"claude-opus-5-5\",\"effort\":\"max\",\"provider\":\"claude-second\",\"ended\":null,\"lastLine\":\"result: success I found the error my first report couldn't pin down. The empty-field check is at `src/web/app.ts:19`, and the exact message is **\\\"Enter both a name and a VAT number.\\\"** That code is no longer on main.\"}",
-      "at": "2026-11-02T10:57:08.198Z"
+      "detail": "{\"task\":\"T6Y7T0V\",\"step\":1,\"state\":\"alive\",\"pid\":2684180,\"session\":\"f3fd1a67-5a55-4684-86cf-2b7ddb4678da\",\"startedAt\":\"2026-11-02T12:47:24.384Z\",\"model\":\"claude-opus-5-5\",\"effort\":\"medium\",\"provider\":\"claude-main\",\"ended\":null,\"lastLine\":\"said: I'll read all seven files now. My earlier reports overstated this: I had only read `server.ts` and `customers/index.ts` in full, and I'll correct that in the report.\"}",
+      "at": "2026-11-02T12:47:28.531Z"
     },
     {
       "name": "stop.mjs ends the turn and marks step.stopped",
       "ok": true,
-      "detail": "{\n  \"task\": \"TWJDR1K\",\n  \"step\": 1,\n  \"pid\": 2309826,\n  \"how\": \"SIGTERM\",\n  \"seq\": 344\n}\n",
-      "at": "2026-11-02T10:57:08.883Z"
+      "detail": "{\n  \"task\": \"T6Y7T0V\",\n  \"step\": 1,\n  \"pid\": 2684180,\n  \"how\": \"SIGTERM\",\n  \"seq\": 406\n}\n",
+      "at": "2026-11-02T12:47:29.227Z"
     },
     {
       "name": "the worker process is gone",
       "ok": true,
       "detail": "",
-      "at": "2026-11-02T10:57:08.884Z"
+      "at": "2026-11-02T12:47:29.227Z"
     },
     {
       "name": "status.mjs says exited after the stop",
       "ok": true,
       "detail": "",
-      "at": "2026-11-02T10:57:09.008Z"
+      "at": "2026-11-02T12:47:29.351Z"
     },
     {
       "name": "the task is stopped in the projection",
       "ok": true,
       "detail": "",
-      "at": "2026-11-02T10:57:09.066Z"
+      "at": "2026-11-02T12:47:29.416Z"
     },
     {
       "name": "read-only tools: notes.txt was refused",
       "ok": true,
       "detail": "",
-      "at": "2026-11-02T10:57:18.696Z"
+      "at": "2026-11-02T12:47:36.404Z"
     },
     {
       "name": "read-only tools: .jevellan/report.json was allowed",
       "ok": true,
-      "detail": "Only the second write worked.\n\n- **`notes.txt`:** This write was denied. The permission check said Write isn't allowed in don't-ask mode, so the file wasn't created. I didn't try another way around th",
-      "at": "2026-11-02T10:57:18.697Z"
+      "detail": "Only the second write worked.\n\n- **`notes.txt`:** This write was denied. Claude Code is in \"don't ask\" mode, which blocked the Write call, so the file wasn't created. I didn't try another way to creat",
+      "at": "2026-11-02T12:47:36.405Z"
     },
     {
       "name": "worktree archived",
       "ok": true,
       "detail": "",
-      "at": "2026-11-02T10:57:18.881Z"
+      "at": "2026-11-02T12:47:36.597Z"
     }
   ]
 }

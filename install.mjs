@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Installs the skills into a project: node install.mjs <project path> [--skills-only] [--json]
+// Installs the skills into a project: node install.mjs <project path> [--skills-only | --project-only] [--json]
 //
 // 1. Refuses (exit 2, nothing written) the other runs' folders, anything that is not the top level of a main git
 //    checkout, a Node older than 22 (the hooks record this binary's path), and a settings.json that does not parse.
@@ -10,7 +10,9 @@
 // 4. Writes <project>/.jevellan/project.json when it is missing, with the detected commands.
 // 5. Adds .claude/, .jevellan/ and plan.md to <project>/.git/info/exclude when absent.
 // 6. Prints what it did.
-// --skills-only does steps 2 and 5 only. --json prints the result as one object instead of text.
+// --skills-only does steps 2 and 5 only. --project-only does steps 4 and 5 only, with the exclude lines .jevellan/ and
+// plan.md: it sets up a project whose skills and hooks come from the Claude Code plugin (README, "Install as a
+// plugin"). --json prints the result as one object instead of text.
 //
 // Everything is checked and planned before the first write, so a refusal leaves the project as it was.
 
@@ -23,7 +25,7 @@ import { parseArgs } from 'node:util';
 import { gitLocate, harnessHome } from './skills/jevellan-ledger/scripts/lib/project.mjs';
 import { compactTime } from './skills/jevellan-ledger/scripts/lib/ids.mjs';
 
-const USAGE = 'usage: node install.mjs <project path> [--skills-only] [--json]';
+const USAGE = 'usage: node install.mjs <project path> [--skills-only | --project-only] [--json]';
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 export const SOURCE_SKILLS = path.join(HERE, 'skills');
 export const SKILL_PREFIX = 'jevellan-';
@@ -34,6 +36,8 @@ export const HOOK_TIMEOUT = 10;
 // '.claude' without a trailing slash: it must also match the .claude symlink in a task worktree, which '.claude/'
 // (directories only) does not.
 export const EXCLUDE_LINES = ['.claude', '.jevellan/', 'plan.md'];
+// A project set up for the plugin gets no .claude folder or link from the harness, so .claude stays the project's own.
+export const PROJECT_ONLY_EXCLUDE_LINES = ['.jevellan/', 'plan.md'];
 export const START_LINE = (project) =>
   `Open a Claude Code session in ${project} and ask it to do something; the coordinator skill takes it from there.`;
 
@@ -451,7 +455,8 @@ export function setupCommandFor(project) {
 
 // ---- the run -------------------------------------------------------------------------------------------------
 
-export function install(input, { skillsOnly = false } = {}) {
+export function install(input, { skillsOnly = false, projectOnly = false } = {}) {
+  if (skillsOnly && projectOnly) throw new Refusal('refused: give --skills-only or --project-only, not both');
   const home = ownerHomeStrict();
   const resolved = path.resolve(input);
   const project = realOrSelf(resolved);
@@ -459,11 +464,12 @@ export function install(input, { skillsOnly = false } = {}) {
   const reason = forbiddenReason(project, home) ?? forbiddenReason(resolved, home) ?? checkoutReason(project);
   if (reason) throw new Refusal(reason);
 
-  const names = sourceSkillNames();
-  if (!names.length) throw new Refusal(`refused: no ${SKILL_PREFIX}* folders found in ${SOURCE_SKILLS}`);
-
-  requireFolderOrAbsent(path.join(project, '.claude'), '.claude');
-  requireFolderOrAbsent(path.join(project, '.claude', 'skills'), '.claude/skills');
+  if (!projectOnly) {
+    const names = sourceSkillNames();
+    if (!names.length) throw new Refusal(`refused: no ${SKILL_PREFIX}* folders found in ${SOURCE_SKILLS}`);
+    requireFolderOrAbsent(path.join(project, '.claude'), '.claude');
+    requireFolderOrAbsent(path.join(project, '.claude', 'skills'), '.claude/skills');
+  }
   requireFolderOrAbsent(path.join(project, '.git', 'info'), '.git/info');
   const excludeFile = path.join(project, '.git', 'info', 'exclude');
   try {
@@ -475,22 +481,24 @@ export function install(input, { skillsOnly = false } = {}) {
   let settingsPlan = null;
   let projectPlan = null;
   if (!skillsOnly) {
-    if (nodeMajor() < 22) {
+    if (nodeMajor() < 22 && !projectOnly) {
       throw new Refusal(
         `refused: this is Node ${process.versions.node}; the hooks run with the Node that runs install, so run install with Node 22 or later`,
       );
     }
     const node = process.execPath;
-    for (const [what, value] of [['the Node path', node], ['the project path', project]]) {
+    for (const [what, value] of projectOnly ? [] : [['the Node path', node], ['the project path', project]]) {
       if (UNQUOTABLE.test(value)) {
         throw new Refusal(`refused: ${what} ${JSON.stringify(value)} holds a character that cannot be quoted in a hook command`);
       }
     }
     requireFolderOrAbsent(path.join(project, '.jevellan'), '.jevellan');
-    const current = readSettings(project);
-    const merged = mergeSettings(current.settings, ourGroups(node, project));
-    const changed = !current.exists || JSON.stringify(merged) !== JSON.stringify(current.settings);
-    settingsPlan = { file: current.file, exists: current.exists, changed, text: `${JSON.stringify(merged, null, 2)}\n` };
+    if (!projectOnly) {
+      const current = readSettings(project);
+      const merged = mergeSettings(current.settings, ourGroups(node, project));
+      const changed = !current.exists || JSON.stringify(merged) !== JSON.stringify(current.settings);
+      settingsPlan = { file: current.file, exists: current.exists, changed, text: `${JSON.stringify(merged, null, 2)}\n` };
+    }
     const projectJson = path.join(project, '.jevellan', 'project.json');
     let exists = false;
     try {
@@ -504,15 +512,16 @@ export function install(input, { skillsOnly = false } = {}) {
   try {
     excludeText = fs.readFileSync(excludeFile, 'utf8');
   } catch {}
-  const excludeMissing = missingExcludeLines(excludeText);
+  const excludeMissing = missingExcludeLines(excludeText, projectOnly ? PROJECT_ONLY_EXCLUDE_LINES : EXCLUDE_LINES);
 
   const archiveDir = path.join(harnessHome(), 'archive', 'skills', `${path.basename(project)}-${compactTime()}`);
-  const skillsPlan = planSkills(project, archiveDir);
+  const skillsPlan = projectOnly ? null : planSkills(project, archiveDir);
 
   // Every check passed: from here on the plan is applied.
   const result = {
     project,
     skillsOnly,
+    projectOnly,
     skillsCopied: [],
     skillsUnchanged: [],
     skillsArchived: [],
@@ -523,7 +532,7 @@ export function install(input, { skillsOnly = false } = {}) {
     lines: [],
   };
 
-  applySkills(project, skillsPlan, result);
+  if (skillsPlan) applySkills(project, skillsPlan, result);
 
   if (settingsPlan?.changed) {
     writeFileAtomic(settingsPlan.file, settingsPlan.text);
@@ -562,6 +571,8 @@ function report(result) {
   const lines = result.lines.length ? [...result.lines] : ['nothing to change'];
   if (result.skillsOnly) {
     lines.push(`Skills installed in ${result.project}/.claude/skills as plain skills; no hooks or project settings were written (--skills-only).`);
+  } else if (result.projectOnly) {
+    lines.push(`${result.project} is set up for the harness; its skills and hooks come from the jevellan-harness plugin (--project-only).`, START_LINE(result.project));
   } else {
     lines.push(START_LINE(result.project));
   }
@@ -575,7 +586,7 @@ export function main(argv) {
     try {
       parsed = parseArgs({
         args: argv,
-        options: { 'skills-only': { type: 'boolean' }, json: { type: 'boolean' }, help: { type: 'boolean', short: 'h' } },
+        options: { 'skills-only': { type: 'boolean' }, 'project-only': { type: 'boolean' }, json: { type: 'boolean' }, help: { type: 'boolean', short: 'h' } },
         allowPositionals: true,
         strict: true,
       });
@@ -587,7 +598,7 @@ export function main(argv) {
       return 0;
     }
     if (parsed.positionals.length !== 1) throw new Refusal(USAGE);
-    const result = install(parsed.positionals[0], { skillsOnly: Boolean(parsed.values['skills-only']) });
+    const result = install(parsed.positionals[0], { skillsOnly: Boolean(parsed.values['skills-only']), projectOnly: Boolean(parsed.values['project-only']) });
     if (json) {
       const { lines, skillsOnly, ...rest } = result;
       process.stdout.write(`${JSON.stringify({ ...rest, skillsOnly }, null, 2)}\n`);
