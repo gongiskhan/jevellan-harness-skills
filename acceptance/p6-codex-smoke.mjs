@@ -14,7 +14,7 @@ const pj = path.join(clone, '.jevellan', 'project.json');
 fs.writeFileSync(pj, JSON.stringify({ ...JSON.parse(fs.readFileSync(pj, 'utf8')), setupCommand: null }, null, 2));
 const task = ledgerCli(clone, ['task', 'create', '--kind', 'single', '--duty', 'investigate', '--title', 'Codex smoke: which port', '--text', 'Which port does the web server in src/web/server.ts listen on, and where is it set? Answer with the file and line.', '--json']).json.task;
 const wt = skillScript(clone, 'jevellan-git', 'scripts/worktree.mjs', ['create', '--task', task, '--json']).json;
-const placed = skillScript(clone, 'jevellan-router', 'scripts/route.mjs', ['--task', task, '--step', '1', '--duty', 'investigate', '--owner', 'codex/gpt-6-astra/low']);
+const placed = skillScript(clone, 'jevellan-placement', 'scripts/route.mjs', ['--task', task, '--step', '1', '--duty', 'investigate', '--owner', 'codex/gpt-6-astra/low']);
 j.check('owner placement on codex', placed.status === 0, placed.stdout.slice(0, 200) || placed.stderr);
 const t0 = Date.now();
 const started = skillScript(clone, 'jevellan-runtime-codex', 'scripts/start.mjs', ['--task', task, '--step', '1', '--duty', 'investigate', '--cwd', wt.path, '--provider', 'codex', '--model', 'gpt-6-astra', '--effort', 'low', '--json']);

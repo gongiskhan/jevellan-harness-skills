@@ -1,5 +1,5 @@
 ---
-name: jevellan-router
+name: jevellan-placement
 description: Placement. Use when a session must decide which model, effort and provider a task step should run on, or must answer a workflow question about a task. Runs a script that asks Jev; never choose yourself.
 jh-role: placement
 ---

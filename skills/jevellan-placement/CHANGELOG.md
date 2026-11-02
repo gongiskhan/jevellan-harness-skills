@@ -1,14 +1,14 @@
-# Changelog: jevellan-router
+# Changelog: jevellan-placement
 
 Changes made by the trigger-eval improvement loop (brief section 10); `evals/RESULTS.md` at the repository root holds each round's numbers.
 
 ## Trigger evals round 1, 2026-11-02
 
-- The role-missing sentence now says how to tell a role (the first word of a skill's description) and to stop without trying any skill name: with the placement skill removed, sessions tried the guessed name jevellan-placement before reporting the role missing (router cases 9 and 10), and the brief says such a session must invoke nothing.
+- The role-missing sentence now says how to tell a role (the first word of a skill's description) and to stop without trying any skill name: with the placement skill removed, sessions tried a skill name guessed from the role word before reporting the role missing (the placement skill's cases 9 and 10), and the brief says such a session must invoke nothing.
 
 ## Trigger evals round 2, 2026-11-02
 
-- The role-missing sentence now says to call no skill at all when no listed skill has the role: one of the two placement-removed runs still tried the guessed name jevellan-placement (router case 9).
+- The role-missing sentence now says to call no skill at all when no listed skill has the role: one of the two placement-removed runs still tried a skill name guessed from the role word (the placement skill's case 9).
 
 ## 0.2.0
 
@@ -27,3 +27,9 @@ Changes made by the trigger-eval improvement loop (brief section 10); `evals/RES
   `ec73b4a67a6b0225e95f97a49c359b4c3678aa6c05f57f89c95e56479a33fafe`.
 - The evals export reads each project's ledger through the ledger skill's `events --json`.
 - Own tests in `test/` run with only this skill present, against fake duty, runtime and ledger skills.
+
+## 0.2.1
+
+- Renamed from jevellan-router to jevellan-placement, so the folder name matches the role (owner decision,
+  docs/decisions.md H-040). The role word, the description, the policy and every script are unchanged; the policy's
+  error messages say "the placement policy".

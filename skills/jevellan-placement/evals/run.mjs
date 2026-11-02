@@ -59,7 +59,7 @@ import {
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 export const SKILL_DIR = path.resolve(HERE, '..');
-export const SKILL_NAME = 'jevellan-router';
+export const SKILL_NAME = 'jevellan-placement';
 export const CASES_FILE = path.join(HERE, 'cases.json');
 export const RESULTS_FILE = path.join(HERE, 'RESULTS.md');
 export const THRESHOLD_FILE = path.join(HERE, 'threshold.json');

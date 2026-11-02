@@ -19,7 +19,7 @@ export async function driveTask(project, task, { journey, log = console.log, max
   if (kind === 'single') {
     steps = [{ ordinal: 1, duty: created.data.duty }];
   } else {
-    const q = run('jevellan-router', 'scripts/route.mjs', ['--task', task, '--questions']);
+    const q = run('jevellan-placement', 'scripts/route.mjs', ['--task', task, '--questions']);
     if (q.status !== 0) throw new Error(`questions: ${q.stderr}`);
     const answers = path.join(path.dirname(cwd), `${task}-answers.json`);
     fs.writeFileSync(answers, q.stdout);
@@ -32,7 +32,7 @@ export async function driveTask(project, task, { journey, log = console.log, max
   }
   const placements = [];
   const runStep = async (step) => {
-    const placed = run('jevellan-router', 'scripts/route.mjs', ['--task', task, '--step', String(step.ordinal), '--duty', step.duty]);
+    const placed = run('jevellan-placement', 'scripts/route.mjs', ['--task', task, '--step', String(step.ordinal), '--duty', step.duty]);
     if (placed.status !== 0) throw new Error(`placement of step ${step.ordinal}: ${placed.stderr}`);
     const p = placed.json;
     placements.push({ step: step.ordinal, duty: step.duty, model: p.model, effort: p.effort, provider: p.provider, p: p.probabilities?.model?.[p.model] });

@@ -10,6 +10,10 @@ const j = new Journey('H11', 'Trigger evals');
 const results = JSON.parse(fs.readFileSync(path.join(REPO, 'evals', 'results.json'), 'utf8'));
 const skills = fs.readdirSync(path.join(REPO, 'skills')).filter((n) => fs.existsSync(path.join(REPO, 'skills', n, 'SKILL.md')));
 j.note(`run of ${results.date}: model ${results.model}, effort ${results.effort}, ${results.runs} runs per case, provider ${results.provider}, Claude Code ${results.claudeVersion ?? '?'}; thresholds ${JSON.stringify(results.thresholds)}`);
+if (results.merged) {
+  const m = results.merged;
+  j.note(`merged results: ${m.remeasured.join(', ')} measured on ${results.date}; ${m.kept.length} skills from the run of ${m.from}${m.dropped.length ? `; left out (no longer in the package): ${m.dropped.join(', ')}` : ''}`);
+}
 j.check('the run covered every skill', skills.every((s) => results.skills.some((r) => r.skill === s)) && (!results.limit || results.limit === null), `${results.skills.length} skills in the run, ${skills.length} in the package`);
 j.check('every skill has at least five positive and five negative cases', skills.every((s) => {
   const cases = JSON.parse(fs.readFileSync(path.join(REPO, 'skills', s, 'evals', 'trigger-cases.json'), 'utf8'));

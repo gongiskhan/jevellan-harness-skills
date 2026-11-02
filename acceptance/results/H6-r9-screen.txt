@@ -1,0 +1,41 @@
+      18 +## How to run                                                                                                                                        
+      19 +                                                                                                                                                      
+      20 +All commands come from the `scripts` in `package.json`:                                                                                              
+      21 +                                                                                                                                                      
+      22 +| Command | What it does |                                                                                                                            
+      23 +| --- | --- |                                                                                                                                  
+      24 +| `npm start` | Runs `tsx src/web/server.ts`: serves the web pages. Needs `SANDBOX_DATA_DIR`; listens on 127.0.0.1, port `PORT` (default 4173).      
+         + |                                                                                                                                                   
+      25 +| `npm test` | Runs `vitest run`: unit tests. CI runs them with `TZ=UTC` and `SANDBOX_DATA_DIR` set. |                                                
+      26 +| `npm run test:browser` | Runs `playwright test`: browser specs. Playwright starts the server itself; run `npx playwright install chromium` on       
+         + first use. |                                                                                                                                         
+      27 +| `npm run lint` | Runs `tsc --noEmit`: type check. |                                                                                          
+      28 +| `npm run check:changelog` | Runs `node scripts/check-changelog.mjs`: fails when the branch does not touch `CHANGELOG.md`. Diffs against `orig
+         +in/main`, so it needs an `origin` remote. |                                                                                                    
+      29 +                                                                                                                                               
+      30 +Details for each are in the sections below.                                                                                                           
+      31 +                                                                                                                                               
+      32  ## Run the web pages                                                                                                                              
+      33                                                                                                                                                     
+      34  ```sh                                                                                                                                             
+  ⎿  (files that changed while this command ran, by the command or by another process; a convenience view, not a review or audit of the command)             
+                                                                                                                                                              
+  Thought for 7s                                                                                                                                             
+
+● The "How to run" section is now on main. Task TT2C3WR, "Add How to run section to README", landed as commit b16be52, fast-forwarded onto your local main.  
+                                                                                                                                                               
+  The new section sits right after "Setup". It's a table of the five package.json scripts: npm start, npm test, npm run test:browser, npm run lint and npm run 
+  check:changelog. Each row shows the command it runs and one line on what it does. The details match package.json and the existing sections, including       
+  SANDBOX_DATA_DIR, port 4173, TZ=UTC and the origin remote the changelog check needs. The older sections are unchanged, and CHANGELOG.md has a new entry.  
+  Before landing, the verify step ran the unit tests (9 passed) and skipped the browser tests because no page changed.                                        
+                                                                                                                                                                
+  Nothing was pushed and no pull request was opened. Landing only merges locally because project.json doesn't turn on pushing after landing. AGENTS.md asks for
+  a pull request, so your local main is now one commit ahead of the remote until you push it or open one.                     
+
+✻ Worked for 14s · done 1:35 PM                                                        
+                                                                                                                                                              
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯                                                                             
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  jevellan-harness-sandbox | main | 8% | Opus 5.5@xhigh | 0 files
+  ⏵⏵ bypass permissions on (shift+tab to cycle) · ← 1 agent   

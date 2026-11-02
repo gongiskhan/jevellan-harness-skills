@@ -5,6 +5,7 @@
 //   node scripts/run-trigger-evals.mjs [--skill <name>]... [--model claude-sonnet-5-5] [--effort low]
 //       [--provider claude-second] [--parallel 6] [--runs 1] [--split all|tuning|held-out] [--limit N]
 //       [--out evals/RESULTS.md] [--timeout <seconds>] [--root <repo root>] [--keep] [--dry-run]
+//       [--merge evals/results.json]
 //
 // Cases live in skills/<name>/evals/trigger-cases.json: a JSON array in Skillio's trigger-set format, {"query",
 // "should_trigger", "held_out"}, with optional fields for the chained links of brief section 3:
@@ -80,6 +81,7 @@ const DEFAULTS = Object.freeze({
   limit: null,
   out: 'evals/RESULTS.md',
   timeout: 300,
+  merge: null,
 });
 const EFFORTS = ['low', 'medium', 'high', 'xhigh', 'max'];
 const SPLITS = ['all', 'tuning', 'held-out'];
@@ -92,7 +94,7 @@ const TEXT_KEEP = 600;
 const EM_DASH = String.fromCharCode(0x2014);
 const USAGE = [
   'usage: node scripts/run-trigger-evals.mjs [--skill <name>]... [--model <id>] [--effort low|medium|high|xhigh|max]',
-  '         [--provider <name>] [--parallel N] [--runs N] [--split all|tuning|held-out] [--limit N]',
+  '         [--provider <name>] [--parallel N] [--runs N] [--split all|tuning|held-out] [--limit N] [--merge <results.json>]',
   '         [--out <file>] [--timeout <seconds>] [--root <repo root>] [--keep] [--dry-run]',
 ].join('\n');
 
@@ -137,6 +139,7 @@ export function parseArgs(argv) {
       case '--root': opts.root = path.resolve(take()); break;
       case '--keep': opts.keep = true; break;
       case '--dry-run': opts.dryRun = true; break;
+      case '--merge': opts.merge = take(); break;
       case '--help': case '-h': opts.help = true; break;
       default: throw new UsageError(`unknown argument "${argv[i]}"`);
     }
@@ -692,16 +695,52 @@ function caseLabel(c) {
   return parts.join(', ');
 }
 
+// A run of some skills merged into the recorded results of a full run (`--merge <results.json>`): the skills this run
+// measured replace theirs, every other skill of the package keeps its recorded cases and runs, and a skill of the
+// recorded run that is no longer in the package (renamed or retired) is left out and named. Thresholds and totals are
+// worked out again over the merged cases. `meta.merged` says which skill was measured when.
+export function mergeResults(base, { meta, caseResults }, packageSkills) {
+  if (!Array.isArray(base?.cases) || !Array.isArray(base?.skills)) throw new Error('not a results.json of this script');
+  const measured = new Set(meta.selectedSkills);
+  const kept = base.cases
+    .filter((c) => !measured.has(c.skill) && packageSkills.includes(c.skill))
+    .map(({ kind, runs, ...c }) => ({ case: c, runs }));
+  const order = (r) => [packageSkills.indexOf(r.case.skill), r.case.index ?? 0];
+  const merged = [...kept, ...caseResults].sort((a, b) => order(a)[0] - order(b)[0] || order(a)[1] - order(b)[1]);
+  const keptSkills = packageSkills.filter((s) => !measured.has(s) && base.skills.some((r) => r.skill === s));
+  const dropped = base.skills.map((r) => r.skill).filter((s) => !packageSkills.includes(s));
+  const names = packageSkills.filter((s) => measured.has(s) || keptSkills.includes(s));
+  const measuredAt = Object.fromEntries(names.map((s) => [s, measured.has(s) ? meta.date : base.measuredAt?.[s] ?? base.date]));
+  return {
+    meta: { ...meta, merged: { from: base.date, fromRuns: base.runs, remeasured: [...measured], kept: keptSkills, dropped, measuredAt } },
+    summary: summarize(merged, names),
+    caseResults: merged,
+  };
+}
+
 export function renderResults({ meta, summary, caseResults }) {
   const out = [];
   const { totals } = summary;
   const failing = summary.skills.filter((s) => !s.verdict.ok);
   out.push('# Trigger evals', '');
+  if (meta.merged) {
+    const m = meta.merged;
+    out.push(
+      `Merged results. ${m.remeasured.join(' and ')} measured again on ${meta.date}; the other ${m.kept.length} skills keep the measurement of ${m.from} `
+      + `(${m.fromRuns} run${m.fromRuns === 1 ? '' : 's'} per case)${m.dropped.length ? `; ${m.dropped.join(', ')} from that run is no longer in the package and is left out (runs recorded before a rename name the skill as it was then)` : ''}. `
+      + 'Totals and verdicts below are over the merged cases.',
+      '',
+    );
+  }
+  // A merged file's totals cover every skill; the time and the cost of the run itself are its own cases'.
+  const own = meta.merged ? summarize(caseResults.filter((r) => meta.merged.remeasured.includes(r.case.skill)), meta.merged.remeasured).totals : null;
   out.push(
     `Run of ${meta.date}: \`claude -p\`${meta.claudeVersion ? ` (Claude Code ${meta.claudeVersion})` : ''} with model ${meta.model}, effort ${meta.effort}, `
     + `provider ${meta.provider}, ${meta.runs} run${meta.runs === 1 ? '' : 's'} per case, split ${meta.split}`
-    + `${meta.limit ? `, at most ${meta.limit} cases per skill` : ''}; ${summary.skills.length} skill${summary.skills.length === 1 ? '' : 's'}, `
-    + `${totals.cases} cases, ${totals.runs} runs, ${totals.errors} errors, ${duration(meta.elapsedMs)}, cost ${usd(totals.costUsd)}.`,
+    + `${meta.limit ? `, at most ${meta.limit} cases per skill` : ''}; `
+    + (own
+      ? `this run ${own.cases} cases, ${own.runs} runs, ${own.errors} errors, ${duration(meta.elapsedMs)}, cost ${usd(own.costUsd)}; merged ${summary.skills.length} skills, ${totals.cases} cases, ${totals.runs} runs, ${totals.errors} errors.`
+      : `${summary.skills.length} skill${summary.skills.length === 1 ? '' : 's'}, ${totals.cases} cases, ${totals.runs} runs, ${totals.errors} errors, ${duration(meta.elapsedMs)}, cost ${usd(totals.costUsd)}.`),
   );
   out.push('');
   out.push(
@@ -773,6 +812,7 @@ export function renderResults({ meta, summary, caseResults }) {
 function resultsJson({ meta, summary, caseResults }) {
   return {
     ...meta,
+    ...(meta.merged ? { measuredAt: meta.merged.measuredAt } : {}),
     thresholds: THRESHOLDS,
     verdict: { ok: summary.skills.every((s) => s.verdict.ok), failingSkills: summary.skills.filter((s) => !s.verdict.ok).map((s) => s.skill) },
     totals: { ...summary.totals, costUsd: roundUsd(summary.totals.costUsd) },
@@ -931,8 +971,16 @@ export async function main(argv = process.argv.slice(2)) {
   const outFile = path.resolve(root, opts.out);
   const jsonFile = path.join(path.dirname(outFile), 'results.json');
   fs.mkdirSync(path.dirname(outFile), { recursive: true });
-  fs.writeFileSync(outFile, redact(renderResults({ meta, summary, caseResults })));
-  fs.writeFileSync(jsonFile, `${redact(JSON.stringify(resultsJson({ meta, summary, caseResults }), null, 2))}\n`);
+  let written = { meta, summary, caseResults };
+  if (opts.merge) {
+    try {
+      written = mergeResults(JSON.parse(fs.readFileSync(path.resolve(root, opts.merge), 'utf8')), { meta, caseResults }, skills.map((s) => s.folder));
+    } catch (error) {
+      return fail(2, `--merge ${opts.merge}: ${error.message} (this run's results are in ${runDir}/streams)`);
+    }
+  }
+  fs.writeFileSync(outFile, redact(renderResults(written)));
+  fs.writeFileSync(jsonFile, `${redact(JSON.stringify(resultsJson(written), null, 2))}\n`);
 
   say('');
   const nameWidth = Math.max(...summary.skills.map((s) => s.skill.length));

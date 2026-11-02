@@ -2,16 +2,16 @@
   "id": "H4",
   "title": "Placement",
   "status": "passed",
-  "startedAt": "2026-11-02T12:46:33.181Z",
-  "finishedAt": "2026-11-02T12:46:39.164Z",
-  "elapsedMs": 5982,
+  "startedAt": "2026-11-02T13:22:30.669Z",
+  "finishedAt": "2026-11-02T13:22:36.483Z",
+  "elapsedMs": 5814,
   "passed": 17,
   "total": 17,
   "timings": {
-    "placement": 533
+    "placement": 1817
   },
   "notes": [
-    "Jev placed the investigate step on gpt-6-astra medium via codex (model p 0.59), 219 ms",
+    "Jev placed the investigate step on gpt-6-astra xhigh via codex (model p 0.38), 199 ms",
     "providers check before the ceiling: exit 0",
     "claude-main current usage 5% (weekly 5, five-hour null), ceiling set to 4% for the check"
   ],
@@ -20,103 +20,103 @@
       "name": "the current skills are installed in the sandbox",
       "ok": true,
       "detail": "changed 0 paths",
-      "at": "2026-11-02T12:46:33.254Z"
+      "at": "2026-11-02T13:22:30.743Z"
     },
     {
       "name": "task created",
       "ok": true,
       "detail": "",
-      "at": "2026-11-02T12:46:33.317Z"
+      "at": "2026-11-02T13:22:30.809Z"
     },
     {
       "name": "worktree created through the git skill",
       "ok": true,
-      "detail": "{\n  \"branch\": \"jh/h4-which-port-does-the-web-server-listen-T2CMEVH\",\n  \"path\": \"/home/ggomes/.jevellan-harness/worktrees/jevellan-harness-sandbox/h4-which-port-does-the-web-server-listen-T2CMEVH\",\n  \"base\": \"main\",\n  \"baseCommit\": \"11b29d57f3199c35cb5d2b87e1972c1b569e3186\",\n  \"setup\": {\n    \"command\": \"npm ci\",\n    \"ms\": 1476\n  }\n}",
-      "at": "2026-11-02T12:46:35.096Z"
+      "detail": "{\n  \"branch\": \"jh/h4-which-port-does-the-web-server-listen-TS0T3BF\",\n  \"path\": \"/home/ggomes/.jevellan-harness/worktrees/jevellan-harness-sandbox/h4-which-port-does-the-web-server-listen-TS0T3BF\",\n  \"base\": \"main\",\n  \"baseCommit\": \"11b29d57f3199c35cb5d2b87e1972c1b569e3186\",\n  \"setup\": {\n    \"command\": \"npm ci\",\n    \"ms\": 1510\n  }\n}",
+      "at": "2026-11-02T13:22:32.627Z"
     },
     {
       "name": "the worktree has the .claude link and an evidence folder",
       "ok": true,
       "detail": "",
-      "at": "2026-11-02T12:46:35.096Z"
+      "at": "2026-11-02T13:22:32.627Z"
     },
     {
       "name": "the worktree is clean in git",
       "ok": true,
       "detail": "",
-      "at": "2026-11-02T12:46:35.104Z"
+      "at": "2026-11-02T13:22:32.636Z"
     },
     {
       "name": "route.mjs exits 0 with provider, model, effort, kind, probabilities, latencyMs, policyHash",
       "ok": true,
-      "detail": "{\"provider\":\"codex\",\"model\":\"gpt-6-astra\",\"effort\":\"medium\",\"kind\":\"codex-subscription\",\"probabilities\":{\"model\":{\"gpt-6-astra\":0.59,\"claude-opus-5-5\":0.18,\"claude-fable-5-1\":0.01,\"claude-sonnet-5-5\":0.04,\"claude-haiku-5-5\":0.18},\"effort\":{\"low\":0.32,\"medium\":0.42,\"high\":0.07,\"xhigh\":0.02,\"max\":0.17}},\"latencyMs\":219,\"policyHash\":\"ec73b4a67a6b0225e95f97a49c359b4c3678aa6c05f57f89c95e56479a33fafe\",\"",
-      "at": "2026-11-02T12:46:35.638Z"
+      "detail": "{\"provider\":\"codex\",\"model\":\"gpt-6-astra\",\"effort\":\"xhigh\",\"kind\":\"codex-subscription\",\"probabilities\":{\"model\":{\"gpt-6-astra\":0.38,\"claude-opus-5-5\":0.34,\"claude-fable-5-1\":0.02,\"claude-sonnet-5-5\":0.04,\"claude-haiku-5-5\":0.22},\"effort\":{\"low\":0.16,\"medium\":0.35,\"high\":0.09,\"xhigh\":0.02,\"max\":0.38}},\"latencyMs\":199,\"policyHash\":\"ec73b4a67a6b0225e95f97a49c359b4c3678aa6c05f57f89c95e56479a33fafe\",\"s",
+      "at": "2026-11-02T13:22:34.454Z"
     },
     {
       "name": "the decision carries probabilities for the model question",
       "ok": true,
-      "detail": "{\"model\":{\"gpt-6-astra\":0.59,\"claude-opus-5-5\":0.18,\"claude-fable-5-1\":0.01,\"claude-sonnet-5-5\":0.04,\"claude-haiku-5-5\":0.18},\"effort\":{\"low\":0.32,\"medium\":0.42,\"high\":0.07,\"xhigh\":0.02,\"max\":0.17}}",
-      "at": "2026-11-02T12:46:35.638Z"
+      "detail": "{\"model\":{\"gpt-6-astra\":0.38,\"claude-opus-5-5\":0.34,\"claude-fable-5-1\":0.02,\"claude-sonnet-5-5\":0.04,\"claude-haiku-5-5\":0.22},\"effort\":{\"low\":0.16,\"medium\":0.35,\"high\":0.09,\"xhigh\":0.02,\"max\":0.38}}",
+      "at": "2026-11-02T13:22:34.454Z"
     },
     {
       "name": "task.placed is in the ledger with source jev and a decision file",
       "ok": true,
-      "detail": "{\"step\":1,\"duty\":\"investigate\",\"provider\":\"codex\",\"model\":\"gpt-6-astra\",\"effort\":\"medium\",\"kind\":\"codex-subscription\",\"probabilities\":{\"model\":{\"gpt-6-astra\":0.59,\"claude-opus-5-5\":0.18,\"claude-fable-5-1\":0.01,\"claude-sonnet-5-5\":0.04,\"claude-haiku-5-5\":0.18},\"effort\":{\"low\":0.32,\"medium\":0.42,\"high",
-      "at": "2026-11-02T12:46:35.641Z"
+      "detail": "{\"step\":1,\"duty\":\"investigate\",\"provider\":\"codex\",\"model\":\"gpt-6-astra\",\"effort\":\"xhigh\",\"kind\":\"codex-subscription\",\"probabilities\":{\"model\":{\"gpt-6-astra\":0.38,\"claude-opus-5-5\":0.34,\"claude-fable-5-1\":0.02,\"claude-sonnet-5-5\":0.04,\"claude-haiku-5-5\":0.22},\"effort\":{\"low\":0.16,\"medium\":0.35,\"high\"",
+      "at": "2026-11-02T13:22:34.458Z"
     },
     {
       "name": "with the key file renamed, route.mjs exits 2 \"Jev: no key configured\"",
       "ok": true,
       "detail": "Jev: no key configured",
-      "at": "2026-11-02T12:46:35.897Z"
+      "at": "2026-11-02T13:22:34.725Z"
     },
     {
       "name": "nothing was appended for the refused placement",
       "ok": true,
       "detail": "",
-      "at": "2026-11-02T12:46:35.900Z"
+      "at": "2026-11-02T13:22:34.727Z"
     },
     {
       "name": "the key file is back with mode 600",
       "ok": true,
       "detail": "",
-      "at": "2026-11-02T12:46:35.900Z"
+      "at": "2026-11-02T13:22:34.727Z"
     },
     {
       "name": "providers.json is restored byte for byte",
       "ok": true,
       "detail": "",
-      "at": "2026-11-02T12:46:38.823Z"
+      "at": "2026-11-02T13:22:36.154Z"
     },
     {
       "name": "with claude-main over its ceiling the decision avoids it (a Claude model goes to claude-second)",
       "ok": true,
-      "detail": "{\"provider\":\"codex\",\"model\":\"gpt-6-astra\",\"effort\":\"medium\",\"kind\":\"codex-subscription\",\"probabilities\":{\"model\":{\"gpt-6-astra\":0.61,\"claude-opus-5-5\":0.08,\"claude-fable-5-1\":0.01,\"claude-sonnet-5-5\":0.06,\"claude-haiku-5-5\":0.24},\"effort\":{\"low\":0.32,\"medium\":0.45,\"high\":0.09,\"xhigh\":0.03,\"max\":0.11",
-      "at": "2026-11-02T12:46:38.823Z"
+      "detail": "{\"provider\":\"codex\",\"model\":\"gpt-6-astra\",\"effort\":\"medium\",\"kind\":\"codex-subscription\",\"probabilities\":{\"model\":{\"gpt-6-astra\":0.53,\"claude-opus-5-5\":0.15,\"claude-fable-5-1\":0.03,\"claude-sonnet-5-5\":0.06,\"claude-haiku-5-5\":0.23},\"effort\":{\"low\":0.18,\"medium\":0.37,\"high\":0.08,\"xhigh\":0.08,\"max\":0.29",
+      "at": "2026-11-02T13:22:36.154Z"
     },
     {
       "name": "the menu Jev saw excludes claude-main",
       "ok": true,
       "detail": "codex, claude-second",
-      "at": "2026-11-02T12:46:38.825Z"
+      "at": "2026-11-02T13:22:36.157Z"
     },
     {
       "name": "worktree archived through the git skill",
       "ok": true,
-      "detail": "{\n  \"archived\": true,\n  \"already\": false,\n  \"from\": \"/home/ggomes/.jevellan-harness/worktrees/jevellan-harness-sandbox/h4-which-port-does-the-web-server-listen-T2CMEVH\",\n  \"to\": \"/home/ggomes/.jevellan-harness/archive/worktrees/jevellan-harness-sandbox/h4-which-port-does-the-web-server-listen-T2CMEV",
-      "at": "2026-11-02T12:46:39.094Z"
+      "detail": "{\n  \"archived\": true,\n  \"already\": false,\n  \"from\": \"/home/ggomes/.jevellan-harness/worktrees/jevellan-harness-sandbox/h4-which-port-does-the-web-server-listen-TS0T3BF\",\n  \"to\": \"/home/ggomes/.jevellan-harness/archive/worktrees/jevellan-harness-sandbox/h4-which-port-does-the-web-server-listen-TS0T3B",
+      "at": "2026-11-02T13:22:36.418Z"
     },
     {
       "name": "the H4 task is no longer open",
       "ok": true,
       "detail": "",
-      "at": "2026-11-02T12:46:39.159Z"
+      "at": "2026-11-02T13:22:36.478Z"
     },
     {
       "name": "the sandbox checkout stays clean",
       "ok": true,
       "detail": "",
-      "at": "2026-11-02T12:46:39.164Z"
+      "at": "2026-11-02T13:22:36.482Z"
     }
   ]
 }

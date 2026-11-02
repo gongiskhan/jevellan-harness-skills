@@ -655,3 +655,25 @@ test('namesMissingRole recognises the ways a session says a role is missing', as
   assert.equal(namesMissingRole('The placement skill isn\'t installed in this session.', 'placement'), true);
   assert.equal(namesMissingRole('I made the worktree with the git skill.', 'git'), false);
 });
+
+test('--merge keeps the recorded skills, replaces the re-measured ones and leaves out a skill no longer in the package', async () => {
+  const { mergeResults, renderResults } = await import('../scripts/run-trigger-evals.mjs');
+  const run = (passed) => ({ passed, fired: passed, invoked: [], unknownSkills: [], namedMissing: null, error: null, attempts: 1, costUsd: 0.01, finalText: '' });
+  const recorded = (skill, index, passed) => ({ skill, index, query: `q ${skill} ${index}`, should_trigger: true, held_out: false, role_phrase: false, context_skill: null, remove_role: null, expect_role_missing: null, kind: 'positive', runs: [run(passed), run(passed), run(passed)] });
+  const base = {
+    date: '2026-11-02T02:00:00Z',
+    runs: 3,
+    skills: [{ skill: 'jevellan-a' }, { skill: 'jevellan-b' }, { skill: 'jevellan-old' }],
+    cases: [recorded('jevellan-a', 1, true), recorded('jevellan-b', 1, false), recorded('jevellan-old', 1, false)],
+  };
+  const fresh = [{ case: { skill: 'jevellan-b', index: 1, query: 'q', should_trigger: true, held_out: false, role_phrase: false, context_skill: null, remove_role: null }, runs: [run(true), run(true), run(true)] }];
+  const meta = { date: '2026-11-02T14:00:00Z', runs: 3, selectedSkills: ['jevellan-b'], model: 'm', effort: 'low', provider: 'p', split: 'all', limit: null, elapsedMs: 1 };
+  const merged = mergeResults(base, { meta, caseResults: fresh }, ['jevellan-a', 'jevellan-b', 'jevellan-new']);
+  assert.deepEqual(merged.summary.skills.map((s) => [s.skill, s.positives.passed, s.positives.runs]), [['jevellan-a', 3, 3], ['jevellan-b', 3, 3]]);
+  assert.deepEqual(merged.meta.merged.dropped, ['jevellan-old']);
+  assert.deepEqual(merged.meta.merged.kept, ['jevellan-a']);
+  assert.deepEqual(merged.meta.merged.measuredAt, { 'jevellan-a': '2026-11-02T02:00:00Z', 'jevellan-b': '2026-11-02T14:00:00Z' });
+  assert.equal(merged.caseResults.length, 2);
+  assert.match(renderResults(merged), /^Merged results\. jevellan-b measured again on 2026-11-02T14:00:00Z; the other 1 skills keep the measurement of 2026-11-02T02:00:00Z \(3 runs per case\); jevellan-old/m);
+  assert.throws(() => mergeResults({}, { meta, caseResults: fresh }, ['jevellan-b']), /not a results.json/);
+});

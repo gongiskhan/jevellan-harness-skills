@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.2.1 - 2026-11-02
+
+- The placement skill is named `jevellan-placement` (it was `jevellan-router`), so its folder name matches its role;
+  the role word and every role phrase are unchanged (docs/decisions.md H-040). `install.mjs` moves an installed
+  `jevellan-router` to the project's `.jevellan/archive/skills/` when it installs `jevellan-placement`.
+- `run-trigger-evals.mjs --merge <results.json>`: a run of some skills merged into a full run's results, naming which
+  skill was measured when; the placement and coordinator skills measured again (three runs per case).
+- `tools/viewer.mjs`: a read-only page over one project's ledger (open and finished tasks, step reports, landings,
+  questions waiting on the owner, the steps' screenshots), to follow the coordinator from a browser over the tailnet.
+
 ## 0.2.0 - 2026-11-02
 
 Decoupling over efficiency (docs/decisions.md H-031 to H-036, AGENTS.md, docs/decoupling.md).

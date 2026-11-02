@@ -20,7 +20,7 @@ j.check('worktree created through the git skill', wt.status === 0 && fs.existsSy
 j.check('the worktree has the .claude link and an evidence folder', fs.existsSync(path.join(wt.json.path, '.claude', 'skills', 'jevellan-ledger', 'SKILL.md')) && fs.existsSync(path.join(wt.json.path, '.jevellan', 'evidence')));
 j.check('the worktree is clean in git', sh('git', ['-C', wt.json.path, 'status', '--porcelain']).stdout.trim() === '', sh('git', ['-C', wt.json.path, 'status', '--porcelain']).stdout.trim());
 
-const route = (extra = []) => skillScript(SANDBOX, 'jevellan-router', 'scripts/route.mjs', ['--task', task, '--step', '1', '--duty', 'investigate', ...extra], { timeoutMs: 120_000 });
+const route = (extra = []) => skillScript(SANDBOX, 'jevellan-placement', 'scripts/route.mjs', ['--task', task, '--step', '1', '--duty', 'investigate', ...extra], { timeoutMs: 120_000 });
 
 // 1. A real placement.
 const t0 = Date.now();
@@ -53,9 +53,9 @@ const providersFile = path.join(HARNESS, 'providers.json');
 const original = fs.readFileSync(providersFile, 'utf8');
 // The usage placement sees is the current window's: a weekly figure observed before its window reset counts as
 // unknown, so the probe runs first and the ceiling goes under what is live now (the router's own reading of it).
-const probe = skillScript(SANDBOX, 'jevellan-router', 'scripts/providers.mjs', ['check', '--only', 'claude-main', '--only', 'claude-second', '--json'], { timeoutMs: 180_000 });
+const probe = skillScript(SANDBOX, 'jevellan-placement', 'scripts/providers.mjs', ['check', '--only', 'claude-main', '--only', 'claude-second', '--json'], { timeoutMs: 180_000 });
 j.note(`providers check before the ceiling: exit ${probe.status}`);
-const { currentUsage } = await import(pathToFileURL(path.join(skillDir(SANDBOX, 'jevellan-router'), 'scripts', 'lib', 'providers-file.mjs')).href);
+const { currentUsage } = await import(pathToFileURL(path.join(skillDir(SANDBOX, 'jevellan-placement'), 'scripts', 'lib', 'providers-file.mjs')).href);
 const state = JSON.parse(fs.readFileSync(path.join(HARNESS, 'providers-state.json'), 'utf8'));
 const live = currentUsage(state.providers?.['claude-main']);
 const weekly = Math.max(live.weeklyPct ?? -1, live.fiveHourPct ?? -1);

@@ -77,7 +77,7 @@ describe('the shipped policy', () => {
   const text = fs.readFileSync(SKILL_MD, 'utf8');
   const { body } = splitFrontmatter(text);
 
-  test('has the six sections the router reads, and the rules sent to Jev hold no Interface text', () => {
+  test('has the six sections placement reads, and the rules sent to Jev hold no Interface text', () => {
     const policy = loadRouterPolicy();
     assert.equal(policy.file, SKILL_MD);
     for (const name of ROUTER_SECTIONS) assert.ok(loadPolicy(SKILL_MD).sections.get(name), name);

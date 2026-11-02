@@ -81,7 +81,7 @@ export function jevRefusal(error) {
 
 // ---- the policy (section 7.8) -----------------------------------------------------------------------------------
 
-/** The sections the router reads; a missing or empty one is exit 2 naming it. */
+/** The sections placement reads; a missing or empty one is exit 2 naming it. */
 export const ROUTER_SECTIONS = ['model', 'model descriptions', 'effort', 'effort guide', 'questions', 'rules'];
 
 export function routerPolicy(policy) {
@@ -300,7 +300,7 @@ export function buildMenu({ config, state, kinds, policy, keyReady, now = Date.n
     }
   }
   if (missing.length) {
-    throw refused(`the router policy (${policy.file}) has no line in "## model descriptions" for ${missing.join(', ')}; add "<model id>: <text>" lines`);
+    throw refused(`the placement policy (${policy.file}) has no line in "## model descriptions" for ${missing.join(', ')}; add "<model id>: <text>" lines`);
   }
   const offered = new Set(models.flatMap((m) => m.efforts));
   const providers = eligible.map((r) => ({
@@ -582,7 +582,7 @@ export function placementQuestions(policy, menu) {
     };
   }
   const missing = menu.efforts.filter((e) => !policy.effortGuide.has(e));
-  if (missing.length) throw refused(`the router policy (${policy.file}) has no line in "## effort guide" for ${missing.join(', ')}`);
+  if (missing.length) throw refused(`the placement policy (${policy.file}) has no line in "## effort guide" for ${missing.join(', ')}`);
   if (menu.efforts.length > 1) {
     questions.effort = {
       type: 'choice',

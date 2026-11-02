@@ -1,4 +1,4 @@
-// Placement (skills/jevellan-router/scripts/route.mjs) together with the real ledger skill, driven as a child process
+// Placement (skills/jevellan-placement/scripts/route.mjs) together with the real ledger skill, driven as a child process
 // the way a coordinator runs it, against a fake Jev on 127.0.0.1 (JH_JEV_URL) that answers /models and /systemone
 // with scripted answers and records every request. Each test builds a temporary project whose .claude/skills holds
 // copies of the router and ledger skills, fixture duty skills (jh-needs) and runtime skills (jh-kinds), and a
@@ -6,7 +6,7 @@
 // is replaced by a stub, so no test can probe a real provider. The router reaches the ledger only through its public
 // script (show --json, events --json, record), so these tests are where the ledger's views, events and record meet
 // the router's reading of them. The router's own pieces, and placement against a fake ledger, are tested in
-// skills/jevellan-router/test/.
+// skills/jevellan-placement/test/.
 import { test, describe, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -16,7 +16,7 @@ import { spawn } from 'node:child_process';
 import { NODE, REPO, addWorktree, childEnv, makeRepo, readLedger, tempDir, writeJson } from './helpers/ledger-fixture.mjs';
 import { appendEvent } from '../skills/jevellan-ledger/scripts/lib/ledger.mjs';
 import { newTaskId } from '../skills/jevellan-ledger/scripts/lib/ids.mjs';
-import * as route from '../skills/jevellan-router/scripts/route.mjs';
+import * as route from '../skills/jevellan-placement/scripts/route.mjs';
 
 const JEV_KEY = 'jev-fixture-key-0123456789';
 const TOKENS = { 'claude-main': 'claude-main-fixture-token-abcdef', 'claude-second': 'claude-second-fixture-token-ghijkl', 'claude-third': 'claude-third-fixture-token-mnopqr' };
@@ -145,11 +145,11 @@ function makeFixture({
   const root = makeRepo();
   writeJson(path.join(root, '.jevellan', 'project.json'), { name: 'fixture-project', guidance: 'Fixture guidance.' });
   const skills = path.join(root, '.claude', 'skills');
-  fs.cpSync(path.join(REPO, 'skills', 'jevellan-router'), path.join(skills, 'jevellan-router'), { recursive: true });
+  fs.cpSync(path.join(REPO, 'skills', 'jevellan-placement'), path.join(skills, 'jevellan-placement'), { recursive: true });
   fs.cpSync(path.join(REPO, 'skills', 'jevellan-ledger'), path.join(skills, 'jevellan-ledger'), { recursive: true });
-  const policyFile = path.join(skills, 'jevellan-router', 'SKILL.md');
+  const policyFile = path.join(skills, 'jevellan-placement', 'SKILL.md');
   if (policy) fs.writeFileSync(policyFile, policy(fs.readFileSync(policyFile, 'utf8')));
-  fs.writeFileSync(path.join(skills, 'jevellan-router', 'scripts', 'providers.mjs'), stub);
+  fs.writeFileSync(path.join(skills, 'jevellan-placement', 'scripts', 'providers.mjs'), stub);
   for (const duty of duties) {
     skillFile(path.join(skills, `fixture-duty-${duty}`), [`name: fixture-duty-${duty}`, `description: Duty ${duty}. Fixture.`, 'jh-role: duty', `jh-duty: ${duty}`, `jh-needs: [${DUTY_NEEDS[duty].join(', ')}]`]);
   }
@@ -193,7 +193,7 @@ function makeFixture({
     home,
     skills,
     policyFile,
-    route: path.join(skills, 'jevellan-router', 'scripts', 'route.mjs'),
+    route: path.join(skills, 'jevellan-placement', 'scripts', 'route.mjs'),
     ledgerCli: path.join(skills, 'jevellan-ledger', 'scripts', 'ledger.mjs'),
   };
 }

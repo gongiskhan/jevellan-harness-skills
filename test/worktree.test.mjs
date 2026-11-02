@@ -29,7 +29,7 @@ function makeProject({ remote = true, config = {} } = {}) {
   writeJson(path.join(root, '.jevellan', 'project.json'), {
     name: path.basename(root), defaultBranch: 'main', testCommand: null, riskyPaths: [], checks: [], pushAfterLanding: false, retentionDays: 3, ...config,
   });
-  for (const skill of ['jevellan-git', 'jevellan-router', 'jevellan-ledger']) {
+  for (const skill of ['jevellan-git', 'jevellan-placement', 'jevellan-ledger']) {
     fs.cpSync(path.join(REPO, 'skills', skill), path.join(root, '.claude', 'skills', skill), { recursive: true });
   }
   return { root, bare };

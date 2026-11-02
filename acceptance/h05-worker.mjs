@@ -20,11 +20,18 @@ const wt = skillScript(SANDBOX, 'jevellan-git', 'scripts/worktree.mjs', ['create
 j.check('worktree created', Boolean(wt?.path));
 
 let t0 = Date.now();
-const placement = skillScript(SANDBOX, 'jevellan-router', 'scripts/route.mjs', ['--task', task, '--step', '1', '--duty', 'investigate'], { timeoutMs: 120_000 });
+const placement = skillScript(SANDBOX, 'jevellan-placement', 'scripts/route.mjs', ['--task', task, '--step', '1', '--duty', 'investigate'], { timeoutMs: 120_000 });
 j.time('placement', Date.now() - t0);
-const p = placement.json;
+let p = placement.json;
 j.check('placed by Jev', placement.status === 0 && Boolean(p?.model), placement.stdout.slice(0, 300) || placement.stderr);
 j.note(`placement: ${p?.model} ${p?.effort} via ${p?.provider} (${p?.kind})`);
+// This journey is the Claude runtime's: when Jev places the step on another kind (H4 covers Jev's choice), the owner
+// places it on Claude instead, as the coordinator would on the owner's word.
+if (p && !/^claude-/.test(p.kind ?? '')) {
+  const owner = skillScript(SANDBOX, 'jevellan-placement', 'scripts/route.mjs', ['--task', task, '--step', '1', '--duty', 'investigate', '--owner', 'claude-second/claude-sonnet-5-5/low'], { timeoutMs: 120_000 });
+  j.note(`Jev chose ${p.kind}; the owner placed the step on claude-second claude-sonnet-5-5 low for this Claude runtime journey (exit ${owner.status})`);
+  p = owner.json ?? p;
+}
 
 t0 = Date.now();
 const started = runtime('start.mjs', ['--task', task, '--step', '1', '--duty', 'investigate', '--cwd', wt.path, '--provider', p.provider, '--model', p.model, '--effort', p.effort]);

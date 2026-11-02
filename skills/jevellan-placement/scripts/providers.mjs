@@ -30,7 +30,7 @@
 //
 // Differences from the reference, with reasons: no store (the state file is the record, merged so providers outside
 // --only keep their entries); no model-list filling from supportedModels() or model/list (providers.json is the
-// owner's, and every menu model needs a line in the router policy); no login command (a Claude worker logs in with a
+// owner's, and every menu model needs a line in the placement policy); no login command (a Claude worker logs in with a
 // token file, Codex with `codex login`, and the fix says which); no local usage rows for openai-compatible providers
 // (no runtime runs them yet). Errors are short fixed sentences: no server body, header value or credential ever
 // reaches the state file, the output or an error. As a last line of defence the state and the output pass through this

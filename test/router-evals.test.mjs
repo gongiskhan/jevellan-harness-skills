@@ -1,4 +1,4 @@
-// The placement policy's evals (skills/jevellan-router/evals/run.mjs): the hand cases shipped in evals/cases.json,
+// The placement policy's evals (skills/jevellan-placement/evals/run.mjs): the hand cases shipped in evals/cases.json,
 // the export of task.placed lines from project ledgers into cases, and the replay of the current policy against the
 // cases through a fake Jev on 127.0.0.1 (JH_JEV_URL). Placements are made by route.mjs itself in temporary projects
 // whose .claude/skills hold copies of the router and ledger skills plus fixture duty and runtime skills; the copied
@@ -13,8 +13,8 @@ import { spawn } from 'node:child_process';
 import { NODE, REPO, childEnv, makeRepo, tempDir, writeJson } from './helpers/ledger-fixture.mjs';
 import { appendEvent } from '../skills/jevellan-ledger/scripts/lib/ledger.mjs';
 import { newTaskId } from '../skills/jevellan-ledger/scripts/lib/ids.mjs';
-import * as evals from '../skills/jevellan-router/evals/run.mjs';
-import { loadRouterPolicy } from '../skills/jevellan-router/scripts/route.mjs';
+import * as evals from '../skills/jevellan-placement/evals/run.mjs';
+import { loadRouterPolicy } from '../skills/jevellan-placement/scripts/route.mjs';
 
 const JEV_KEY = 'jev-evals-fixture-key-0123456789';
 const OPUS = { id: 'claude-opus-5-5', label: 'Opus', efforts: ['low', 'medium', 'high', 'xhigh', 'max'] };
@@ -25,7 +25,7 @@ const STEPS = [
   { ordinal: 1, duty: 'implement', instructions: 'Implement it.', when: null, onFail: null },
   { ordinal: 2, duty: 'verify', instructions: 'Verify it.', when: null, onFail: { goto: 1, maxLoops: 2 } },
 ];
-const REPO_CASES = JSON.parse(fs.readFileSync(path.join(REPO, 'skills', 'jevellan-router', 'evals', 'cases.json'), 'utf8'));
+const REPO_CASES = JSON.parse(fs.readFileSync(path.join(REPO, 'skills', 'jevellan-placement', 'evals', 'cases.json'), 'utf8'));
 const handCase = (id) => structuredClone(REPO_CASES.cases.find((c) => c.id === id));
 
 // ---- the fake Jev ------------------------------------------------------------------------------------------------
@@ -93,10 +93,10 @@ function makeFixture({ models = [OPUS, HAIKU], jevKey = true, policy } = {}) {
   writeJson(path.join(root, '.jevellan', 'project.json'), { name: 'evals-fixture', guidance: '' });
   const skills = path.join(root, '.claude', 'skills');
   // The repository's own RESULTS.md is not copied, so a test can tell whether the runner wrote one.
-  const results = path.join(REPO, 'skills', 'jevellan-router', 'evals', 'RESULTS.md');
-  fs.cpSync(path.join(REPO, 'skills', 'jevellan-router'), path.join(skills, 'jevellan-router'), { recursive: true, filter: (source) => source !== results });
+  const results = path.join(REPO, 'skills', 'jevellan-placement', 'evals', 'RESULTS.md');
+  fs.cpSync(path.join(REPO, 'skills', 'jevellan-placement'), path.join(skills, 'jevellan-placement'), { recursive: true, filter: (source) => source !== results });
   fs.cpSync(path.join(REPO, 'skills', 'jevellan-ledger'), path.join(skills, 'jevellan-ledger'), { recursive: true });
-  const router = path.join(skills, 'jevellan-router');
+  const router = path.join(skills, 'jevellan-placement');
   fs.writeFileSync(path.join(router, 'scripts', 'providers.mjs'), "export async function checkProviders() { throw new Error('the fixture does not probe'); }\n");
   if (policy) fs.writeFileSync(path.join(router, 'SKILL.md'), policy(fs.readFileSync(path.join(router, 'SKILL.md'), 'utf8')));
   for (const [duty, needs] of Object.entries(NEEDS)) {
@@ -277,7 +277,7 @@ describe('--export', () => {
 
     // A person labels the blocked case; a later export keeps the label, and the finished verify step joins.
     const labelled = readCases(fx.casesFile).map((x) => (x.id === cf.id ? { ...x, expected: { model: 'claude-opus-5-5' } } : x));
-    writeJson(fx.casesFile, { skill: 'jevellan-router', cases: labelled });
+    writeJson(fx.casesFile, { skill: 'jevellan-placement', cases: labelled });
     report(root, b, 2);
     const again = await runEvals(fx, ['--export', root]);
     assert.equal(again.status, 0, again.stderr);
@@ -330,7 +330,7 @@ describe('replay', () => {
     unlabelled.expected = null;
     const cases = [handCase('hand-ui-feature-implement'), handCase('hand-provider-headroom'), handCase('hand-wf-port-flag'), unlabelled, stale];
     const casesFile = path.join(tempDir('jh-evals-cases-'), 'cases.json');
-    writeJson(casesFile, { skill: 'jevellan-router', cases });
+    writeJson(casesFile, { skill: 'jevellan-placement', cases });
     const results = path.join(path.dirname(casesFile), 'RESULTS.md');
     return { ...fx, cases: casesFile, results };
   }
@@ -367,7 +367,7 @@ describe('replay', () => {
     assert.equal(jev.requests.length, 4, 'two calls for the provider case, one each for the other scored cases');
 
     const md = fs.readFileSync(fx.results, 'utf8');
-    assert.match(md, /^# Eval results: jevellan-router$/m);
+    assert.match(md, /^# Eval results: jevellan-placement$/m);
     assert.match(md, new RegExp(`^- Policy hash: \`${policy.hash}\`$`, 'm'));
     assert.match(md, /^- Date: \d{4}-\d{2}-\d{2}T/m);
     assert.match(md, /^\| needs_docs \| - \| 0\/1 \(0%\) \| 0\/1 \(0%\) \|$/m);

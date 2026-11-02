@@ -41,8 +41,8 @@ description: "Coordinator. Use when the owner asks this session to run work: it 
 jh-role: coordinator`,
       coordinatorBody,
     ),
-    'skills/jevellan-router/SKILL.md': skill(
-      `name: jevellan-router
+    'skills/jevellan-placement/SKILL.md': skill(
+      `name: jevellan-placement
 description: 'Placement. Use when a step needs a model, effort and provider.'
 jh-role: placement`,
       '# Placement\n\nRun the script next to this file. Never choose yourself.',
@@ -172,13 +172,13 @@ test('a clean fixture passes the lint, --write and --check', () => {
 });
 
 test('a missing jh-role fails', () => {
-  const root = fixture((f) => edit(f, 'skills/jevellan-router/SKILL.md', 'jh-role: placement', ''), { write: false });
-  expectProblem(root, 'skills/jevellan-router/SKILL.md: jh-role is missing');
+  const root = fixture((f) => edit(f, 'skills/jevellan-placement/SKILL.md', 'jh-role: placement', ''), { write: false });
+  expectProblem(root, 'skills/jevellan-placement/SKILL.md: jh-role is missing');
 });
 
 test('an unknown jh-role fails', () => {
-  const root = fixture((f) => edit(f, 'skills/jevellan-router/SKILL.md', 'jh-role: placement', 'jh-role: router'), { write: false });
-  expectProblem(root, 'skills/jevellan-router/SKILL.md: jh-role "router" is not one of coordinator, placement');
+  const root = fixture((f) => edit(f, 'skills/jevellan-placement/SKILL.md', 'jh-role: placement', 'jh-role: router'), { write: false });
+  expectProblem(root, 'skills/jevellan-placement/SKILL.md: jh-role "router" is not one of coordinator, placement');
 });
 
 test('a description that does not start with the role word fails', () => {
@@ -201,8 +201,8 @@ test('a name that does not match its folder fails', () => {
 });
 
 test('a body that names another skill fails, and its own name is allowed', () => {
-  const root = fixture((f) => edit(f, 'skills/jevellan-coordinator/SKILL.md', 'Use the ledger skill', 'Use jevellan-router/scripts/route.mjs, then the ledger skill'), { write: false });
-  const lines = expectProblem(root, 'skills/jevellan-coordinator/SKILL.md: the body names another skill, "jevellan-router"');
+  const root = fixture((f) => edit(f, 'skills/jevellan-coordinator/SKILL.md', 'Use the ledger skill', 'Use jevellan-placement/scripts/route.mjs, then the ledger skill'), { write: false });
+  const lines = expectProblem(root, 'skills/jevellan-coordinator/SKILL.md: the body names another skill, "jevellan-placement"');
   assert.ok(lines.some((l) => l.includes('"the placement skill"')), 'the problem suggests the role phrase');
   assert.ok(!lines.some((l) => l.startsWith('skills/jevellan-git/SKILL.md')), 'the git body names only itself');
   // A longer name that merely starts with another skill's name does not count.
@@ -222,8 +222,8 @@ test('a body with role phrases and no role-missing sentence fails', () => {
   const root = fixture((f) => edit(f, 'skills/jevellan-coordinator/SKILL.md', 'call no skill at all', 'stop at once'), { write: false });
   expectProblem(root, `skills/jevellan-coordinator/SKILL.md: the body uses role phrases but lacks the sentence "${SENTENCE}"`);
   // A body without role phrases does not need it, and role phrases match whatever their case.
-  const phrased = fixture((f) => edit(f, 'skills/jevellan-router/SKILL.md', 'Run the script', 'Ask The Ledger Skill first. Run the script'), { write: false });
-  expectProblem(phrased, 'skills/jevellan-router/SKILL.md: the body uses role phrases but lacks the sentence');
+  const phrased = fixture((f) => edit(f, 'skills/jevellan-placement/SKILL.md', 'Run the script', 'Ask The Ledger Skill first. Run the script'), { write: false });
+  expectProblem(phrased, 'skills/jevellan-placement/SKILL.md: the body uses role phrases but lacks the sentence');
 });
 
 test('a runtime without jh-kinds fails, and so does an empty list', () => {
@@ -299,7 +299,7 @@ test('a stale or missing docs/roles.md fails --check and not the plain lint', ()
 
 test('every problem is listed, one per line', () => {
   const root = fixture((f) => {
-    edit(f, 'skills/jevellan-router/SKILL.md', 'jh-role: placement', '');
+    edit(f, 'skills/jevellan-placement/SKILL.md', 'jh-role: placement', '');
     edit(f, 'skills/jevellan-git/SKILL.md', 'name: jevellan-git', 'name: git');
     delete f['skills/jevellan-workflow-bug/workflow.json'];
   }, { write: false });
@@ -311,10 +311,10 @@ test('every problem is listed, one per line', () => {
 });
 
 test('an unquoted value with ": " and a missing frontmatter are refused', () => {
-  const colon = fixture((f) => edit(f, 'skills/jevellan-router/SKILL.md', "description: 'Placement. Use when a step needs a model, effort and provider.'", 'description: Placement. Use when a step needs: a model'), { write: false });
-  expectProblem(colon, 'skills/jevellan-router/SKILL.md: description: an unquoted value may not contain ": "; put the value in double quotes');
-  const none = fixture((f) => { f['skills/jevellan-router/SKILL.md'] = '# Placement\n'; }, { write: false });
-  expectProblem(none, 'skills/jevellan-router/SKILL.md: no frontmatter');
+  const colon = fixture((f) => edit(f, 'skills/jevellan-placement/SKILL.md', "description: 'Placement. Use when a step needs a model, effort and provider.'", 'description: Placement. Use when a step needs: a model'), { write: false });
+  expectProblem(colon, 'skills/jevellan-placement/SKILL.md: description: an unquoted value may not contain ": "; put the value in double quotes');
+  const none = fixture((f) => { f['skills/jevellan-placement/SKILL.md'] = '# Placement\n'; }, { write: false });
+  expectProblem(none, 'skills/jevellan-placement/SKILL.md: no frontmatter');
   const folder = fixture((f) => { f['skills/jevellan-empty/README.md'] = 'nothing\n'; }, { write: false });
   expectProblem(folder, 'skills/jevellan-empty/SKILL.md: missing');
 });
@@ -369,19 +369,19 @@ test('helper copies that differ are listed as notices on stdout and never fail t
   const helper = (text) => `// A helper each skill keeps its own copy of.\nexport const value = ${JSON.stringify(text)};\n`;
   const root = fixture((f) => {
     f['skills/jevellan-git/scripts/lib/helper.mjs'] = helper('a');
-    f['skills/jevellan-router/scripts/lib/helper.mjs'] = helper('b');
+    f['skills/jevellan-placement/scripts/lib/helper.mjs'] = helper('b');
     f['skills/jevellan-runtime-alpha/scripts/lib/helper.mjs'] = helper('a');
     f['skills/jevellan-git/scripts/lib/same.mjs'] = helper('same');
-    f['skills/jevellan-router/scripts/lib/same.mjs'] = helper('same');
-    f['skills/jevellan-router/scripts/lib/nested/deep.mjs'] = helper('x');
+    f['skills/jevellan-placement/scripts/lib/same.mjs'] = helper('same');
+    f['skills/jevellan-placement/scripts/lib/nested/deep.mjs'] = helper('x');
     f['skills/jevellan-runtime-alpha/scripts/lib/nested/deep.mjs'] = helper('y');
     f['skills/jevellan-runtime-alpha/scripts/lib/alone.mjs'] = helper('alone');
   });
   const result = run(root, '--check');
   assert.equal(result.status, 0, result.stderr);
   const notices = result.stdout.split('\n').filter((l) => l.startsWith('notice: '));
-  assert.ok(notices.includes('notice: scripts/lib/helper.mjs differs between the 3 skills that keep a copy: version 1 in jevellan-git, jevellan-runtime-alpha; version 2 in jevellan-router'), notices.join('\n'));
-  assert.ok(notices.includes('notice: scripts/lib/nested/deep.mjs differs between the 2 skills that keep a copy: version 1 in jevellan-router; version 2 in jevellan-runtime-alpha'), notices.join('\n'));
+  assert.ok(notices.includes('notice: scripts/lib/helper.mjs differs between the 3 skills that keep a copy: version 1 in jevellan-git, jevellan-runtime-alpha; version 2 in jevellan-placement'), notices.join('\n'));
+  assert.ok(notices.includes('notice: scripts/lib/nested/deep.mjs differs between the 2 skills that keep a copy: version 1 in jevellan-placement; version 2 in jevellan-runtime-alpha'), notices.join('\n'));
   assert.ok(!notices.some((l) => l.includes('same.mjs') || l.includes('alone.mjs')), 'identical copies and single files are not listed');
   assert.match(result.stdout, /check-roles: 8 skills, 20 event kinds, clean/);
   assert.equal(result.stderr, '');

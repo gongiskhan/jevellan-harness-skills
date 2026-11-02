@@ -72,10 +72,10 @@ Claude Code then refreshes the marketplace in the background and installs a new 
 A client machine that must stay on one release pins the marketplace to its tag instead, and gets no updates:
 
 ```
-claude plugin marketplace add gongiskhan/jevellan-harness-skills#v0.2.0
+claude plugin marketplace add gongiskhan/jevellan-harness-skills#v0.2.1
 ```
 
-(v0.2.0 is the first tag that carries the plugin; v0.1.0 predates it.) The skills appear namespaced
+(Any release tag from v0.2.0 on carries the plugin; v0.1.0 predates it.) The skills appear namespaced
 (`jevellan-harness:jevellan-coordinator`, ...) and work the same: they find each other by role inside the plugin's
 folder. The ledger's hooks come with the plugin and run with the `node` first on PATH, so Node 22.13 or later must be
 first on PATH for Claude Code (the SessionStart hook says so in the session when it is not). Workers the runtime
@@ -149,7 +149,7 @@ A task runs like this:
 
 The workflows (feature, bug, automation) are `workflow.json` files in the workflow skills; a project overrides one
 with `.jevellan/workflows/<kind>.json`. A verify step whose tests fail sends the task back to the step its `onFail`
-names, at most `maxLoops` times. Jev answers placement from the policy in the router skill's `SKILL.md` and landing
+names, at most `maxLoops` times. Jev answers placement from the policy in the placement skill's `SKILL.md` and landing
 from the policy in the git skill's `SKILL.md`; both are plain sections a person edits, and `evals/` in each skill
 replays them against the decisions recorded in the ledgers.
 
@@ -162,8 +162,8 @@ settings, hooks, plugins and instructions do not reach them; what a worker is to
 Add an entry to `~/.jevellan-harness/providers.json`: `name`, `kind` (`claude-subscription`, `claude-endpoint`,
 `codex-subscription`, `openai-compatible`), the login (`tokenFile`, `keyFile` with `baseUrl`, or `codexHome`),
 `ceilingPct`, and `models` with their ids, labels and efforts (or `"same as <provider>"`). Add one line per new model id
-to the router skill's `## model descriptions`; placement refuses a menu model without a description, so the policy
-cannot drift from the providers. Run `node .claude/skills/jevellan-router/scripts/providers.mjs check` to probe the
+to the placement skill's `## model descriptions`; placement refuses a menu model without a description, so the policy
+cannot drift from the providers. Run `node .claude/skills/jevellan-placement/scripts/providers.mjs check` to probe the
 login and usage. A kind is offered only when an installed runtime skill lists it in `jh-kinds`; `openai-compatible`
 has no runtime skill yet.
 
@@ -191,6 +191,9 @@ own tests alone, the repository suites, the role lint and the decoupling lint.
 - `skills/<name>/test/`: each skill's own suites. `test/`: the suites of several skills together, the installer and the
   lints. `acceptance/`: the H1 to H12 journeys, `timings.mjs` and `RESULTS.md`.
 - `docs/decoupling.md` (each kind of coupling the repository forbids and how the lint catches it).
+- `tools/viewer.mjs --project <path> --host <tailnet address>`: a read-only page over a project's ledger (tasks, step
+  reports, landings, questions waiting on you, screenshots), refreshed every 10 s; bind it to the machine's Tailscale
+  address (or 127.0.0.1 behind `tailscale serve`), never to a public interface.
 - `docs/decisions.md` (H-001 onwards, with reasons), `docs/findings.md` (verified tool behaviour).
 
 MIT licence.

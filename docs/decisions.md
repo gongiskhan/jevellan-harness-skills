@@ -501,3 +501,20 @@ and blocks the worker), for the others duplicate lines. `runHook` now claims eac
 finds it and exits, logging why. A claim older than 30 s belongs to an earlier identical event and is taken over;
 claims older than ten minutes are swept. Only calls that name their transcript are claimed (every Claude Code call
 does), and nothing is claimed outside a project set up for the harness, so the hooks still write nothing elsewhere.
+
+## H-040 The placement skill is named jevellan-placement (owner decision on H-030)
+
+The owner decided H-030's open question: the skill `jevellan-router` is renamed `jevellan-placement`, so its folder
+name matches its role, the one exception among the roles held by a single skill. The role word "placement" and every
+role phrase ("the placement skill") are unchanged, so no other skill's body changed; only the folder, the frontmatter
+name, the generated `docs/roles.md`, the README, the tests, the acceptance scripts and the evals runner's cases and
+notes did. A few skills' CHANGELOGs had recorded "the guessed name jevellan-placement" from the H-030 runs; once that is
+a real sibling's folder name the decoupling lint refuses it there, so those lines now say "a skill name guessed from the
+role word". `install.mjs` moves an installed `jevellan-router` to `<project>/.jevellan/archive/skills/
+jevellan-router-<time>/` when it installs `jevellan-placement` (`RENAMED_SKILLS`), never deleting it; the plugin
+needed no change, since its manifests list no skills. Records written before the rename (`acceptance/results` of the
+H7 and H8 runs, the trigger-eval runs of the other fifteen skills) keep the name the skill had then.
+
+The trigger evals of `jevellan-placement` and `jevellan-coordinator` were run again (three runs per case) and merged
+into `evals/results.json` with the other fifteen skills' measurement of H-030 (`run-trigger-evals.mjs --merge`, which
+names which skill was measured when); H11 reads the merged file.

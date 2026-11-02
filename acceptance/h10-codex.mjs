@@ -1,4 +1,4 @@
-// H10 Codex: with the router policy temporarily edited to prefer GPT for investigation, a single investigate step
+// H10 Codex: with the placement policy temporarily edited to prefer GPT for investigation, a single investigate step
 // runs on codex exec, its report is recorded by the runtime parent, and the policy is restored. Or "skipped: Codex not
 // logged in" with a NEEDS-OWNER line when `codex login status` does not say logged in.
 
@@ -16,7 +16,7 @@ if (!/logged in/i.test(`${login.stdout}${login.stderr}`)) {
 } else {
   j.check('codex login status says logged in', true, (login.stdout + login.stderr).trim());
   j.check('the skills are installed', sh(NODE, [path.join(REPO, 'install.mjs'), SANDBOX, '--json']).status === 0);
-  const policy = path.join(skillDir(SANDBOX, 'jevellan-router'), 'SKILL.md');
+  const policy = path.join(skillDir(SANDBOX, 'jevellan-placement'), 'SKILL.md');
   const original = fs.readFileSync(policy, 'utf8');
   let result;
   let task;
@@ -38,7 +38,7 @@ if (!/logged in/i.test(`${login.stdout}${login.stderr}`)) {
   } finally {
     fs.writeFileSync(policy, original);
   }
-  j.check('the policy is restored byte for byte', fs.readFileSync(policy, 'utf8') === original && sh('diff', ['-q', policy, path.join(REPO, 'skills', 'jevellan-router', 'SKILL.md')]).status === 0);
+  j.check('the policy is restored byte for byte', fs.readFileSync(policy, 'utf8') === original && sh('diff', ['-q', policy, path.join(REPO, 'skills', 'jevellan-placement', 'SKILL.md')]).status === 0);
   const events = readLedger(SANDBOX).filter((e) => e.task === task);
   const placed = events.find((e) => e.kind === 'task.placed');
   j.check('Jev placed the step on GPT via codex', placed?.data?.provider === 'codex' && placed?.data?.model === 'gpt-6-astra', `${placed?.data?.model} via ${placed?.data?.provider} (p ${placed?.data?.probabilities?.model?.[placed?.data?.model]})`);

@@ -1,18 +1,20 @@
 # Trigger evals
 
-Run of 2026-11-02T02:37:23Z: `claude -p` (Claude Code 2.1.316) with model claude-sonnet-5-5, effort low, provider claude-second, 3 runs per case, split all; 17 skills, 248 cases, 744 runs, 0 errors, 14 min 9 s, cost 34.35 USD.
+Merged results. jevellan-placement and jevellan-coordinator measured again on 2026-11-02T13:25:26Z; the other 15 skills keep the measurement of 2026-11-02T02:37:23Z (3 runs per case); jevellan-router from that run is no longer in the package and is left out (runs recorded before a rename name the skill as it was then). Totals and verdicts below are over the merged cases.
+
+Run of 2026-11-02T13:25:26Z: `claude -p` (Claude Code 2.1.316) with model claude-sonnet-5-5, effort low, provider claude-second, 3 runs per case, split all; this run 31 cases, 93 runs, 0 errors, 3 min 6 s, cost 4.62 USD; merged 17 skills, 248 cases, 744 runs, 0 errors.
 
 Each run is one `claude -p` session in a temporary git project with the skills in .claude/skills, the Skill tool and the read-only Read, Glob and Grep, --permission-mode dontAsk and --max-turns 3. Thresholds per skill: at least 90% of the positive runs invoke the skill, at most 5% of the negative runs pick the skill as their first one, and at least 98% of the role-phrase runs pass. A role-missing run (the role's skills not installed) passes when it invokes no skill at all and the answer names the missing role. An error never counts as a pass.
 
 With fewer than 50 role-phrase runs per skill, the 98% threshold means every role-phrase run must pass.
 
-Verdict: 2 of 17 skills below the thresholds: jevellan-coordinator, jevellan-router.
+Verdict: 1 of 17 skills below the thresholds: jevellan-placement.
 
 ## Per skill
 
 | Skill | Positives | False negatives | False positives | Role missing | Role phrase | Held-out positives | Held-out negatives | Errors | Verdict |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| jevellan-coordinator | 21/24 (88%) | 3 | 0/21 | - | 18/18 (100%) | 6/6 | 3/3 | 0 | below: positives 21/24 below 90% |
+| jevellan-coordinator | 22/24 (92%) | 2 | 0/21 | - | 18/18 (100%) | 6/6 | 3/3 | 0 | meets |
 | jevellan-duty-answer | 21/21 (100%) | 0 | 0/21 | - | 27/27 (100%) | 6/6 | 3/3 | 0 | meets |
 | jevellan-duty-automate | 21/21 (100%) | 0 | 0/21 | - | 27/27 (100%) | 6/6 | 3/3 | 0 | meets |
 | jevellan-duty-converse | 21/21 (100%) | 0 | 0/21 | - | 27/27 (100%) | 6/6 | 3/3 | 0 | meets |
@@ -23,7 +25,7 @@ Verdict: 2 of 17 skills below the thresholds: jevellan-coordinator, jevellan-rou
 | jevellan-duty-verify | 21/21 (100%) | 0 | 0/21 | - | 27/27 (100%) | 6/6 | 3/3 | 0 | meets |
 | jevellan-git | 24/24 (100%) | 0 | 0/18 | 3/3 | 18/18 (100%) | 6/6 | 3/3 | 0 | meets |
 | jevellan-ledger | 24/24 (100%) | 0 | 0/18 | 3/3 | 18/18 (100%) | 6/6 | 3/3 | 0 | meets |
-| jevellan-router | 23/24 (96%) | 1 | 0/18 | 1/6 | 22/27 (81%) | 6/6 | 3/3 | 0 | below: role-phrase runs 22/27 below 98% |
+| jevellan-placement | 23/24 (96%) | 1 | 0/18 | 3/6 | 24/27 (89%) | 6/6 | 3/3 | 0 | below: role-phrase runs 24/27 below 98% |
 | jevellan-runtime-claude | 24/24 (100%) | 0 | 0/18 | 3/3 | 27/27 (100%) | 6/6 | 3/3 | 0 | meets |
 | jevellan-runtime-codex | 24/24 (100%) | 0 | 0/18 | 3/3 | 24/24 (100%) | 6/6 | 3/3 | 0 | meets |
 | jevellan-workflow-automation | 24/24 (100%) | 0 | 0/18 | 3/3 | 21/21 (100%) | 6/6 | 3/3 | 0 | meets |
@@ -41,9 +43,9 @@ Verdict: 2 of 17 skills below the thresholds: jevellan-coordinator, jevellan-rou
 | jevellan-coordinator -> jevellan-ledger | 9/9 | 100% |
 | jevellan-coordinator -> jevellan-ledger (ledger removed) | 3/3 | 100% |
 | jevellan-coordinator -> jevellan-ledger (must not fire) | 3/3 | 100% |
-| jevellan-coordinator -> jevellan-router | 3/3 | 100% |
-| jevellan-coordinator -> jevellan-router (must not fire) | 6/6 | 100% |
-| jevellan-coordinator -> jevellan-router (placement removed) | 0/3 | 0% |
+| jevellan-coordinator -> jevellan-placement | 3/3 | 100% |
+| jevellan-coordinator -> jevellan-placement (must not fire) | 6/6 | 100% |
+| jevellan-coordinator -> jevellan-placement (placement removed) | 2/3 | 67% |
 | jevellan-coordinator -> jevellan-runtime-claude | 6/6 | 100% |
 | jevellan-coordinator -> jevellan-runtime-claude (must not fire) | 9/9 | 100% |
 | jevellan-coordinator -> jevellan-runtime-claude (runtime removed) | 3/3 | 100% |
@@ -59,12 +61,12 @@ Verdict: 2 of 17 skills below the thresholds: jevellan-coordinator, jevellan-rou
 | jevellan-coordinator -> jevellan-workflow-feature | 9/9 | 100% |
 | jevellan-coordinator -> jevellan-workflow-feature (must not fire) | 6/6 | 100% |
 | jevellan-coordinator -> jevellan-workflow-feature (workflow removed) | 3/3 | 100% |
-| jevellan-workflow-automation -> jevellan-router | 3/3 | 100% |
+| jevellan-workflow-automation -> jevellan-placement | 3/3 | 100% |
 | jevellan-workflow-automation -> jevellan-runtime-codex | 3/3 | 100% |
-| jevellan-workflow-bug -> jevellan-router | 3/3 | 100% |
-| jevellan-workflow-bug -> jevellan-router (placement removed) | 1/3 | 33% |
+| jevellan-workflow-bug -> jevellan-placement | 3/3 | 100% |
+| jevellan-workflow-bug -> jevellan-placement (placement removed) | 1/3 | 33% |
 | jevellan-workflow-bug -> jevellan-runtime-claude | 3/3 | 100% |
-| jevellan-workflow-feature -> jevellan-router | 3/3 | 100% |
+| jevellan-workflow-feature -> jevellan-placement | 3/3 | 100% |
 | jevellan-workflow-feature -> jevellan-runtime-claude | 3/3 | 100% |
 | jevellan-workflow-feature -> jevellan-runtime-codex | 3/3 | 100% |
 | prompt -> jevellan-duty-answer | 3/3 | 100% |
@@ -93,7 +95,7 @@ Verdict: 2 of 17 skills below the thresholds: jevellan-coordinator, jevellan-rou
 | runtime duty line -> jevellan-duty-verify | 12/12 | 100% |
 | runtime duty line -> jevellan-duty-verify (must not fire) | 9/9 | 100% |
 | runtime duty line -> jevellan-ledger (must not fire) | 3/3 | 100% |
-| runtime duty line -> jevellan-router (must not fire) | 3/3 | 100% |
+| runtime duty line -> jevellan-placement (must not fire) | 3/3 | 100% |
 | runtime duty line -> jevellan-runtime-claude (must not fire) | 3/3 | 100% |
 | runtime duty line -> jevellan-workflow-automation (must not fire) | 3/3 | 100% |
 | runtime duty line -> jevellan-workflow-bug (must not fire) | 3/3 | 100% |
@@ -114,9 +116,9 @@ Verdict: 2 of 17 skills below the thresholds: jevellan-coordinator, jevellan-rou
 
 > Three tasks in parallel: (1) README how to run; (2) a unit test for one untested pure function in src; (3) an empty-state message on the customers page when there are no customers, with a test.
 
-- Run 1: failed; invoked no skill; answer: "I'll start by looking at the project."
-- Run 2: failed; invoked no skill; answer: "I'll start by looking at the project layout."
-- Run 3: failed; invoked no skill; answer: "I'll start by looking at the project layout."
+- Run 1: failed; invoked no skill; answer: "I'll start by looking at the project. Three independent edits. `lineTotalCents` is the untested pure function. The server starts listening on import, so I'll move the customers HTML into a separate module to make it testable."
+- Run 2: failed; invoked no skill; answer: "I'll start by looking at the project."
+- Run 3: passed; invoked jevellan-coordinator, jevellan-ledger
 
 ### jevellan-duty-document case 6 (positive, held out)
 
@@ -134,29 +136,29 @@ Verdict: 2 of 17 skills below the thresholds: jevellan-coordinator, jevellan-rou
 - Run 2: failed; invoked no skill
 - Run 3: passed; invoked jevellan-duty-investigate
 
-### jevellan-router case 4 (positive, context jevellan-coordinator)
+### jevellan-placement case 4 (positive, context jevellan-coordinator)
 
 > Verify step 3 of T8QW2N reported testsRun.passed false, and the retry back to step 2 is recorded. Step 2 must be placed again before it restarts; use the placement skill for it.
 
-- Run 1: failed; invoked jevellan-ledger; answer: "I'll start with the ledger skill to check the task's state."
-- Run 2: passed; invoked jevellan-ledger, jevellan-router
-- Run 3: passed; invoked jevellan-ledger, jevellan-router
+- Run 1: failed; invoked jevellan-ledger; answer: "I'll check the ledger first. Bash isn't available here, so I'll read the ledger file directly."
+- Run 2: passed; invoked jevellan-ledger, jevellan-placement
+- Run 3: passed; invoked jevellan-ledger, jevellan-placement
 
-### jevellan-router case 9 (role-missing, role phrase, context jevellan-coordinator, placement removed)
+### jevellan-placement case 9 (role-missing, role phrase, context jevellan-coordinator, placement removed)
 
 > Task T3K9QZ "README: how to run" (single, duty document) is created and its worktree is ready. Step 1 has not been placed yet. Use the placement skill now and continue with its answer.
 
-- Run 1: failed; invoked jevellan-placement (not installed); named the missing role: yes; answer: "I can't place step 1 of T3K9QZ "README: how to run". My skill list has no placement skill (nothing with "Placement" as its first word), and calling `jevellan-placement` failed as an unknown skill. Placement is what chooses the provider, model and effort for each step, and I'm not allowed to pick ..."
-- Run 2: failed; invoked jevellan-placement (not installed); named the missing role: yes; answer: "I can't place step 1 of T3K9QZ "README: how to run". No placement skill is loaded in this session. My skill list has ledger, git, runtime, workflow and duty skills, but nothing whose role is placement. The call I tried, `jevellan-placement`, came back as unknown. I won't choose a provider, model ..."
-- Run 3: failed; invoked jevellan-placement (not installed); named the missing role: yes; answer: "I can't place step 1 of T3K9QZ "README: how to run". My skill list has no placement skill. The skills I do have cover the coordinator, duty, git, ledger, runtime and workflow roles. I tried `jevellan-placement` and it doesn't exist. I won't choose a provider, model or effort myself, so the task s..."
+- Run 1: passed; invoked no skill; named the missing role: yes; answer: "I can't place step 1 of T3K9QZ "README: how to run". None of my skills has the Placement role. Its description would have to start with "Placement", and the skills I have cover the coordinator, duties, git, ledger, runtimes and workflows only. I've called no skill and started nothing. The task st..."
+- Run 2: passed; invoked no skill; named the missing role: yes; answer: "I can't place step 1 of T3K9QZ "README: how to run". None of my skills has the placement role. The ones I have cover coordinator, duty, git, ledger, runtime and workflow. Only placement can choose the provider, model and effort for a step, and I'm not allowed to pick those myself or start the ste..."
+- Run 3: failed; invoked jevellan-placement (not installed); named the missing role: yes; answer: "I can't start step 1 of T3K9QZ "README: how to run" because this session has no placement skill. The skills I can see cover coordinator, duty, git, ledger, runtime and workflow roles, but none has the placement role. Placement is what picks the provider, model and effort for each step, and I don'..."
 
-### jevellan-router case 10 (role-missing, role phrase, context jevellan-workflow-bug, placement removed)
+### jevellan-placement case 10 (role-missing, role phrase, context jevellan-workflow-bug, placement removed)
 
 > Bug task T5HB7C has its worktree and its resolved steps are recorded: 1 implement, 2 verify. Step 1 is next. Use the placement skill now and continue with its answer.
 
-- Run 1: failed; invoked jevellan-placement (not installed); named the missing role: yes; answer: "I'm stopping at step 1 of task T5HB7C (implement) because no skill with the **placement** role is available. I tried to invoke one, and the call returned "Unknown skill". None of the available skills describes itself as placement. The roles I can see are coordinator, duty, git, ledger, runtime an..."
-- Run 2: failed; invoked jevellan-placement (not installed); named the missing role: yes; answer: "No skill with the placement role is available. The list has no `jevellan-placement` or anything else with that role. The workflow tells me to stop here and not improvise it, so I haven't run step 1 (implement) or any later step. To continue, the placement skill needs to be installed or enabled. O..."
-- Run 3: passed; invoked no skill; named the missing role: yes; answer: "I've stopped before step 1 (implement) because the **placement** skill isn't available in this session. None of the loaded skills has that role. The available ones are coordinator, duty-*, git, ledger, runtime-claude, runtime-codex and the workflow skills. The workflow needs placement to choose t..."
+- Run 1: failed; invoked jevellan-placement (not installed); named the missing role: yes; answer: "I can't continue with step 1. No placement skill is available in this session, so I haven't started anything. The workflow needs a skill whose role is "placement". It uses that skill to choose a provider for each step, and the runtime skill depends on its answer. The skills I do have cover coordi..."
+- Run 2: failed; invoked no skill; named the missing role: no; answer: "I can't start step 1 (implement) of task T5HB7C. The workflow needs a placement skill, and none is available in this session. The skills I have cover the coordinator, the duties, git, the ledger, the runtimes and the workflows, but nothing with the placement role. I haven't called any skill or tr..."
+- Run 3: passed; invoked no skill; named the missing role: yes; answer: "I'm stopping at step 1 of bug task T5HB7C because the placement skill isn't available in this session. The workflow tells me to use a placement skill to choose the provider for each step. None of the skills I can call has that role. The ledger, runtime (Claude and Codex), git, duty and workflow s..."
 
 ## Role-missing runs
 
@@ -168,12 +170,12 @@ Every run of a case whose role was not installed: what it invoked and how it ans
 - jevellan-ledger case 9 (ledger removed, context jevellan-coordinator), run 1: passed; invoked no skill; answer: "I can't create the task: none of my skills has the Ledger role. The skills I have cover coordination, placement, git, runtime, workflows and duties, but nothing that creates tasks, checks status or..."
 - jevellan-ledger case 9 (ledger removed, context jevellan-coordinator), run 2: passed; invoked no skill; answer: "I can't create the task yet, because this session has no ledger skill. The skills I have cover coordinator, duty, git, placement, runtime and workflow, but nothing whose description starts with "Le..."
 - jevellan-ledger case 9 (ledger removed, context jevellan-coordinator), run 3: passed; invoked no skill; answer: "I can't create the task because this session has no skill with the Ledger role. The skills I have cover placement, git, runtime, workflow and the duties, but none of them creates tasks or reports s..."
-- jevellan-router case 9 (placement removed, context jevellan-coordinator), run 1: failed; invoked jevellan-placement (not installed); answer: "I can't place step 1 of T3K9QZ "README: how to run". My skill list has no placement skill (nothing with "Placement" as its first word), and calling `jevellan-placement` failed as an unknown skill. ..."
-- jevellan-router case 9 (placement removed, context jevellan-coordinator), run 2: failed; invoked jevellan-placement (not installed); answer: "I can't place step 1 of T3K9QZ "README: how to run". No placement skill is loaded in this session. My skill list has ledger, git, runtime, workflow and duty skills, but nothing whose role is placem..."
-- jevellan-router case 9 (placement removed, context jevellan-coordinator), run 3: failed; invoked jevellan-placement (not installed); answer: "I can't place step 1 of T3K9QZ "README: how to run". My skill list has no placement skill. The skills I do have cover the coordinator, duty, git, ledger, runtime and workflow roles. I tried `jevell..."
-- jevellan-router case 10 (placement removed, context jevellan-workflow-bug), run 1: failed; invoked jevellan-placement (not installed); answer: "I'm stopping at step 1 of task T5HB7C (implement) because no skill with the **placement** role is available. I tried to invoke one, and the call returned "Unknown skill". None of the available skil..."
-- jevellan-router case 10 (placement removed, context jevellan-workflow-bug), run 2: failed; invoked jevellan-placement (not installed); answer: "No skill with the placement role is available. The list has no `jevellan-placement` or anything else with that role. The workflow tells me to stop here and not improvise it, so I haven't run step 1..."
-- jevellan-router case 10 (placement removed, context jevellan-workflow-bug), run 3: passed; invoked no skill; answer: "I've stopped before step 1 (implement) because the **placement** skill isn't available in this session. None of the loaded skills has that role. The available ones are coordinator, duty-*, git, led..."
+- jevellan-placement case 9 (placement removed, context jevellan-coordinator), run 1: passed; invoked no skill; answer: "I can't place step 1 of T3K9QZ "README: how to run". None of my skills has the Placement role. Its description would have to start with "Placement", and the skills I have cover the coordinator, dut..."
+- jevellan-placement case 9 (placement removed, context jevellan-coordinator), run 2: passed; invoked no skill; answer: "I can't place step 1 of T3K9QZ "README: how to run". None of my skills has the placement role. The ones I have cover coordinator, duty, git, ledger, runtime and workflow. Only placement can choose ..."
+- jevellan-placement case 9 (placement removed, context jevellan-coordinator), run 3: failed; invoked jevellan-placement (not installed); answer: "I can't start step 1 of T3K9QZ "README: how to run" because this session has no placement skill. The skills I can see cover coordinator, duty, git, ledger, runtime and workflow roles, but none has ..."
+- jevellan-placement case 10 (placement removed, context jevellan-workflow-bug), run 1: failed; invoked jevellan-placement (not installed); answer: "I can't continue with step 1. No placement skill is available in this session, so I haven't started anything. The workflow needs a skill whose role is "placement". It uses that skill to choose a pr..."
+- jevellan-placement case 10 (placement removed, context jevellan-workflow-bug), run 2: failed; invoked no skill; answer: "I can't start step 1 (implement) of task T5HB7C. The workflow needs a placement skill, and none is available in this session. The skills I have cover the coordinator, the duties, git, the ledger, t..."
+- jevellan-placement case 10 (placement removed, context jevellan-workflow-bug), run 3: passed; invoked no skill; answer: "I'm stopping at step 1 of bug task T5HB7C because the placement skill isn't available in this session. The workflow tells me to use a placement skill to choose the provider for each step. None of t..."
 - jevellan-runtime-claude case 9 (runtime removed, context jevellan-coordinator), run 1: passed; invoked no skill; answer: "I can't start step 1 (document) of T3K9QZ because there is no runtime skill in my list. I have skills for placement, ledger, git, workflow and the duties, but none whose description begins with "Ru..."
 - jevellan-runtime-claude case 9 (runtime removed, context jevellan-coordinator), run 2: passed; invoked no skill; answer: "I can't start step 1 (document) of T3K9QZ, because none of my skills has the runtime role. The skills I have cover coordinator, duty, ledger, git, placement and workflow, but none of them starts a ..."
 - jevellan-runtime-claude case 9 (runtime removed, context jevellan-coordinator), run 3: passed; invoked no skill; answer: "I can't start step 1 (document) of T3K9QZ because none of my available skills has the Runtime role. The skills I have cover coordinator, duty, git, ledger, placement and workflow, but none for star..."

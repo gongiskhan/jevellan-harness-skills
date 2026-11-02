@@ -389,6 +389,31 @@ test('a changed skill is archived then replaced; a retired jevellan folder is ar
   assert.ok(out.changed.includes(path.join(skills, 'jevellan-retired')));
 });
 
+test('an installed jevellan-router (renamed jevellan-placement in 0.2.1) is moved to .jevellan/archive/, never deleted', () => {
+  const box = sandbox();
+  const project = makeRepo(box, 'renamed');
+  assert.equal(run(box, [project]).status, 0);
+  const skills = path.join(project, '.claude', 'skills');
+  // What a 0.2.0 installation left: the placement skill under its old name, with a local file in it.
+  fs.cpSync(path.join(SKILLS, 'jevellan-placement'), path.join(skills, 'jevellan-router'), { recursive: true });
+  fs.writeFileSync(path.join(skills, 'jevellan-router', 'local-note.txt'), 'kept\n');
+  const before = treeFiles(path.join(skills, 'jevellan-router'));
+
+  const result = run(box, [project, '--json']);
+  assert.equal(result.status, 0, result.stderr);
+  const [archived] = result.json.skillsArchived;
+  assert.equal(result.json.skillsArchived.length, 1);
+  assert.equal(archived.name, 'jevellan-router');
+  assert.equal(archived.reason, 'renamed to jevellan-placement');
+  assert.equal(path.dirname(archived.to), path.join(project, '.jevellan', 'archive', 'skills'));
+  assert.match(path.basename(archived.to), /^jevellan-router-\d{8}T\d{9}Z$/);
+  assert.deepEqual(treeFiles(archived.to), before, 'the old copy is whole in the archive');
+  assert.equal(fs.existsSync(path.join(skills, 'jevellan-router')), false);
+  assert.deepEqual(installedSkillFolders(project), sourceSkillFolders());
+  assert.equal(fs.existsSync(path.join(box.harness, 'archive', 'skills')), false, 'not in the harness archive');
+  assert.equal(git(box, project, 'status', '--porcelain').trim(), '', 'the archive is under the excluded .jevellan/');
+});
+
 test('an executable bit that differs from the package counts as a change', () => {
   const box = sandbox();
   const project = makeRepo(box, 'app');

@@ -5,7 +5,9 @@
 //    checkout, a Node older than 22 (the hooks record this binary's path), and a settings.json that does not parse.
 // 2. Copies every jevellan-* folder of skills/ to <project>/.claude/skills/. A copy that already matches is left
 //    alone; one that differs, and a jevellan-* folder the package no longer has, is moved to
-//    <harness home>/archive/skills/<project>-<time>/ first. Nothing is ever deleted.
+//    <harness home>/archive/skills/<project>-<time>/ first. A skill the package renamed (RENAMED_SKILLS: the old
+//    jevellan-router is jevellan-placement since 0.2.1) is moved to <project>/.jevellan/archive/skills/<old>-<time>/
+//    when the new one is installed. Nothing is ever deleted.
 // 3. Merges the three ledger hooks into <project>/.claude/settings.json, keeping every other key and hook.
 // 4. Writes <project>/.jevellan/project.json when it is missing, with the detected commands.
 // 5. Adds .claude/, .jevellan/ and plan.md to <project>/.git/info/exclude when absent.
@@ -29,6 +31,8 @@ const USAGE = 'usage: node install.mjs <project path> [--skills-only | --project
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 export const SOURCE_SKILLS = path.join(HERE, 'skills');
 export const SKILL_PREFIX = 'jevellan-';
+// Old folder name -> the folder that replaces it (docs/decisions.md H-040).
+export const RENAMED_SKILLS = Object.freeze({ 'jevellan-router': 'jevellan-placement' });
 export const HOOK_MARKER = 'jevellan-ledger/hooks/';
 export const POST_TOOL_MATCHER = 'Bash|Edit|Write|MultiEdit|NotebookEdit';
 export const SESSION_START_MATCHERS = ['startup', 'resume', 'compact'];
@@ -262,6 +266,12 @@ function planSkills(project, archiveDir) {
   for (const entry of present) {
     if (!entry.name.startsWith(SKILL_PREFIX) || names.includes(entry.name)) continue;
     if (!entry.isDirectory() && !entry.isSymbolicLink()) continue;
+    const renamed = RENAMED_SKILLS[entry.name];
+    if (renamed && names.includes(renamed)) {
+      // A renamed skill stays with the project, beside its ledger, under the name it had.
+      plan.archive.push({ name: entry.name, from: path.join(targetRoot, entry.name), reason: `renamed to ${renamed}`, dir: path.join(project, '.jevellan', 'archive', 'skills') });
+      continue;
+    }
     plan.archive.push({ name: entry.name, from: path.join(targetRoot, entry.name), reason: 'no longer in the package' });
   }
   plan.archiveDir = archiveDir;
@@ -271,7 +281,7 @@ function planSkills(project, archiveDir) {
 function applySkills(project, plan, result) {
   fs.mkdirSync(path.join(project, '.claude', 'skills'), { recursive: true });
   for (const item of plan.archive) {
-    const to = freeName(plan.archiveDir, item.name);
+    const to = item.dir ? freeName(item.dir, `${item.name}-${compactTime()}`) : freeName(plan.archiveDir, item.name);
     move(item.from, to);
     result.skillsArchived.push({ name: item.name, to, reason: item.reason });
     result.lines.push(`archived ${path.relative(project, item.from)} (${item.reason}) to ${to}`);

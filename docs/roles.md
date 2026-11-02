@@ -19,7 +19,7 @@ edit it by hand: change the skill, run the command again and commit the result. 
 | jevellan-duty-verify | duty | duty: verify; needs: repo-write, shell, browser | Duty verify. Use when this session is running a task step whose duty is verify: only when the runtime's instructions for this session say 'Your step is duty verify', never for a request typed by the owner. Runs the tests and browser journeys and saves evidence. End by writing the report file. |
 | jevellan-git | git | - | Git. Use when a task needs its worktree created or removed, or when a finished task must be landed on the project's default branch. Landing is guarded: it refuses when steps are not done, the tree is dirty or the checks fail. |
 | jevellan-ledger | ledger | - | Ledger. Use when a session must create a task, record a note or a standing preference about how work runs, record or read what happened to a task, wait for a step's report, or show status. The ledger is the only durable state; its hooks record sessions automatically. |
-| jevellan-router | placement | - | Placement. Use when a session must decide which model, effort and provider a task step should run on, or must answer a workflow question about a task. Runs a script that asks Jev; never choose yourself. |
+| jevellan-placement | placement | - | Placement. Use when a session must decide which model, effort and provider a task step should run on, or must answer a workflow question about a task. Runs a script that asks Jev; never choose yourself. |
 | jevellan-runtime-claude | runtime | provider kinds: claude-subscription, claude-endpoint | Runtime for Claude providers (kinds claude-subscription and claude-endpoint). Use when a session must start, resume, stop or check a task step on a Claude provider chosen by placement. |
 | jevellan-runtime-codex | runtime | provider kinds: codex-subscription | Runtime for Codex providers (kind codex-subscription). Use when a session must start, resume, stop or check a task step on a Codex provider chosen by placement. |
 | jevellan-workflow-automation | workflow | task kind: automation | Workflow automation. Use when the coordinator is about to run a task of kind automation: it gives the ordered steps, their duties and instructions, and the retry rule. |
@@ -29,7 +29,7 @@ edit it by hand: change the skill, run the command again and commit the result. 
 ## Roles
 
 - coordinator: `jevellan-coordinator`
-- placement: `jevellan-router`
+- placement: `jevellan-placement`
 - runtime: `jevellan-runtime-claude`, `jevellan-runtime-codex`
 - ledger: `jevellan-ledger`
 - git: `jevellan-git`
@@ -49,7 +49,7 @@ edit it by hand: change the skill, run the command again and commit the result. 
 - `jevellan-duty-verify`: none
 - `jevellan-git`: none
 - `jevellan-ledger`: none
-- `jevellan-router`: "the ledger skill"
+- `jevellan-placement`: "the ledger skill"
 - `jevellan-runtime-claude`: "the ledger skill", "the duty skill for"
 - `jevellan-runtime-codex`: "the ledger skill", "the duty skill for"
 - `jevellan-workflow-automation`: "the placement skill", "the ledger skill", "the git skill", "the runtime skill for"

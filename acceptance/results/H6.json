@@ -2,102 +2,102 @@
   "id": "H6",
   "title": "The chain",
   "status": "passed",
-  "startedAt": "2026-11-02T12:47:36.652Z",
-  "finishedAt": "2026-11-02T12:50:05.510Z",
-  "elapsedMs": 148858,
+  "startedAt": "2026-11-02T13:33:53.024Z",
+  "finishedAt": "2026-11-02T13:35:57.835Z",
+  "elapsedMs": 124810,
   "passed": 13,
   "total": 13,
   "timings": {
-    "request to landing": 124783
+    "request to landing": 104753
   },
   "notes": [
-    "run 8 on a fresh clone of the sandbox baseline",
-    "coordinator session b2d63bbc-425e-41e8-ba40-95860008d06b",
+    "run 9 on a fresh clone of the sandbox baseline",
+    "coordinator session ea6ac12a-f021-4b57-9fca-e2bfab804eec",
     "the coordinator chose a single task, which has no workflow line",
-    "Skill invocations: jevellan-coordinator, jevellan-ledger, jevellan-git, jevellan-router, jevellan-runtime-claude",
+    "Skill invocations: jevellan-coordinator, jevellan-ledger, jevellan-git, jevellan-placement, jevellan-runtime-claude",
     "placements: s1 document claude-sonnet-5-5 medium via claude-main; s2 verify claude-sonnet-5-5 high via claude-main",
-    "landing: verify-then-land {\"land\":0.45,\"verify-then-land\":0.54,\"ask-owner\":0.01}",
-    "coordinator's last reply: Your README now has a \"How to run\" section: TBFZ450 landed on main as commit 79c1aaa, a fast-forward merge. The section sits between \"Setup\" and \"Run the web pages\". It lists all five package.json scripts with their exact commands, and says what setup each one needs. CHANGELOG.md has a matching entry. The verify step ran the unit tests (9 passed) and the type check, which passed. It skipped the br",
-    "runs so far: 1:pass 2:pass 3:pass 4:pass 5:pass 6:pass 7:pass 8:pass"
+    "landing: verify-then-land {\"land\":0.33,\"verify-then-land\":0.66,\"ask-owner\":0.01}",
+    "coordinator's last reply: The \"How to run\" section is now on `main`. Task TT2C3WR, \"Add How to run section to README\", landed as commit b16be52, fast-forwarded onto your local `main`. The new section sits right after \"Setup\". It's a table of the five `package.json` scripts: `npm start`, `npm test`, `npm run test:browser`, `npm run lint` and `npm run check:changelog`. Each row shows the command it runs and one line on what ",
+    "runs so far: 1:pass 2:pass 3:pass 4:pass 5:pass 6:pass 7:pass 8:pass 9:pass"
   ],
   "checks": [
     {
       "name": "the skills are installed in the project",
       "ok": true,
       "detail": "",
-      "at": "2026-11-02T12:47:36.918Z"
+      "at": "2026-11-02T13:33:53.275Z"
     },
     {
       "name": "the coordinator created one task for the request",
       "ok": true,
-      "detail": "TBFZ450 (single document): Add a How to run section to the README",
-      "at": "2026-11-02T12:50:05.495Z"
+      "detail": "TT2C3WR (single document): Add How to run section to README",
+      "at": "2026-11-02T13:35:57.819Z"
     },
     {
       "name": "task.worktree",
       "ok": true,
       "detail": "",
-      "at": "2026-11-02T12:50:05.495Z"
+      "at": "2026-11-02T13:35:57.820Z"
     },
     {
       "name": "every started step was placed first",
       "ok": true,
       "detail": "steps 1, 2",
-      "at": "2026-11-02T12:50:05.495Z"
+      "at": "2026-11-02T13:35:57.820Z"
     },
     {
       "name": "step.started carries model and effort",
       "ok": true,
       "detail": "",
-      "at": "2026-11-02T12:50:05.496Z"
+      "at": "2026-11-02T13:35:57.820Z"
     },
     {
       "name": "every started step has a report and a step.done",
       "ok": true,
       "detail": "",
-      "at": "2026-11-02T12:50:05.496Z"
+      "at": "2026-11-02T13:35:57.821Z"
     },
     {
       "name": "landing.decided",
       "ok": true,
       "detail": "",
-      "at": "2026-11-02T12:50:05.496Z"
+      "at": "2026-11-02T13:35:57.821Z"
     },
     {
       "name": "task.landed, or task.asked with a stated reason",
       "ok": true,
       "detail": "task.landed",
-      "at": "2026-11-02T12:50:05.496Z"
+      "at": "2026-11-02T13:35:57.821Z"
     },
     {
       "name": "no human input beyond the request",
       "ok": true,
       "detail": "one message was sent",
-      "at": "2026-11-02T12:50:05.496Z"
+      "at": "2026-11-02T13:35:57.821Z"
     },
     {
       "name": "zero slips",
       "ok": true,
       "detail": "",
-      "at": "2026-11-02T12:50:05.496Z"
+      "at": "2026-11-02T13:35:57.821Z"
     },
     {
       "name": "main has the How to run section",
       "ok": true,
       "detail": "",
-      "at": "2026-11-02T12:50:05.500Z"
+      "at": "2026-11-02T13:35:57.825Z"
     },
     {
       "name": "the project checkout is clean",
       "ok": true,
       "detail": "",
-      "at": "2026-11-02T12:50:05.508Z"
+      "at": "2026-11-02T13:35:57.834Z"
     },
     {
       "name": "passed three times in a row",
       "ok": true,
       "detail": "true,true,true",
-      "at": "2026-11-02T12:50:05.510Z"
+      "at": "2026-11-02T13:35:57.835Z"
     }
   ]
 }
