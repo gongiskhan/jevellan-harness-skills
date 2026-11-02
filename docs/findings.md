@@ -146,3 +146,12 @@ Checked by `acceptance/h05-worker.mjs` on the sandbox: a single investigate task
   written. The investigate worker wrote only its report file and left the worktree clean.
 - Times: placement 443 ms; start to report 87 s (Opus at max effort); resume to report 35 s; `stop.mjs` ended a running
   turn with SIGTERM to the process group in 456 ms, and the projection then showed the task stopped.
+
+## 2026-11-02 A real implement step landed (phase 4 check)
+
+`acceptance/p4-implement.mjs`, a scripted chain over the installed scripts on a clone of the sandbox at its baseline:
+a single implement task "README: how to run" got its worktree (with `npm ci` as its setup command), Jev placed it on
+`claude-sonnet-5-5` medium via claude-second (p 0.89), the worker committed a "How to run" section and reported done
+through the Stop hook, `step.done` passed its guard, and `land.mjs` asked Jev (land 0.97), ran
+`TZ=UTC SANDBOX_DATA_DIR=.sandbox-data npm test` in the worktree (passed) and fast-forwarded the clone's main with
+`merge --ff-only`, in 19 s from the task to the landing. The landed commit carries no attribution.

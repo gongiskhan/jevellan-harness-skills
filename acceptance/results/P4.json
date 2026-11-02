@@ -1,0 +1,113 @@
+{
+  "id": "P4",
+  "title": "Implement step landed (phase 4 check)",
+  "status": "passed",
+  "startedAt": "2026-11-02T00:39:29.318Z",
+  "finishedAt": "2026-11-02T00:39:48.265Z",
+  "elapsedMs": 18947,
+  "passed": 15,
+  "total": 15,
+  "timings": {
+    "task to landing": 18731
+  },
+  "notes": [
+    "worktree /home/ggomes/.jevellan-harness/worktrees/jevellan-harness-sandbox/readme-how-to-run-TQSAJPF",
+    "step 1 implement: claude-sonnet-5-5 medium via claude-second",
+    "  report: done - README.md now has a \"How to run\" section listing the package.json scripts (start, test, test:browser, lint, check:changelog), one line each on what it does and ",
+    "land: exit 0 { \"task\": \"TQSAJPF\", \"route\": \"land\", \"landed\": true, \"commit\": \"9c7cdb317b9aca24408f847598c16f49c82f2a16\", \"target\": \"main\", \"method\": \"merge --ff-only\", \"forced\": false, \"reason\": \"Small or low-risk ",
+    "placements: [{\"step\":1,\"duty\":\"implement\",\"model\":\"claude-sonnet-5-5\",\"effort\":\"medium\",\"provider\":\"claude-second\",\"p\":0.89}]",
+    "landing: \"land\" {\"land\":0.97,\"verify-then-land\":0.03,\"ask-owner\":0}"
+  ],
+  "checks": [
+    {
+      "name": "installed on the clone",
+      "ok": true,
+      "detail": "",
+      "at": "2026-11-02T00:39:29.460Z"
+    },
+    {
+      "name": "the task landed",
+      "ok": true,
+      "detail": "",
+      "at": "2026-11-02T00:39:48.251Z"
+    },
+    {
+      "name": "the ledger has task.created",
+      "ok": true,
+      "detail": "",
+      "at": "2026-11-02T00:39:48.251Z"
+    },
+    {
+      "name": "the ledger has task.worktree",
+      "ok": true,
+      "detail": "",
+      "at": "2026-11-02T00:39:48.252Z"
+    },
+    {
+      "name": "the ledger has task.placed",
+      "ok": true,
+      "detail": "",
+      "at": "2026-11-02T00:39:48.252Z"
+    },
+    {
+      "name": "the ledger has step.started",
+      "ok": true,
+      "detail": "",
+      "at": "2026-11-02T00:39:48.252Z"
+    },
+    {
+      "name": "the ledger has step.report",
+      "ok": true,
+      "detail": "",
+      "at": "2026-11-02T00:39:48.252Z"
+    },
+    {
+      "name": "the ledger has step.done",
+      "ok": true,
+      "detail": "",
+      "at": "2026-11-02T00:39:48.252Z"
+    },
+    {
+      "name": "the ledger has landing.decided",
+      "ok": true,
+      "detail": "",
+      "at": "2026-11-02T00:39:48.252Z"
+    },
+    {
+      "name": "the ledger has task.landed",
+      "ok": true,
+      "detail": "",
+      "at": "2026-11-02T00:39:48.252Z"
+    },
+    {
+      "name": "main moved to the landed commit",
+      "ok": true,
+      "detail": "61fc71a -> 9c7cdb3",
+      "at": "2026-11-02T00:39:48.255Z"
+    },
+    {
+      "name": "README.md on main has a How to run section",
+      "ok": true,
+      "detail": "",
+      "at": "2026-11-02T00:39:48.255Z"
+    },
+    {
+      "name": "the landed commits carry no attribution",
+      "ok": true,
+      "detail": "Document how to run the project in the README",
+      "at": "2026-11-02T00:39:48.259Z"
+    },
+    {
+      "name": "the landing ran the test command and it passed",
+      "ok": true,
+      "detail": "[[\"TZ=UTC SANDBOX_DATA_DIR=.sandbox-data npm test\",true]]",
+      "at": "2026-11-02T00:39:48.259Z"
+    },
+    {
+      "name": "the clone checkout is clean",
+      "ok": true,
+      "detail": "",
+      "at": "2026-11-02T00:39:48.264Z"
+    }
+  ]
+}

@@ -239,3 +239,14 @@ environment (no provider or Jev values), writes its output to `<worktree>/.jevel
 `.jevellan/setup.done` on success; a failure is exit 2 after the worktree is recorded, and the next create of the same
 task runs the setup again. The sandbox's project.json, written before this decision, got `"setupCommand": "npm ci"`
 from the H1 journey. (The skills run had the same need, its D-039.)
+
+## H-024 The sandbox copy starts from the baseline before the skills run's journeys
+
+The live sandbox's main (43e279e) already holds the skills run's journey landings of 1 November: a README "How to run"
+section, the empty state of the customers page, unit tests for the HTML helpers and more. Copied as it is, the
+requests of H6 ("Add a How to run section to the README...") and H7 (the same three tasks the skills run landed) would
+be no-ops, and the phase 4 implement step found its section already there. So the copy's main was moved back, before
+any H6 or H7 run, to `61fc71a` ("Seed invoices and customers acceptance baseline", 13 October), the commit the skills
+run started its journeys from; the later commits stay in the copy on the branch `skills-run-main`, and nothing was
+deleted. At the baseline `npm test` (3 tests) and `npm run test:browser` (2 specs) pass with `TZ=UTC
+SANDBOX_DATA_DIR=.sandbox-data`, and `npm run lint` is clean. The live sandbox itself is untouched.
