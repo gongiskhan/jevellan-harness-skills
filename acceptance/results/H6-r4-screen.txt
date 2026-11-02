@@ -1,0 +1,41 @@
+  ⎿  Updated README.md (+12 -0)                                                                                                                            
+      15  npm ci                                                                                                                     
+      16  ```                                     
+      17                                                                                                                                                 
+      18 +## How to run                                                                                                                                  
+      19 +                                                                                                                                                     
+      20 +Every script in `package.json`, with the command to type:                                                                                            
+      21 +                                                                                                                                               
+      22 +| Command | Runs | Needs | What it does |                                                                                                      
+      23 +| --- | --- | --- | --- |                                                                                                                      
+      24 +| `npm start` | `tsx src/web/server.ts` | `SANDBOX_DATA_DIR` | Starts the web server. See [Run the web pages](#run-the-web-pages). |           
+      25 +| `npm test` | `vitest run` | `SANDBOX_DATA_DIR`, `TZ=UTC` | Runs the unit tests once. See [Test](#test). |                                        
+      26 +| `npm run test:browser` | `playwright test` | `npx playwright install chromium` on first run | Runs the browser tests; Playwright starts the s       
+         +erver itself. See [Test](#test). |                                                                                                                 
+      27 +| `npm run lint` | `tsc --noEmit` | nothing extra | Type checks the project without writing files. |                                                  
+      28 +| `npm run check:changelog` | `node scripts/check-changelog.mjs` | an `origin` remote | Fails if the change does not touch `CHANGELOG.md`; diff    
+         +s against `origin/main`. See [Changelog](#changelog). |                                                                                               
+      29 +                                                                                                                                                   
+      30  ## Run the web pages                                                                                                                                  
+      31                                                                                                                                                     
+      32  ```sh                                                                                                                                                 
+  ⎿  (files that changed while this command ran, by the command or by another process; a convenience view, not a review or audit of the command)             
+                                                                                                                                                                
+  Thought for 6s                                                                                                                                         
+
+● The README change (THVA599) is now on your local main, a fast-forward to commit 07bc742. After ## Setup there's a "How to run" table of all five package.json 
+  scripts. Each row shows the command to type, what it runs, the env it needs and a link to the existing section with the details. CHANGELOG.md has a matching 
+  line.                                                                                                                                                  
+                                                                                                                                                                
+  The extra verify run passed: the unit tests ran 9 of 9 green, and the table matches package.json. It skipped browser tests because the change is docs-only and
+  touches no page.                                                                                                                                          
+                                                                                                                                                               
+  Nothing was pushed, because project.json has pushAfterLanding: false. AGENTS.md asks for a pull request, so tell me if you want that pushed and a PR opened.
+
+✻ Worked for 16s · done 2:47 AM                                                            
+                                                                                                                                                              
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯                                                                             
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  jevellan-harness-sandbox | main | 7% | Opus 5.5@xhigh | 0 files
+  ⏵⏵ bypass permissions on (shift+tab to cycle) · ← 1 agent   

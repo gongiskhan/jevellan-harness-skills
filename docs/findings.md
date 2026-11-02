@@ -184,3 +184,50 @@ through the Stop hook, `step.done` passed its guard, and `land.mjs` asked Jev (l
   its weekly window used.
 - In H7, Jev placed the unit test task on `gpt-6-astra` high via codex (p 0.51); the coordinator started it with the
   Codex runtime skill and it landed after its checks passed.
+
+## 2026-11-02 Final: every verification result and every flag, in one place
+
+Verifications the brief asks for, and what they found (the entries above have the detail):
+
+- Stop hooks run in `claude -p` (2.1.316), and `{"decision":"block","reason":...}` continues the turn; the second call
+  carries `stop_hook_active: true`. The Claude runtime therefore needs no exit-time fallback (H-007). Verified again by
+  H3 with real workers: a worker without a report was blocked twice and then recorded blocked and synthesized.
+- SessionStart stdout reaches the session's context in `-p` and in interactive sessions, for `startup` and `resume`;
+  the `hookSpecificOutput.additionalContext` form works too. H3 and H9 saw a worker's task ledger and a coordinator's
+  open work in context; H9's restarted coordinator picked up its task from it.
+- `--session-id <uuid>` is honoured in `-p` and names the transcript; `--resume <uuid>` continues the same
+  conversation (H5).
+- `--append-system-prompt-file` and `--effort` (low to max) are accepted; the append reaches the model (H5's worker
+  followed its duty line).
+- `--tools` restricts the read-only duties: with `--permission-mode dontAsk`, `--tools
+  Read,Glob,Grep,WebSearch,WebFetch,Skill,Write,Edit` and `--allowedTools` naming only the report file (and plan.md),
+  every other write is refused (H5 probe).
+- Codex: every flag of section 5.3 exists in 0.153.4 and works as written (`exec --json -C -m -c
+  model_reasoning_effort=... --dangerously-bypass-approvals-and-sandbox`, prompt from stdin with `-`); `exec resume`
+  takes the thread id and has no `-C`. H10 and P6 ran live; `codex login status` said logged in, so H10 was not skipped.
+- Jev answers placement in about 0.3 to 0.5 s; a missing key is exit 2 "Jev: no key configured" with nothing appended
+  (H4).
+- The owner's personal instructions reach any session under the owner's home through ancestor folders unless
+  `claudeMdExcludes` keeps them out; Claude Code keeps `CLAUDE_CODE_OAUTH_TOKEN` out of the worker's shell.
+
+Claude Code 2.1.316, supported and used: `-p`, `--session-id`, `--resume`, `--model`, `--effort`, `--permission-mode`
+(bypassPermissions, dontAsk), `--tools` (variadic: the prompt follows `--`), `--allowedTools`, `--settings` (JSON:
+`claudeMdExcludes`, `attribution`, `permissions.deny`), `--append-system-prompt-file` and `--append-system-prompt`,
+`--output-format stream-json`, `--verbose`, `--include-hook-events`, `--max-turns` (answer and converse; the trigger
+evals), `--no-session-persistence` (the trigger evals), and the environment `CLAUDE_CODE_OAUTH_TOKEN`,
+`CLAUDE_CONFIG_DIR`, `ENABLE_CLAUDEAI_MCP_SERVERS=false`, `CLAUDE_CODE_DISABLE_BACKGROUND_TASKS=1`. Present but not
+used: `--setting-sources` (it does not keep ancestor CLAUDE.md files out when project settings must load), `--bare` and
+`--safe-mode` (both drop the hooks the ledger needs), `--bg`, `--worktree`, `--system-prompt-snapshot`,
+`--permission-prompts`, `CLAUDE_CODE_SUBPROCESS_ENV_SCRUB` (needs bubblewrap and confines subprocesses). Not in the help
+text but accepted: `--append-system-prompt-file`, `--max-turns`. Behaviour to know: the interactive trust dialog
+defaults to "No, exit"; a settings file that fails validation is ignored silently in `-p` mode; transcripts end with
+metadata entries after the last message.
+
+Codex CLI 0.153.4, supported and used: `exec --json`, `-C`, `-m`, `-c key=value`,
+`--dangerously-bypass-approvals-and-sandbox`, `-` for the prompt on stdin, `exec resume <thread id> -` (with `--json`,
+`-m`, `-c`, the bypass flag), `login status`, `app-server` with `initialize`, `account/read` (`refreshToken: false`) and
+`account/rateLimits/read`. Present but not used: `-s/--sandbox` (brief 5.3 bypasses it), `--ephemeral`,
+`--output-schema`, `-o`, `--ignore-user-config`, `--skip-git-repo-check`. Not supported: `-C` on `exec resume`.
+
+Journeys (acceptance/RESULTS.md): H1 to H10 and H12 pass; H11 is blocked by section 10's limit of three improvement
+rounds per skill with 15 of 17 skills at or above the thresholds (H-030).

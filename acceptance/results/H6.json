@@ -2,102 +2,102 @@
   "id": "H6",
   "title": "The chain",
   "status": "passed",
-  "startedAt": "2026-11-02T00:55:53.752Z",
-  "finishedAt": "2026-11-02T00:58:35.117Z",
-  "elapsedMs": 161364,
+  "startedAt": "2026-11-02T02:44:48.746Z",
+  "finishedAt": "2026-11-02T02:47:43.586Z",
+  "elapsedMs": 174840,
   "passed": 13,
   "total": 13,
   "timings": {
-    "request to landing": 135245
+    "request to landing": 154784
   },
   "notes": [
-    "run 3 on a fresh clone of the sandbox baseline",
-    "coordinator session dceafdad-0807-42da-9e29-d338a1c58610",
+    "run 4 on a fresh clone of the sandbox baseline",
+    "coordinator session b07a50e3-e69d-4941-8c7a-5319ced25026",
     "the coordinator chose a single task, which has no workflow line",
     "Skill invocations: jevellan-coordinator, jevellan-ledger, jevellan-git, jevellan-router, jevellan-runtime-claude",
     "placements: s1 document claude-sonnet-5-5 medium via claude-second; s2 verify claude-sonnet-5-5 high via claude-second",
-    "landing: verify-then-land {\"land\":0.4,\"verify-then-land\":0.59,\"ask-owner\":0.01}",
-    "coordinator's last reply: TK57P15, \"README: add How to run section\", is now on local `main` as commit 5108374. The new section covers setup (Node 20 or newer, then `npm ci`) and has a table of all five `package.json` scripts. Each row shows the npm command, the underlying command and a one-line description. `CHANGELOG.md` has a matching entry. The verify step ran the unit tests (3 passed), `npm run lint` and both browser s",
-    "runs so far: 1:pass 2:pass 3:pass"
+    "landing: verify-then-land {\"land\":0.46,\"verify-then-land\":0.53,\"ask-owner\":0.01}",
+    "coordinator's last reply: The README change (THVA599) is now on your local main, a fast-forward to commit 07bc742. After `## Setup` there's a \"How to run\" table of all five `package.json` scripts. Each row shows the command to type, what it runs, the env it needs and a link to the existing section with the details. `CHANGELOG.md` has a matching line. The extra verify run passed: the unit tests ran 9 of 9 green, and the tab",
+    "runs so far: 1:pass 2:pass 3:pass 4:pass"
   ],
   "checks": [
     {
       "name": "the skills are installed in the project",
       "ok": true,
       "detail": "",
-      "at": "2026-11-02T00:55:53.980Z"
+      "at": "2026-11-02T02:44:48.991Z"
     },
     {
       "name": "the coordinator created one task for the request",
       "ok": true,
-      "detail": "TK57P15 (single document): README: add How to run section",
-      "at": "2026-11-02T00:58:35.100Z"
+      "detail": "THVA599 (single document): Add How to run section to README",
+      "at": "2026-11-02T02:47:43.569Z"
     },
     {
       "name": "task.worktree",
       "ok": true,
       "detail": "",
-      "at": "2026-11-02T00:58:35.101Z"
+      "at": "2026-11-02T02:47:43.569Z"
     },
     {
       "name": "every started step was placed first",
       "ok": true,
       "detail": "steps 1, 2",
-      "at": "2026-11-02T00:58:35.101Z"
+      "at": "2026-11-02T02:47:43.570Z"
     },
     {
       "name": "step.started carries model and effort",
       "ok": true,
       "detail": "",
-      "at": "2026-11-02T00:58:35.101Z"
+      "at": "2026-11-02T02:47:43.570Z"
     },
     {
       "name": "every started step has a report and a step.done",
       "ok": true,
       "detail": "",
-      "at": "2026-11-02T00:58:35.101Z"
+      "at": "2026-11-02T02:47:43.570Z"
     },
     {
       "name": "landing.decided",
       "ok": true,
       "detail": "",
-      "at": "2026-11-02T00:58:35.101Z"
+      "at": "2026-11-02T02:47:43.570Z"
     },
     {
       "name": "task.landed, or task.asked with a stated reason",
       "ok": true,
       "detail": "task.landed",
-      "at": "2026-11-02T00:58:35.101Z"
+      "at": "2026-11-02T02:47:43.570Z"
     },
     {
       "name": "no human input beyond the request",
       "ok": true,
       "detail": "one message was sent",
-      "at": "2026-11-02T00:58:35.101Z"
+      "at": "2026-11-02T02:47:43.570Z"
     },
     {
       "name": "zero slips",
       "ok": true,
       "detail": "",
-      "at": "2026-11-02T00:58:35.101Z"
+      "at": "2026-11-02T02:47:43.571Z"
     },
     {
       "name": "main has the How to run section",
       "ok": true,
       "detail": "",
-      "at": "2026-11-02T00:58:35.105Z"
+      "at": "2026-11-02T02:47:43.575Z"
     },
     {
       "name": "the project checkout is clean",
       "ok": true,
       "detail": "",
-      "at": "2026-11-02T00:58:35.115Z"
+      "at": "2026-11-02T02:47:43.584Z"
     },
     {
       "name": "passed three times in a row",
       "ok": true,
       "detail": "true,true,true",
-      "at": "2026-11-02T00:58:35.117Z"
+      "at": "2026-11-02T02:47:43.586Z"
     }
   ]
 }

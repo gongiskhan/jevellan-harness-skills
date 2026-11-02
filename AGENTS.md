@@ -30,8 +30,29 @@ deterministically, plain Node scripts next to it.
 - `docs/decisions.md` (append-only, H-numbers), `docs/findings.md` (verified tool behaviour), `docs/roles.md`
   (generated).
 
+## Shared code between skills
+
+A skill may not import another skill by name. Scripts reach a sibling skill through its role with
+`scripts/lib/roles.mjs` (`importFromRole('ledger', 'scripts/lib/ledger.mjs')`). Code two skills share is kept as
+identical copies: `roles.mjs` in every skill with scripts, and `common.mjs`, `task.mjs`, `prompt.mjs`, `proc.mjs` and
+`cli.mjs` in both runtime skills. `scripts/check-roles.mjs` refuses copies that differ, so change one and copy it.
+
+## Environment variables
+
+- Set by the runtimes for a worker and read by the hooks: `JH_TASK`, `JH_STEP`, `JH_DUTY`, `JH_PROJECT`, `JH_SESSION`,
+  `JH_CWD` (the step's worktree).
+- For tests and second installations: `JH_HARNESS_HOME` (instead of `~/.jevellan-harness`), `JH_CLAUDE_BIN` and
+  `JH_CODEX_BIN` (fake binaries), `JH_JEV_URL` and `JH_ANTHROPIC_URL` (fake servers, loopback addresses only),
+  `JH_TEST_TMPDIR` (where the suites make their temporary folders).
+
 ## Testing
 
-`npm test` runs every unit suite and the role lint. Acceptance journeys run with
-`node acceptance/<journey>.mjs` against `~/jevellan-projects/jevellan-harness-sandbox` and need the provider seeds in
-`~/.jevellan-harness/`.
+- `npm test` runs every unit suite and the role lint; run it with Node 22 first on PATH.
+- `node scripts/run-trigger-evals.mjs [--skill <name>]... [--runs N]` runs the trigger evals through real `claude -p`
+  sessions on a provider token and writes `evals/RESULTS.md` (it costs money: about 12 USD per full run of one run per
+  case). A change to a description or a calling body is recorded in that skill's `CHANGELOG.md`.
+- The acceptance journeys run with `node acceptance/<journey>.mjs` against `~/jevellan-projects/jevellan-harness-sandbox`
+  (or a fresh baseline clone, `acceptance/clone-sandbox.mjs`) and need the provider seeds in `~/.jevellan-harness/`.
+  Each writes `acceptance/results/<id>.json` and regenerates `acceptance/RESULTS.md`. The coordinator journeys drive an
+  interactive session in the tmux session `jh-coord` (`acceptance/coord.mjs`) and count slips from its transcript;
+  `acceptance/recheck-slips.mjs` re-runs that analysis on saved transcripts, recording why.

@@ -2,103 +2,103 @@
   "id": "H3",
   "title": "Hooks",
   "status": "passed",
-  "startedAt": "2026-11-01T23:46:44.103Z",
-  "finishedAt": "2026-11-01T23:47:07.319Z",
-  "elapsedMs": 23216,
+  "startedAt": "2026-11-02T02:38:52.229Z",
+  "finishedAt": "2026-11-02T02:39:17.275Z",
+  "elapsedMs": 25046,
   "passed": 14,
   "total": 14,
   "timings": {
-    "worker without a report": 5318,
-    "worker with a valid report": 5177,
-    "worker with an invalid report": 9721
+    "worker without a report": 5845,
+    "worker with a valid report": 5888,
+    "worker with an invalid report": 10059
   },
   "notes": [
-    "H3 worktrees: h3-TXEKJC8, h3-TH4461C, h3-T1VHKWM under /home/ggomes/.jevellan-harness/worktrees/jevellan-harness-sandbox"
+    "H3 worktrees: h3-TT58VVM, h3-TFQHD03, h3-TZA4VXW under /home/ggomes/.jevellan-harness/worktrees/jevellan-harness-sandbox"
   ],
   "checks": [
     {
       "name": "the worker without a report was blocked twice",
       "ok": true,
       "detail": "2 blocks logged, 3 Stop calls",
-      "at": "2026-11-01T23:46:49.507Z"
+      "at": "2026-11-02T02:38:58.180Z"
     },
     {
       "name": "then recorded blocked, synthesized",
       "ok": true,
       "detail": "{\"status\":\"blocked\",\"summary\":\"No report was written.\",\"synthesized\":true}",
-      "at": "2026-11-01T23:46:49.507Z"
+      "at": "2026-11-02T02:38:58.181Z"
     },
     {
       "name": "SessionStart printed the task ledger to the worker",
       "ok": true,
-      "detail": "Ledger for task TXEKJC8, step 1: | #2 23:46:44 task.created TXEKJC8 single investigate: end without a report",
-      "at": "2026-11-01T23:46:49.507Z"
+      "detail": "Ledger for task TT58VVM, step 1: | #250 02:38:52 task.created TT58VVM single investigate: end without a report",
+      "at": "2026-11-02T02:38:58.181Z"
     },
     {
       "name": "the valid report is in the ledger as step.report",
       "ok": true,
-      "detail": "{\"status\":\"done\",\"summary\":\"H3 valid report test: nothing changed.\",\"changedFiles\":[],\"reportFile\":\"/home/ggomes/jevellan-projects/jevellan-harness-sandbox/.jevellan/reports/TH4461C-s1-20261101T234654074Z.json\"}",
-      "at": "2026-11-01T23:46:54.763Z"
+      "detail": "{\"status\":\"done\",\"summary\":\"H3 valid report test: nothing changed.\",\"changedFiles\":[],\"reportFile\":\"/home/ggomes/jevellan-projects/jevellan-harness-sandbox/.jevellan/reports/TFQHD03-s1-20261102T023903287Z.json\"}",
+      "at": "2026-11-02T02:39:04.154Z"
     },
     {
       "name": "the report file was archived under the project reports folder",
       "ok": true,
-      "detail": "/home/ggomes/jevellan-projects/jevellan-harness-sandbox/.jevellan/reports/TH4461C-s1-20261101T234654074Z.json",
-      "at": "2026-11-01T23:46:54.763Z"
+      "detail": "/home/ggomes/jevellan-projects/jevellan-harness-sandbox/.jevellan/reports/TFQHD03-s1-20261102T023903287Z.json",
+      "at": "2026-11-02T02:39:04.154Z"
     },
     {
       "name": "the worktree no longer has report.json",
       "ok": true,
       "detail": "",
-      "at": "2026-11-01T23:46:54.763Z"
+      "at": "2026-11-02T02:39:04.154Z"
     },
     {
       "name": "PostToolUse recorded the Write with the file path",
       "ok": true,
-      "detail": "[{\"tool\":\"Write\",\"summary\":\"/home/ggomes/.jevellan-harness/worktrees/jevellan-harness-sandbox/h3-TH4461C/.jevellan/report.json\"}]",
-      "at": "2026-11-01T23:46:54.763Z"
+      "detail": "[{\"tool\":\"Write\",\"summary\":\"/home/ggomes/.jevellan-harness/worktrees/jevellan-harness-sandbox/h3-TFQHD03/.jevellan/report.json\"}]",
+      "at": "2026-11-02T02:39:04.155Z"
     },
     {
       "name": "PostToolUse lines carry no file contents",
       "ok": true,
       "detail": "",
-      "at": "2026-11-01T23:46:54.764Z"
+      "at": "2026-11-02T02:39:04.157Z"
     },
     {
       "name": "the invalid report was blocked with the first problem",
       "ok": true,
-      "detail": "2026-11-01T23:47:00.015Z stop T1VHKWM s1: invalid report, blocked: report.json: options must have 2 to 4 items",
-      "at": "2026-11-01T23:47:04.562Z"
+      "detail": "2026-11-02T02:39:10.146Z stop TZA4VXW s1: invalid report, blocked: report.json: options must have 2 to 4 items",
+      "at": "2026-11-02T02:39:14.299Z"
     },
     {
       "name": "the corrected report was then recorded",
       "ok": true,
-      "detail": "{\"status\":\"needs-decision\",\"summary\":\"H3 invalid report test.\",\"question\":\"Blue or Green?\",\"options\":[{\"label\":\"Blue\"},{\"label\":\"Green\"}],\"reportFile\":\"/home/ggomes/jevellan-projects/jevellan-harness-sandbox/.jevellan/reports/T1VHKWM-s1-20261101T234704109Z.json\"}",
-      "at": "2026-11-01T23:47:04.562Z"
+      "detail": "{\"status\":\"needs-decision\",\"summary\":\"H3 invalid report test.\",\"question\":\"Blue or Green?\",\"options\":[{\"label\":\"Blue\"},{\"label\":\"Green\"}],\"reportFile\":\"/home/ggomes/jevellan-projects/jevellan-harness-sandbox/.jevellan/reports/TZA4VXW-s1-20261102T023913804Z.json\"}",
+      "at": "2026-11-02T02:39:14.301Z"
     },
     {
       "name": "SessionStart printed the open work to a coordinator session",
       "ok": true,
-      "detail": "This project's work runs through the coordinator skill: use it for any request to do, plan, track or report on work here. | Open work in this project's ledger: | TXEKJC8 waiting-owner: end without a report - step 1 investigate on claude-sonnet-5-5 low via claude-second (next: answer the step or ask ",
-      "at": "2026-11-01T23:47:07.207Z"
+      "detail": "This project's work runs through the coordinator skill: use it for any request to do, plan, track or report on work here. | Open work in this project's ledger: | TT58VVM waiting-owner: end without a report - step 1 investigate on claude-sonnet-5-5 low via claude-second (next: answer the step or ask ",
+      "at": "2026-11-02T02:39:17.153Z"
     },
     {
       "name": "the sandbox ledger verifies",
       "ok": true,
-      "detail": "{\n  \"ok\": true,\n  \"lines\": 23,\n  \"issues\": []\n}",
-      "at": "2026-11-01T23:47:07.259Z"
+      "detail": "{\n  \"ok\": true,\n  \"lines\": 271,\n  \"issues\": []\n}",
+      "at": "2026-11-02T02:39:17.213Z"
     },
     {
       "name": "no H3 task is left open",
       "ok": true,
       "detail": "",
-      "at": "2026-11-01T23:47:07.314Z"
+      "at": "2026-11-02T02:39:17.271Z"
     },
     {
       "name": "the sandbox checkout stays clean",
       "ok": true,
       "detail": "",
-      "at": "2026-11-01T23:47:07.318Z"
+      "at": "2026-11-02T02:39:17.275Z"
     }
   ]
 }

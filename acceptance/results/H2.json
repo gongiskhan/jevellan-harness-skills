@@ -2,14 +2,14 @@
   "id": "H2",
   "title": "Ledger",
   "status": "passed",
-  "startedAt": "2026-11-01T23:45:56.136Z",
-  "finishedAt": "2026-11-01T23:46:02.475Z",
-  "elapsedMs": 6338,
+  "startedAt": "2026-11-02T02:38:45.057Z",
+  "finishedAt": "2026-11-02T02:38:52.182Z",
+  "elapsedMs": 7124,
   "passed": 24,
   "total": 24,
   "timings": {
-    "10 x 50 appends through ledger.mjs": 4343,
-    "wait after the report line": 253
+    "10 x 50 appends through ledger.mjs": 5086,
+    "wait after the report line": 256
   },
   "notes": [],
   "checks": [
@@ -17,145 +17,145 @@
       "name": "skills installed on the clone",
       "ok": true,
       "detail": "",
-      "at": "2026-11-01T23:45:56.255Z"
+      "at": "2026-11-02T02:38:45.209Z"
     },
     {
       "name": "every writer exited 0",
       "ok": true,
       "detail": "0,0,0,0,0,0,0,0,0,0",
-      "at": "2026-11-01T23:46:00.599Z"
+      "at": "2026-11-02T02:38:50.296Z"
     },
     {
       "name": "verify passes on 500 lines",
       "ok": true,
       "detail": "{\n  \"ok\": true,\n  \"lines\": 500,\n  \"issues\": []\n}",
-      "at": "2026-11-01T23:46:00.650Z"
+      "at": "2026-11-02T02:38:50.353Z"
     },
     {
       "name": "seq runs 1 to 500 without a gap",
       "ok": true,
       "detail": "",
-      "at": "2026-11-01T23:46:00.651Z"
+      "at": "2026-11-02T02:38:50.354Z"
     },
     {
       "name": "each writer's lines are in its own order",
       "ok": true,
       "detail": "",
-      "at": "2026-11-01T23:46:00.653Z"
+      "at": "2026-11-02T02:38:50.355Z"
     },
     {
       "name": "status: TH20001 is stopped",
       "ok": true,
       "detail": "got stopped",
-      "at": "2026-11-01T23:46:00.786Z"
+      "at": "2026-11-02T02:38:50.489Z"
     },
     {
       "name": "status: TH20002 is done",
       "ok": true,
       "detail": "got done",
-      "at": "2026-11-01T23:46:00.786Z"
+      "at": "2026-11-02T02:38:50.489Z"
     },
     {
       "name": "status: TH20003 is done",
       "ok": true,
       "detail": "got done",
-      "at": "2026-11-01T23:46:00.787Z"
+      "at": "2026-11-02T02:38:50.489Z"
     },
     {
       "name": "status: TH20004 is queued",
       "ok": true,
       "detail": "got queued",
-      "at": "2026-11-01T23:46:00.787Z"
+      "at": "2026-11-02T02:38:50.489Z"
     },
     {
       "name": "status: TH20005 is waiting-owner",
       "ok": true,
       "detail": "got waiting-owner",
-      "at": "2026-11-01T23:46:00.787Z"
+      "at": "2026-11-02T02:38:50.490Z"
     },
     {
       "name": "status: TH20006 is waiting-owner",
       "ok": true,
       "detail": "got waiting-owner",
-      "at": "2026-11-01T23:46:00.787Z"
+      "at": "2026-11-02T02:38:50.490Z"
     },
     {
       "name": "status: TH20007 is waiting-owner",
       "ok": true,
       "detail": "got waiting-owner",
-      "at": "2026-11-01T23:46:00.787Z"
+      "at": "2026-11-02T02:38:50.490Z"
     },
     {
       "name": "status: TH20008 is landing",
       "ok": true,
       "detail": "got landing",
-      "at": "2026-11-01T23:46:00.787Z"
+      "at": "2026-11-02T02:38:50.490Z"
     },
     {
       "name": "status: TH20009 is failed",
       "ok": true,
       "detail": "got failed",
-      "at": "2026-11-01T23:46:00.787Z"
+      "at": "2026-11-02T02:38:50.490Z"
     },
     {
       "name": "status: TH20010 is failed",
       "ok": true,
       "detail": "got failed",
-      "at": "2026-11-01T23:46:00.787Z"
+      "at": "2026-11-02T02:38:50.490Z"
     },
     {
       "name": "status: TH20011 is running",
       "ok": true,
       "detail": "got running",
-      "at": "2026-11-01T23:46:00.787Z"
+      "at": "2026-11-02T02:38:50.490Z"
     },
     {
       "name": "status: TH20012 is failed",
       "ok": true,
       "detail": "got failed",
-      "at": "2026-11-01T23:46:00.787Z"
+      "at": "2026-11-02T02:38:50.490Z"
     },
     {
       "name": "status: TH20013 is queued",
       "ok": true,
       "detail": "got queued",
-      "at": "2026-11-01T23:46:00.787Z"
+      "at": "2026-11-02T02:38:50.490Z"
     },
     {
       "name": "status: TH20014 is queued",
       "ok": true,
       "detail": "got queued",
-      "at": "2026-11-01T23:46:00.787Z"
+      "at": "2026-11-02T02:38:50.490Z"
     },
     {
       "name": "status marked the dead pid's step lost",
       "ok": true,
       "detail": "",
-      "at": "2026-11-01T23:46:00.787Z"
+      "at": "2026-11-02T02:38:50.490Z"
     },
     {
       "name": "status --brief prints at most five lines",
       "ok": true,
       "detail": "5 lines",
-      "at": "2026-11-01T23:46:00.852Z"
+      "at": "2026-11-02T02:38:50.556Z"
     },
     {
       "name": "waiting-owner tasks come first",
       "ok": true,
       "detail": "Waiting on the owner:",
-      "at": "2026-11-01T23:46:00.915Z"
+      "at": "2026-11-02T02:38:50.621Z"
     },
     {
       "name": "wait returns within 600 ms of the report line with exit 0",
       "ok": true,
-      "detail": "253 ms, exit 0",
-      "at": "2026-11-01T23:46:02.475Z"
+      "detail": "256 ms, exit 0",
+      "at": "2026-11-02T02:38:52.182Z"
     },
     {
       "name": "wait prints the report",
       "ok": true,
       "detail": "",
-      "at": "2026-11-01T23:46:02.475Z"
+      "at": "2026-11-02T02:38:52.182Z"
     }
   ]
 }

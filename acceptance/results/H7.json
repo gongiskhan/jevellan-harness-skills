@@ -4,7 +4,7 @@
   "status": "passed",
   "startedAt": "2026-11-02T01:10:59.358Z",
   "finishedAt": "2026-11-02T01:10:59.474Z",
-  "elapsedMs": 116,
+  "elapsedMs": 672000,
   "passed": 10,
   "total": 10,
   "timings": {
@@ -22,7 +22,8 @@
     "landing of T67AEHV: land {\"land\":0.98,\"verify-then-land\":0.01,\"ask-owner\":0.01}",
     "landing of TJTX078: land {\"land\":0.98,\"verify-then-land\":0.02,\"ask-owner\":0}",
     "landing of TKZD411: land {\"land\":0.98,\"verify-then-land\":0.02,\"ask-owner\":0}",
-    "coordinator's last reply: All three tasks are landed on main: - **README: how to run (T67AEHV)** - `aa08466`. Setup, run and test commands now work when copy-pasted, including the required `SANDBOX_DATA_DIR`, `TZ=UTC` for unit tests, and the Playwright browser install. - **Unit test for the HTML escape helper (TJTX078)** - `5e757bd`. `escape` moved unchanged into `src/web/html.ts`, with 4 tests in `src/web/html.test.ts`. - **Customers page: empty-state message (TKZD411)** - `b3bba11`. The table keeps its headers and show"
+    "coordinator's last reply: All three tasks are landed on main: - **README: how to run (T67AEHV)** - `aa08466`. Setup, run and test commands now work when copy-pasted, including the required `SANDBOX_DATA_DIR`, `TZ=UTC` for unit tests, and the Playwright browser install. - **Unit test for the HTML escape helper (TJTX078)** - `5e757bd`. `escape` moved unchanged into `src/web/html.ts`, with 4 tests in `src/web/html.test.ts`. - **Customers page: empty-state message (TKZD411)** - `b3bba11`. The table keeps its headers and show",
+    "elapsed: the run itself took 672 s (acceptance/out/h7.log, started 00:58:48Z); the re-check that rewrote this record took under a second"
   ],
   "checks": [
     {
