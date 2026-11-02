@@ -1,0 +1,41 @@
+       4                                                                                                                                                      
+       5 -Run `npm ci` for setup, `npm test` for unit tests, `npm run lint` for type checks, and `npm start` for the web pages. Work in the assigned work       
+         -tree and publish a pull request.                                                                                                                    
+       5 +Work in the assigned worktree and publish a pull request.                                                                                             
+       6 +                                                                                                                                                    
+       7 +## How to run                                                                                                                                         
+       8 +                                                                                                                                                    
+       9 +Requires Node >= 20.                                                                                                                                  
+      10 +                                                                                                                                                    
+      11 +1. `npm ci` - install the exact dependencies from the lockfile (setup, run this first).                                                        
+      12 +2. `npm start` - start the web server (`tsx src/web/server.ts`) that serves the invoice and customer pages.                                    
+      13 +3. `npm test` - run the unit tests once with Vitest (`vitest run`).                                                                                   
+      14 +4. `npm run test:browser` - run the Playwright browser specs in `tests/browser`; it starts the app with `npm start` on http://127.0.0.1:4173 pe       
+         +r `playwright.config.ts`.                                                                                                                             
+      15 +5. `npm run lint` - type-check the project with `tsc --noEmit` (no files are emitted).                                                                
+      16 +6. `npm run check:changelog` - fail if `CHANGELOG.md` is not changed in `origin/main...HEAD`, so every change needs a changelog entry.              
+  ⎿  (files that changed while this command ran, by the command or by another process; a convenience view, not a review or audit of the command)                
+                                                                                                                                                              
+  Thought for 7s                                                                                                                                         
+                                                                                                                                                              
+● I added the "How to run" section to the README, and the change is now on main (task TS7VJZF, commit fddf12c). The section says Node 20 or newer is required,
+  then lists npm ci for setup followed by every script in package.json (npm start, npm test, npm run test:browser, npm run lint and npm run check:changelog), 
+  each with a one-line description. CHANGELOG.md has a matching entry. Nothing else changed.                                                                    
+                                                                                                                                                              
+  Before landing, a verify step ran the unit tests, the two Playwright browser specs and npm run lint, and all of them passed.                               
+                                                                                                                                                              
+  npm run check:changelog didn't work, though, and that problem was already there. The script compares the branch against origin/main, but this repo has no     
+  origin remote, so it fails on every branch whether or not the changelog changed. The verify step checked by hand against local main instead. Because of the 
+  missing remote, nothing was pushed either, so no pull request was opened even though AGENTS.md asks for one.                                               
+                                                                                                                                                              
+  Should I open a bug task to make check:changelog work without an origin remote, for example by falling back to local main?                             
+                                                                                                                                                                
+  1. TS7VJZF follow-up, check:changelog fix: "Yes, open the bug task" or "Leave it".                                                                      
+
+✻ Worked for 16s · done 12:47 AM                                                           
+                                                                                                                                                              
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯                                                                             
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  jevellan-harness-sandbox | main | 7% | Opus 5.5@xhigh | 0 files
+  ⏵⏵ bypass permissions on (shift+tab to cycle) · ← 1 agent   

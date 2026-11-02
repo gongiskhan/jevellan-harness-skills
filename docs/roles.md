@@ -8,6 +8,7 @@ edit it by hand: change the skill, run the command again and commit the result. 
 
 | Skill | Role | Covers | Description |
 | --- | --- | --- | --- |
+| jevellan-coordinator | coordinator | - | Coordinator. Use when the owner asks this session to run, plan, track or report on work for this project as a whole: it turns requests into tasks, runs them step by step through the other skills, and keeps the owner informed. Not for doing the work yourself. |
 | jevellan-duty-answer | duty | duty: answer; needs: none | Duty answer. Use when this session is running a task step whose duty is answer. Answers from general knowledge, with no repository access. End by writing the report file. |
 | jevellan-duty-automate | duty | duty: automate; needs: repo-write, shell, browser | Duty automate. Use when this session is running a task step whose duty is automate. Builds Playwright automations with a dry-run flag and evidence. End by writing the report file. |
 | jevellan-duty-converse | duty | duty: converse; needs: none | Duty converse. Use when this session is running a task step whose duty is converse. Holds one conversation turn in the coordinator's voice. End by writing the report file. |
@@ -20,15 +21,16 @@ edit it by hand: change the skill, run the command again and commit the result. 
 | jevellan-ledger | ledger | - | Ledger. Use when a session must create a task, record or read what happened to a task, wait for a step's report, or show status. The ledger is the only durable state; its hooks record sessions automatically. |
 | jevellan-router | placement | - | Placement. Use when a session must decide which model, effort and provider a task step should run on, or must answer a workflow question about a task. Runs a script that asks Jev; never choose yourself. |
 | jevellan-runtime-claude | runtime | provider kinds: claude-subscription, claude-endpoint | Runtime for Claude providers (kinds claude-subscription and claude-endpoint). Use when a session must start, resume, stop or check a task step on a Claude provider chosen by placement. |
+| jevellan-runtime-codex | runtime | provider kinds: codex-subscription | Runtime for Codex providers (kind codex-subscription). Use when a session must start, resume, stop or check a task step on a Codex provider chosen by placement. |
 | jevellan-workflow-automation | workflow | task kind: automation | Workflow automation. Use when the coordinator is about to run a task of kind automation: it gives the ordered steps, their duties and instructions, and the retry rule. |
 | jevellan-workflow-bug | workflow | task kind: bug | Workflow bug. Use when the coordinator is about to run a task of kind bug: it gives the ordered steps, their duties and instructions, and the retry rule. |
 | jevellan-workflow-feature | workflow | task kind: feature | Workflow feature. Use when the coordinator is about to run a task of kind feature: it gives the ordered steps, their duties and instructions, and the retry rule. |
 
 ## Roles
 
-- coordinator: no skill installed
+- coordinator: `jevellan-coordinator`
 - placement: `jevellan-router`
-- runtime: `jevellan-runtime-claude`
+- runtime: `jevellan-runtime-claude`, `jevellan-runtime-codex`
 - ledger: `jevellan-ledger`
 - git: `jevellan-git`
 - duty: `jevellan-duty-answer`, `jevellan-duty-automate`, `jevellan-duty-converse`, `jevellan-duty-document`, `jevellan-duty-implement`, `jevellan-duty-investigate`, `jevellan-duty-plan`, `jevellan-duty-verify`
@@ -36,6 +38,7 @@ edit it by hand: change the skill, run the command again and commit the result. 
 
 ## Role phrases each body uses
 
+- `jevellan-coordinator`: "the placement skill", "the ledger skill", "the git skill", "the runtime skill for", "the workflow skill for"
 - `jevellan-duty-answer`: none
 - `jevellan-duty-automate`: none
 - `jevellan-duty-converse`: none
@@ -48,6 +51,7 @@ edit it by hand: change the skill, run the command again and commit the result. 
 - `jevellan-ledger`: none
 - `jevellan-router`: "the ledger skill"
 - `jevellan-runtime-claude`: "the ledger skill"
+- `jevellan-runtime-codex`: "the ledger skill"
 - `jevellan-workflow-automation`: "the placement skill", "the ledger skill", "the git skill", "the runtime skill for"
 - `jevellan-workflow-bug`: "the placement skill", "the ledger skill", "the git skill", "the runtime skill for"
 - `jevellan-workflow-feature`: "the placement skill", "the ledger skill", "the git skill", "the runtime skill for"

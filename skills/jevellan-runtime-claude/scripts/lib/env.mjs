@@ -16,112 +16,16 @@
 // into a log or into a file.
 
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
-import { execFileSync } from 'node:child_process';
+import { RuntimeError, baseWorkerEnv, harnessHome, ownerHome, readSecret } from './common.mjs';
 
-export const BASE_KEYS = ['PATH', 'HOME', 'USER', 'LANG', 'TERM', 'SHELL', 'TMPDIR'];
+export * from './common.mjs';
 export const CLAUDE_KINDS = ['claude-subscription', 'claude-endpoint'];
-
-export class RuntimeError extends Error {
-  constructor(message, exitCode = 2) {
-    super(message);
-    this.exitCode = exitCode;
-  }
-}
-
-export function ownerHome() {
-  try {
-    const home = os.userInfo().homedir;
-    if (home) return home;
-  } catch {}
-  return os.homedir();
-}
-
-export function harnessHome() {
-  return process.env.JH_HARNESS_HOME || path.join(ownerHome(), '.jevellan-harness');
-}
-
-export function expandHome(value) {
-  if (typeof value !== 'string') return value;
-  if (value === '~') return ownerHome();
-  if (value.startsWith('~/')) return path.join(ownerHome(), value.slice(2));
-  return value;
-}
-
-export function providersFile() {
-  return path.join(harnessHome(), 'providers.json');
-}
-
-export function loadProvidersFile(file = providersFile()) {
-  let raw;
-  try {
-    raw = JSON.parse(fs.readFileSync(file, 'utf8'));
-  } catch (error) {
-    throw new RuntimeError(`cannot read ${file}: ${error.code ?? error.message}`);
-  }
-  if (!raw || !Array.isArray(raw.providers)) throw new RuntimeError(`${file} has no providers list`);
-  return raw;
-}
-
-// The provider entry with its models resolved ("same as <other>" lists the other provider's models).
-export function findProvider(name, config = loadProvidersFile()) {
-  const provider = config.providers.find((p) => p.name === name);
-  if (!provider) throw new RuntimeError(`no provider "${name}" in providers.json`, 3);
-  let models = provider.models;
-  const same = typeof models === 'string' ? /^same as (\S+)$/.exec(models) : null;
-  if (same) models = config.providers.find((p) => p.name === same[1])?.models;
-  return { ...provider, models: Array.isArray(models) ? models : [] };
-}
-
-export function readSecret(file) {
-  if (!file) return undefined;
-  try {
-    const value = fs.readFileSync(expandHome(file), 'utf8').trim();
-    return value || undefined;
-  } catch {
-    return undefined;
-  }
-}
-
-let cachedIdentity = null;
-export function machineGitIdentity() {
-  if (cachedIdentity) return cachedIdentity;
-  const read = (key) => {
-    try {
-      const value = execFileSync('git', ['config', '--global', '--get', key], {
-        cwd: '/',
-        encoding: 'utf8',
-        stdio: ['ignore', 'pipe', 'ignore'],
-        env: { PATH: process.env.PATH ?? '/usr/bin:/bin', HOME: ownerHome() },
-      }).trim();
-      return value || undefined;
-    } catch {
-      return undefined;
-    }
-  };
-  cachedIdentity = { name: read('user.name'), email: read('user.email') };
-  return cachedIdentity;
-}
-
-// The Node binary the hooks and scripts are written for: this process's when it is 22 or later.
-export function nodeBinary() {
-  const major = Number(process.versions.node.split('.')[0]);
-  if (major >= 22) return process.execPath;
-  const known = path.join(ownerHome(), '.nvm/versions/node/v22.23.2/bin/node');
-  return fs.existsSync(known) ? known : process.execPath;
-}
 
 export function claudeConfigDir() {
   const dir = path.join(harnessHome(), 'claude-config');
   fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
   return dir;
-}
-
-function joinPath(first, rest) {
-  const out = [];
-  for (const p of [...first, ...String(rest ?? '').split(path.delimiter)]) if (p && !out.includes(p)) out.push(p);
-  return out.join(path.delimiter);
 }
 
 // The provider's login variables. Refuses when the provider cannot run a Claude session here.
@@ -152,28 +56,11 @@ export function providerLogin(provider) {
 }
 
 export function workerEnv({ provider, task, step, duty, project, session, base = process.env }) {
-  const env = {};
-  for (const key of BASE_KEYS) if (base[key]) env[key] = base[key];
-  env.HOME = env.HOME || ownerHome();
-  env.LANG = env.LANG || 'C.UTF-8';
-  env.TERM = env.TERM || 'dumb';
-  env.TMPDIR = env.TMPDIR || '/tmp';
-  env.PATH = joinPath([path.dirname(nodeBinary())], base.PATH ?? '/usr/local/bin:/usr/bin:/bin');
+  const env = baseWorkerEnv({ task, step, duty, project, session, base });
   Object.assign(env, providerLogin(provider));
   env.CLAUDE_CONFIG_DIR = claudeConfigDir();
   env.ENABLE_CLAUDEAI_MCP_SERVERS = 'false';
   env.CLAUDE_CODE_DISABLE_BACKGROUND_TASKS = '1';
-  const identity = machineGitIdentity();
-  if (identity.name) env.GIT_AUTHOR_NAME = env.GIT_COMMITTER_NAME = identity.name;
-  if (identity.email) env.GIT_AUTHOR_EMAIL = env.GIT_COMMITTER_EMAIL = identity.email;
-  const browsers = path.join(ownerHome(), '.cache', 'ms-playwright');
-  if (fs.existsSync(browsers)) env.PLAYWRIGHT_BROWSERS_PATH = browsers;
-  if (process.env.JH_HARNESS_HOME) env.JH_HARNESS_HOME = process.env.JH_HARNESS_HOME;
-  env.JH_TASK = task;
-  env.JH_STEP = String(step);
-  env.JH_DUTY = duty;
-  env.JH_PROJECT = project;
-  env.JH_SESSION = session;
   return env;
 }
 

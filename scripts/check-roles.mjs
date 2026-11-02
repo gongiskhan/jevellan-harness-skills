@@ -624,6 +624,43 @@ export function renderRolesDoc(skills) {
   return out.join('\n');
 }
 
+// ---- shared library copies -----------------------------------------------------------------------------------------
+
+// Files every skill that has them carries as identical copies, because a skill may not import another skill by name.
+export const SHARED_LIBS = ['roles.mjs', 'common.mjs', 'task.mjs', 'prompt.mjs', 'proc.mjs', 'cli.mjs'];
+
+export function lintSharedLibs(root) {
+  const problems = [];
+  const skillsDir = path.join(root, 'skills');
+  let folders = [];
+  try {
+    folders = fs.readdirSync(skillsDir).sort();
+  } catch {
+    return problems;
+  }
+  for (const name of SHARED_LIBS) {
+    const copies = folders
+      .map((folder) => path.join(skillsDir, folder, 'scripts', 'lib', name))
+      .filter((file) => fs.existsSync(file))
+      .map((file) => ({ file: path.relative(root, file), text: fs.readFileSync(file, 'utf8') }));
+    // roles.mjs and cli.mjs exist under the same name in skills that keep their own (the ledger's cli.mjs); only
+    // copies whose first line matches the first copy's are compared.
+    const groups = new Map();
+    for (const copy of copies) {
+      const key = copy.text.split('\n')[0];
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key).push(copy);
+    }
+    for (const group of groups.values()) {
+      const first = group[0];
+      for (const other of group.slice(1)) {
+        if (other.text !== first.text) problems.push(`${other.file}: differs from ${first.file}; shared library copies must be identical`);
+      }
+    }
+  }
+  return problems;
+}
+
 // ---- the command ---------------------------------------------------------------------------------------------------
 
 export async function checkRoles(root, { mode = 'lint' } = {}) {
@@ -636,6 +673,7 @@ export async function checkRoles(root, { mode = 'lint' } = {}) {
     }
     : null;
   problems.push(...lintSkills(skills, vocab));
+  problems.push(...lintSharedLibs(root));
   if (ledger.problem) problems.push(ledger.problem);
   else problems.push(...lintKinds(root, ledger.module.KINDS).problems);
   const doc = renderRolesDoc(skills);

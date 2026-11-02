@@ -37,7 +37,9 @@ export async function driveTask(project, task, { journey, log = console.log, max
     const p = placed.json;
     placements.push({ step: step.ordinal, duty: step.duty, model: p.model, effort: p.effort, provider: p.provider, p: p.probabilities?.model?.[p.model] });
     log(`step ${step.ordinal} ${step.duty}: ${p.model} ${p.effort} via ${p.provider}`);
-    const started = run('jevellan-runtime-claude', 'scripts/start.mjs', ['--task', task, '--step', String(step.ordinal), '--duty', step.duty, '--cwd', cwd, '--provider', p.provider, '--model', p.model, '--effort', p.effort, '--json']);
+    const runtime = p.kind === 'codex-subscription' ? 'jevellan-runtime-codex' : 'jevellan-runtime-claude';
+    step.runtime = runtime;
+    const started = run(runtime, 'scripts/start.mjs', ['--task', task, '--step', String(step.ordinal), '--duty', step.duty, '--cwd', cwd, '--provider', p.provider, '--model', p.model, '--effort', p.effort, '--json']);
     if (started.status !== 0) throw new Error(`start of step ${step.ordinal}: ${started.stderr}`);
     for (let turn = 0; ; turn += 1) {
       const waited = ledgerCli(project, ['wait', '--task', task, '--step', String(step.ordinal), '--timeout', String(timeoutS), '--json'], { timeoutMs: (timeoutS + 60) * 1000 });
@@ -50,11 +52,11 @@ export async function driveTask(project, task, { journey, log = console.log, max
         return { ok: false, why: done.stderr.trim(), report: r };
       }
       if (r.status === 'progress' && turn < maxContinues) {
-        run('jevellan-runtime-claude', 'scripts/resume.mjs', ['--task', task, '--step', String(step.ordinal), '--message', 'Continue.', '--json']);
+        run(step.runtime, 'scripts/resume.mjs', ['--task', task, '--step', String(step.ordinal), '--message', 'Continue.', '--json']);
         continue;
       }
       if (r.status === 'needs-decision' && r.options?.length && turn < maxContinues) {
-        run('jevellan-runtime-claude', 'scripts/resume.mjs', ['--task', task, '--step', String(step.ordinal), '--message', r.options[0].label, '--json']);
+        run(step.runtime, 'scripts/resume.mjs', ['--task', task, '--step', String(step.ordinal), '--message', r.options[0].label, '--json']);
         continue;
       }
       return { ok: false, why: `report ${r.status}`, report: r };
@@ -64,6 +66,8 @@ export async function driveTask(project, task, { journey, log = console.log, max
     const result = await runStep(step);
     if (!result.ok) return { landed: false, why: `step ${step.ordinal} ${step.duty}: ${result.why}`, placements, cwd };
   }
+  // A single read-only step has nothing to land: the projection counts it done once its step is done.
+  if (kind === 'single' && ['investigate', 'answer', 'converse', 'plan'].includes(created.data.duty)) return { landed: false, done: true, placements, cwd };
   for (let round = 0; round < 3; round += 1) {
     const land = run('jevellan-git', 'scripts/land.mjs', ['--task', task, '--json'], { timeoutMs: 1_800_000 });
     log(`land: exit ${land.status} ${land.stdout.replace(/\s+/g, ' ').slice(0, 200)} ${land.stderr.trim().slice(0, 200)}`);

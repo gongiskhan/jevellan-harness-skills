@@ -10,6 +10,7 @@ Times are UTC.
 | H3 Hooks | passed | 14/14 | 23 s | 2026-11-01T23:47:07.319Z |
 | H4 Placement | passed | 17/17 | 1 s | 2026-11-02T00:30:00.468Z |
 | H5 Worker | passed | 26/26 | 133 s | 2026-11-02T00:33:46.807Z |
+| H6 The chain | passed | 13/13 | 161 s | 2026-11-02T00:58:35.117Z |
 
 ## H1 Install
 
@@ -161,3 +162,33 @@ Timings: placement 443 ms; start to report 86664 ms; resume to report 35143 ms; 
 
 Notes:
 - placement: claude-opus-5-5 max via claude-second (claude-subscription)
+
+## H6 The chain
+
+Status: passed. Started 2026-11-02T00:55:53.752Z, 161 s.
+
+Timings: request to landing 135245 ms.
+
+- PASS the skills are installed in the project
+- PASS the coordinator created one task for the request: TK57P15 (single document): README: add How to run section
+- PASS task.worktree
+- PASS every started step was placed first: steps 1, 2
+- PASS step.started carries model and effort
+- PASS every started step has a report and a step.done
+- PASS landing.decided
+- PASS task.landed, or task.asked with a stated reason: task.landed
+- PASS no human input beyond the request: one message was sent
+- PASS zero slips
+- PASS main has the How to run section
+- PASS the project checkout is clean
+- PASS passed three times in a row: true,true,true
+
+Notes:
+- run 3 on a fresh clone of the sandbox baseline
+- coordinator session dceafdad-0807-42da-9e29-d338a1c58610
+- the coordinator chose a single task, which has no workflow line
+- Skill invocations: jevellan-coordinator, jevellan-ledger, jevellan-git, jevellan-router, jevellan-runtime-claude
+- placements: s1 document claude-sonnet-5-5 medium via claude-second; s2 verify claude-sonnet-5-5 high via claude-second
+- landing: verify-then-land {"land":0.4,"verify-then-land":0.59,"ask-owner":0.01}
+- coordinator's last reply: TK57P15, "README: add How to run section", is now on local `main` as commit 5108374. The new section covers setup (Node 20 or newer, then `npm ci`) and has a table of all five `package.json` scripts. Each row shows the npm command, the underlying command and a one-line description. `CHANGELOG.md` has a matching entry. The verify step ran the unit tests (3 passed), `npm run lint` and both browser s
+- runs so far: 1:pass 2:pass 3:pass

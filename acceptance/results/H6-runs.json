@@ -1,0 +1,63 @@
+[
+  {
+    "run": 1,
+    "passed": true,
+    "at": "2026-11-02T00:52:09.502Z",
+    "dir": "/home/ggomes/jevellan-projects/jevellan-harness-runs/h6-r1-1793580302202/jevellan-harness-sandbox",
+    "task": "TS7VJZF",
+    "session": "12119b88-0ada-4496-8930-daf304403b33",
+    "slips": [],
+    "skills": [
+      "jevellan-coordinator",
+      "jevellan-ledger",
+      "jevellan-git",
+      "jevellan-router",
+      "jevellan-runtime-claude"
+    ],
+    "elapsedMs": 427055,
+    "reanalysed": {
+      "at": "2026-11-02T00:52:44.552Z",
+      "reason": "the slip analyser read the lines of a heredoc brief (containing >=) as shell redirects; fixed in coord.mjs stripHeredocs; every other check of run 1 passed",
+      "slipsBefore": [
+        "Bash \"the others need `npm run <name>` (for example `npm run test:browser`, `npm run lint`, `npm run check:changelog`). Descri\": wrote /home/ggomes/jevellan-projects/jevellan-harness-runs/h6-r1-1793580302202/jevellan-harness-sandbox/` outside .jevellan",
+        "Bash \"test:browser runs Playwright specs per playwright.config.ts). Mention Node >= 20 from \"engines\".\": wrote /home/ggomes/jevellan-projects/jevellan-harness-runs/h6-r1-1793580302202/jevellan-harness-sandbox/= outside .jevellan"
+      ]
+    }
+  },
+  {
+    "run": 2,
+    "passed": true,
+    "otherChecksPassed": true,
+    "at": "2026-11-02T00:55:26.701Z",
+    "dir": "/home/ggomes/jevellan-projects/jevellan-harness-runs/h6-r2-1793580781524/jevellan-harness-sandbox",
+    "task": "TT9QY0G",
+    "session": "602225c1-073a-4e12-94fa-b5e20c58b807",
+    "slips": [],
+    "skills": [
+      "jevellan-coordinator",
+      "jevellan-ledger",
+      "jevellan-git",
+      "jevellan-router",
+      "jevellan-runtime-claude"
+    ],
+    "elapsedMs": 144935
+  },
+  {
+    "run": 3,
+    "passed": true,
+    "otherChecksPassed": true,
+    "at": "2026-11-02T00:58:35.116Z",
+    "dir": "/home/ggomes/jevellan-projects/jevellan-harness-runs/h6-r3-1793580953754/jevellan-harness-sandbox",
+    "task": "TK57P15",
+    "session": "dceafdad-0807-42da-9e29-d338a1c58610",
+    "slips": [],
+    "skills": [
+      "jevellan-coordinator",
+      "jevellan-ledger",
+      "jevellan-git",
+      "jevellan-router",
+      "jevellan-runtime-claude"
+    ],
+    "elapsedMs": 161127
+  }
+]

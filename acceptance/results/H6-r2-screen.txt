@@ -1,0 +1,41 @@
+       5 -Run `npm ci` for setup, `npm test` for unit tests, `npm run lint` for type checks, and `npm start` for the web pages. Work in the assigned work     
+         -tree and publish a pull request.                                                                                                                  
+       5 +Work in the assigned worktree and publish a pull request.                                                                                        
+       6 +                                                                                                                                                    
+       7 +## How to run                                                                                                                                     
+       8 +                                                                                                                                                 
+       9 +1. Set up: make sure Node 20 or newer is installed (`engines` requires `>=20`), then install dependencies with `npm ci`.                       
+      10 +2. Run any of the scripts below from the repository root.                                                                                      
+      11 +                                                                                                                                               
+      12 +| Command | What it does |                                                                                                                     
+      13 +| --- | --- |                                                                                                                                  
+      14 +| `npm start` | Serves the web pages (runs `tsx src/web/server.ts`). |                                                                            
+      15 +| `npm test` | Runs the unit tests once with Vitest. |                                                                                           
+      16 +| `npm run test:browser` | Runs the browser specs with Playwright. |                                                                           
+      17 +| `npm run lint` | Type-checks the project with `tsc --noEmit`. |                                                                              
+      18 +| `npm run check:changelog` | Fails if `CHANGELOG.md` is not changed on this branch compared with `origin/main`. |                             
+  ⎿  (files that changed while this command ran, by the command or by another process; a convenience view, not a review or audit of the command)         
+                                                                                                                                                           
+  Thought for 7s                                                                                                                                            
+
+● TT9QY0G ("README: add How to run section listing package.json scripts") is on main now, landed by fast-forward at a3572fb. The new section in README.md covers
+  setup first (Node >= 20, then npm ci). After that comes a table of all five package.json scripts with their exact commands: npm start, npm test, npm run 
+  test:browser, npm run lint and npm run check:changelog. CHANGELOG.md got a one-line entry to match.                                                       
+                                                                                                                                                           
+  The verify step passed npm test (3 tests) and npm run lint, and the landing check re-ran npm test. It skipped browser tests because the change touches no 
+  page.                                                                                                                                                    
+                                                                                                                                                              
+  - No pull request. AGENTS.md asks for one, but this repo has no origin remote, so the change only went to local main.                                      
+  - npm run check:changelog fails in this checkout. The script compares against origin/main, which doesn't exist here, so it errors out. It's a setup problem
+    and wasn't caused by this change. The verifier ran the same comparison against local main, and the changelog entry is there.                         
+                                                                                                                                                                
+  1. TT9QY0G follow-up: do you want a small task so scripts/check-changelog.mjs uses local main when origin/main is missing? Options: "Create the task" or  
+     "Leave it" (fine if a real remote is coming).                                                                       
+
+✻ Baked for 19s · done 12:55 AM                                                            
+                                                                                                                                                              
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯                                                                             
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  jevellan-harness-sandbox | main | 7% | Opus 5.5@xhigh | 0 files
+  ⏵⏵ bypass permissions on (shift+tab to cycle) · ← 1 agent   

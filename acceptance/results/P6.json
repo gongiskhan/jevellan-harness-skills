@@ -1,0 +1,59 @@
+{
+  "id": "P6",
+  "title": "Codex runtime smoke (phase 6 check)",
+  "status": "passed",
+  "startedAt": "2026-11-02T00:50:53.373Z",
+  "finishedAt": "2026-11-02T00:51:28.558Z",
+  "elapsedMs": 35184,
+  "passed": 7,
+  "total": 7,
+  "timings": {
+    "start to report": 20143,
+    "resume to report": 14647
+  },
+  "notes": [],
+  "checks": [
+    {
+      "name": "installed",
+      "ok": true,
+      "detail": "",
+      "at": "2026-11-02T00:50:53.531Z"
+    },
+    {
+      "name": "owner placement on codex",
+      "ok": true,
+      "detail": "{\"provider\":\"codex\",\"model\":\"gpt-6-astra\",\"effort\":\"low\",\"kind\":\"codex-subscription\",\"probabilities\":{},\"latencyMs\":0,\"policyHash\":\"41e7c31f47d42591cebbe449cde583f11ad8e4dd736658a67a8e8d659b170dfc\",\"s",
+      "at": "2026-11-02T00:50:53.762Z"
+    },
+    {
+      "name": "codex start returns at once",
+      "ok": true,
+      "detail": "",
+      "at": "2026-11-02T00:50:53.835Z"
+    },
+    {
+      "name": "the runner recorded a report from the file",
+      "ok": true,
+      "detail": "{\"kind\":\"step.report\",\"task\":\"TYDH59Z\",\"step\":1,\"seq\":6,\"status\":\"done\",\"summary\":\"The web server listens on port 4173 by default, or the numeric value of the PORT environment variable when set. This is configured directly in src/web/server.ts:14: .listen(Number(process.env.PORT ?? 4173), '127.0.0.1'). The same line binds it to localhost (127.0.0.1). Findings are based on reading the source; the s",
+      "at": "2026-11-02T00:51:13.905Z"
+    },
+    {
+      "name": "the thread id is the native session id",
+      "ok": true,
+      "detail": "01a199bc-de19-7ab0-9b66-7bdffea9400f",
+      "at": "2026-11-02T00:51:13.905Z"
+    },
+    {
+      "name": "codex exec resume continued the thread and reported",
+      "ok": true,
+      "detail": " {\"kind\":\"step.report\",\"task\":\"TYDH59Z\",\"step\":1,\"seq\":10,\"status\":\"done\",\"summary\":\"The web server listens on port 4173 by default, overridden by the numeric value of the PORT environment variable whe",
+      "at": "2026-11-02T00:51:28.552Z"
+    },
+    {
+      "name": "the worktree is unchanged",
+      "ok": true,
+      "detail": "",
+      "at": "2026-11-02T00:51:28.558Z"
+    }
+  ]
+}

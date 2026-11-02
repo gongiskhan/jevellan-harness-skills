@@ -250,3 +250,37 @@ any H6 or H7 run, to `61fc71a` ("Seed invoices and customers acceptance baseline
 run started its journeys from; the later commits stay in the copy on the branch `skills-run-main`, and nothing was
 deleted. At the baseline `npm test` (3 tests) and `npm run test:browser` (2 specs) pass with `TZ=UTC
 SANDBOX_DATA_DIR=.sandbox-data`, and `npm run lint` is clean. The live sandbox itself is untouched.
+
+## H-025 The Codex runtime's shape
+
+- `start.mjs` returns at once after spawning `runner.mjs` detached (its own process group). The runner feeds the
+  message to `codex exec --json -C <worktree> -m <model> -c model_reasoning_effort=<effort>
+  --dangerously-bypass-approvals-and-sandbox -` on stdin (a long append never meets the argument size limit), copies
+  the event stream to `~/.jevellan-harness/logs/<session>.log`, appends `session.started` with the thread id from
+  `thread.started` as the native session id, and when Codex exits records the report the way the Stop hook does
+  (valid: `step.report` and the file archived; invalid: blocked with the problem; none: blocked, synthesized). It
+  cannot block a turn the way the hook does, so a missing or invalid report is recorded at once.
+- `step.started` carries the runner's pid (the step is alive while the runner is) and `nativeSessionId: null`;
+  `resume.mjs` reads the thread id from the session's `session.started` and runs `codex exec resume --json ...
+  <thread> -` in the worktree (resume has no `-C`).
+- Codex loads no Claude skills, so the duty skill's body is put into the first message instead of the "use the duty
+  skill" sentence, after "Instructions for this session:".
+- Every duty runs with approvals and the sandbox bypassed, as brief 5.3 says; investigate and plan are held to
+  read-only by their instructions on Codex (the Claude runtime enforces it with its tool set, H-021).
+- `CODEX_HOME` is the provider's `codexHome` or the owner's `~/.codex`; `start.mjs` refuses when that folder has no
+  `auth.json` and names `codex login`. No `auth.json` is copied, read or refreshed by these scripts.
+- The shared runtime code lives in identical copies of `scripts/lib/{common,task,prompt,proc,cli,roles}.mjs` in both
+  runtime skills; `scripts/check-roles.mjs` refuses copies that differ.
+
+## H-026 Where the coordinator journeys run
+
+H6 asks three times for the same README section, which only makes sense on a project that lacks it, so each H6 run
+uses a fresh clone of the sandbox at its baseline (`~/jevellan-projects/jevellan-harness-runs/h6-r<n>-.../
+jevellan-harness-sandbox`, installed like the sandbox). H7, H8 and H9 run on the sandbox itself, whose main then holds
+what they landed; H7's README task is the same work as H6's request, so the sandbox's main gets that section from H7.
+The coordinator is started as the brief says, `claude --permission-mode bypassPermissions` in the project folder under
+the owner's login, plus `--session-id <uuid>` so the journey can read its transcript
+(`~/.claude/projects/<folder>/<uuid>.jsonl`) for the Skill invocations and the slip count. The first run's slip
+analysis read the lines of a heredoc brief as shell redirects (two false slips); the analyser was fixed to skip
+heredoc bodies and run 1 was re-analysed from its saved transcript, which is recorded in
+`acceptance/results/H6-runs.json` with the reason.

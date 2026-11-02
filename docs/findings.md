@@ -155,3 +155,16 @@ a single implement task "README: how to run" got its worktree (with `npm ci` as 
 through the Stop hook, `step.done` passed its guard, and `land.mjs` asked Jev (land 0.97), ran
 `TZ=UTC SANDBOX_DATA_DIR=.sandbox-data npm test` in the worktree (passed) and fast-forwarded the clone's main with
 `merge --ff-only`, in 19 s from the task to the landing. The landed commit carries no attribution.
+
+## 2026-11-02 The coordinator in tmux (phase 5)
+
+- The workspace trust dialog of an interactive `claude` in a folder the owner never opened defaults to "No, exit":
+  Enter quits. The journeys move to "Yes, I trust this folder" first. The bypass-permissions warning does not appear
+  (the owner's settings skip it).
+- An interactive transcript ends with metadata entries (`mode`, `permission-mode`, `atis-latch`, `bridge-session`)
+  after the last message; whether the session is idle is read from the last `user` or `assistant` entry.
+- A background Bash command (`ledger.mjs wait` run with run_in_background) wakes the interactive session when it
+  exits: in H6 the coordinator went from the step's report to step.done, landing, the extra verify step and the
+  landing again without any input. Its output file is read with `cat` of the task's output file.
+- In zsh, a tmux target written `=jh-coord:` on a command line is equals expansion ("jh-coord: not found"); it must be
+  quoted. The journeys pass it to tmux without a shell.
