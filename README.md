@@ -52,7 +52,9 @@ claude plugin install jevellan-harness@jevellan-harness-skills --scope user
 ```
 
 Then turn on auto-update for that marketplace: in Claude Code, `/plugin`, Marketplaces, `jevellan-harness-skills`,
-Enable auto-update; or in `~/.claude/settings.json`:
+Enable auto-update; or add `"autoUpdate": true` to the entry the add command wrote in `~/.claude/settings.json` (an
+entry written there by hand, before any add, is only picked up by an interactive session, not by the `claude plugin`
+commands):
 
 ```json
 {
