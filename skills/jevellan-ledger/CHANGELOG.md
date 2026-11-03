@@ -2,6 +2,11 @@
 
 Changes made by the trigger-eval improvement loop (brief section 10); `evals/RESULTS.md` at the repository root holds each round's numbers.
 
+## 0.3.0
+
+- A task that landed by pull request (`task.landed` with `pr`) shows it: `show --json` adds `landedPr`, the status
+  lists the pull request instead of the commit, and its timeline line names the pull request. Nothing else changed.
+
 ## 0.2.0
 
 Decoupling over efficiency: other skills reach the ledger only through `ledger.mjs`, run as a process with `--json`,

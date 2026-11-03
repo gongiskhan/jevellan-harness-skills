@@ -630,6 +630,93 @@ describe('land.mjs alone', () => {
 
 // ---- no ledger skill ---------------------------------------------------------------------------------------------
 
+// A fake gh: `pr list` answers the pull requests in its state file, `pr create` adds one and prints its URL, `pr edit`
+// and `pr ready` change one; every call is logged with its arguments and stdin. The state file sits next to it,
+// because land.mjs runs gh with only PATH, HOME and gh's own settings in its environment.
+const FAKE_GH = `#!${process.execPath}
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+const file = path.join(path.dirname(fileURLToPath(import.meta.url)), 'gh-state.json');
+const state = JSON.parse(fs.readFileSync(file, 'utf8'));
+const argv = process.argv.slice(2);
+let stdin = '';
+try { stdin = fs.readFileSync(0, 'utf8'); } catch {}
+state.calls.push({ argv, stdin });
+const opt = (name) => { const i = argv.indexOf(name); return i < 0 ? undefined : argv[i + 1]; };
+const out = (text) => { fs.writeFileSync(file, JSON.stringify(state)); process.stdout.write(text); process.exit(0); };
+const pr = state.prs.find((p) => String(p.number) === argv[2]);
+if (argv[1] === 'list') out(JSON.stringify(state.prs.filter((p) => p.headRefName === opt('--head'))));
+if (argv[1] === 'create') {
+  const number = state.prs.length + 1;
+  state.prs.push({ number, url: 'https://github.com/acme/widgets/pull/' + number, state: 'OPEN', isDraft: argv.includes('--draft'), headRefName: opt('--head'), isCrossRepository: false });
+  out('https://github.com/acme/widgets/pull/' + number + '\\n');
+}
+if (argv[1] === 'edit' && pr) out(pr.url + '\\n');
+if (argv[1] === 'ready' && pr) { pr.isDraft = false; out(''); }
+process.stderr.write('fake gh: ' + argv.join(' ') + '\\n');
+process.exit(1);
+`;
+
+// A project that lands by pull request: origin is a bare repository reached as https://github.com/acme/widgets.git,
+// one commit ahead of the local main (someone else's work, never fetched into it).
+function prSetup() {
+  const ctx = setup({ config: { landing: 'pr', checks: ['echo checks-ok'] } });
+  const bare = path.join(ctx.base, 'origin.git');
+  git(ctx.base, 'init', '-q', '--bare', '-b', 'main', bare);
+  git(ctx.root, 'config', `url.${bare}.insteadOf`, 'https://github.com/acme/widgets.git');
+  git(ctx.root, 'remote', 'add', 'origin', 'https://github.com/acme/widgets.git');
+  git(ctx.root, 'push', '-q', 'origin', 'main');
+  const other = path.join(ctx.base, 'other');
+  git(ctx.base, 'clone', '-q', bare, other);
+  const upstream = commit(other, { 'CHANGELOG.md': 'upstream\n' }, 'upstream work');
+  git(other, 'push', '-q', 'origin', 'main');
+  const ghDir = path.join(ctx.base, 'gh');
+  fs.mkdirSync(ghDir);
+  fs.writeFileSync(path.join(ghDir, 'gh'), FAKE_GH, { mode: 0o755 });
+  writeJson(path.join(ghDir, 'gh-state.json'), { prs: [], calls: [] });
+  ctx.env.JH_GH_BIN = path.join(ghDir, 'gh');
+  ctx.gh = () => readJson(path.join(ghDir, 'gh-state.json'));
+  return { ctx, bare, upstream, localMain: sha(ctx.root, 'main') };
+}
+
+describe('landing by pull request, alone', () => {
+  test('the worktree starts from origin/main; land opens the pull request, ask-owner a draft that Land now marks ready', () => {
+    const { ctx, bare, upstream, localMain } = prSetup();
+    const { wt, head } = readyTask(ctx, 'T1AAAAA');
+    assert.equal(wt.base, 'origin/main');
+    assert.equal(wt.baseCommit, upstream);
+    const r = ctx.run('land.mjs', ['--task', 'T1AAAAA', '--json']);
+    assert.equal(r.status, 0, r.stderr);
+    const out = r.json();
+    assert.equal(out.pr, 'https://github.com/acme/widgets/pull/1');
+    assert.equal(out.commit, head, 'origin/main was already in the branch: nothing to merge');
+    assert.equal(sha(bare, wt.branch), head);
+    assert.equal(sha(bare, 'main'), upstream);
+    assert.equal(sha(ctx.root, 'main'), localMain);
+    const create = ctx.gh().calls.find((c) => c.argv[1] === 'create');
+    assert.deepEqual(create.argv, ['pr', 'create', '--base', 'main', '--head', wt.branch, '--title', 'Add a How to run section', '--body-file', '-', '--repo', 'acme/widgets']);
+    assert.match(create.stdin, /^## Summary\n\nVerified the change\.\n\n## Checks\n\n- `echo checks-ok`: passed in \d+ s\n/);
+    assert.deepEqual(lastOf(ctx, 'T1AAAAA', 'task.landed').data, { pr: out.pr, commit: head, target: 'main', method: 'pr' });
+
+    readyTask(ctx, 'T2BBBBB', { title: 'Change the billing rounding', files: { 'src/billing.js': 'export const round = Math.round;\n' } });
+    ctx.placement.answer({ route: 'ask-owner' });
+    const asked = ctx.run('land.mjs', ['--task', 'T2BBBBB', '--json']);
+    assert.equal(asked.status, 7, asked.stderr);
+    assert.equal(asked.json().pr, 'https://github.com/acme/widgets/pull/2');
+    assert.equal(asked.json().draft, true);
+    assert.equal(lastOf(ctx, 'T2BBBBB', 'task.asked').data.pr, 'https://github.com/acme/widgets/pull/2');
+    assert.equal(ctx.gh().prs[1].isDraft, true);
+    ctx.placement.remove();
+    const forced = ctx.run('land.mjs', ['--task', 'T2BBBBB', '--force', '--json']);
+    assert.equal(forced.status, 0, forced.stderr);
+    assert.equal(ctx.gh().prs[1].isDraft, false);
+    assert.equal(ctx.gh().calls.filter((c) => c.argv[1] === 'create').length, 2);
+    assert.equal(lastOf(ctx, 'T2BBBBB', 'task.landed').data.pr, 'https://github.com/acme/widgets/pull/2');
+    assert.equal(sha(ctx.root, 'main'), localMain);
+  });
+});
+
 describe('without a ledger skill', () => {
   test('every command is exit 2 naming the missing role; --help still answers', () => {
     const ctx = setup({ ledger: false, placement: false });

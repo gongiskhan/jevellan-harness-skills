@@ -47,6 +47,7 @@ export function detail(event) {
     case 'landing.checked':
       return `${d.passed ? 'passed' : 'FAILED'}: ${clip(d.command, 100)}`;
     case 'task.landed':
+      if (d.pr) return `pull request ${d.pr}${d.merged ? ' (merged)' : ''}${d.commit ? ` at ${String(d.commit).slice(0, 12)}` : ''}`;
       return `commit ${String(d.commit ?? '').slice(0, 12)}${d.target ? ` on ${d.target}` : ''}`;
     case 'task.asked':
       return `${clip(d.question, 120)} [${(d.options ?? []).map((o) => (typeof o === 'string' ? o : o.label)).join(' | ')}]`;

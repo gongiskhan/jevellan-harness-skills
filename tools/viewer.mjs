@@ -48,6 +48,8 @@ function liveLine(taskId, step, runtime) {
 }
 
 const esc = (value) => String(value ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+// A pull request link: only an https URL becomes a link; anything else is shown as text.
+const prLink = (url) => (/^https:\/\/[^\s"'<>]+$/.test(String(url ?? '')) ? `<a href="${esc(url)}" rel="noreferrer" target="_blank">${esc(url)}</a>` : esc(url));
 const time = (iso) => (iso ? esc(String(iso).replace('T', ' ').replace(/\.\d+Z$/, 'Z')) : '');
 const STATE_CLASS = { 'waiting-owner': 'warn', running: 'run', landing: 'run', failed: 'bad', queued: 'idle', done: 'good', stopped: 'idle' };
 
@@ -129,8 +131,11 @@ const LINE = {
   'step.stopped': (d) => `stopped: ${esc(d.reason)}`,
   'landing.decided': (d) => `landing route <strong>${esc(d.route)}</strong> <span class="muted">(${esc(d.source)})</span>: ${esc(d.reason)}`,
   'landing.checked': (d) => `check <code>${esc(d.command)}</code> <span class="${d.passed ? 'good' : 'bad'}">${d.passed ? 'passed' : 'failed'}</span>`,
-  'task.landed': (d) => `<span class="good">landed on ${esc(d.target)} at <code>${esc(String(d.commit ?? '').slice(0, 12))}</code> (${esc(d.method)})</span>`,
-  'task.asked': (d) => `<span class="warn">asked the owner: ${esc(d.question)}</span>`,
+  'task.landed': (d) =>
+    d.pr
+      ? `<span class="good">${d.merged ? 'pull request merged on GitHub' : 'pull request open for review'}: ${prLink(d.pr)} at <code>${esc(String(d.commit ?? '').slice(0, 12))}</code></span>`
+      : `<span class="good">landed on ${esc(d.target)} at <code>${esc(String(d.commit ?? '').slice(0, 12))}</code> (${esc(d.method)})</span>`,
+  'task.asked': (d) => `<span class="warn">asked the owner: ${esc(d.question)}</span>${d.pr ? ` <span class="muted">draft:</span> ${prLink(d.pr)}` : ''}`,
   note: (d) => `note: ${esc(d.text)}`,
 };
 
@@ -148,7 +153,7 @@ function taskPage(id) {
     return `<tr><td>${esc(s.ordinal)}</td><td>${esc(s.duty)}</td><td>${stateBadge(s.state)}</td><td>${esc([s.model, s.effort, s.provider && `via ${s.provider}`].filter(Boolean).join(' '))}${live ? `<div class="muted">now: ${esc(live)}</div>` : ''}</td></tr>`;
   }).join('');
   const brief = t.text ? `<details class="card"><summary>Brief</summary><pre>${esc(t.text)}</pre></details>` : '';
-  return page(`${id} ${t.title}`, `<p><a href="/">All tasks</a></p><h1>${esc(id)} ${esc(t.title)}</h1><div>${stateBadge(t.state)}<span class="muted">${esc(t.kind)}${t.duty ? ` ${esc(t.duty)}` : ''}${t.reason ? `: ${esc(t.reason)}` : ''}</span></div>${brief}
+  return page(`${id} ${t.title}`, `<p><a href="/">All tasks</a></p><h1>${esc(id)} ${esc(t.title)}</h1><div>${stateBadge(t.state)}<span class="muted">${esc(t.kind)}${t.duty ? ` ${esc(t.duty)}` : ''}${t.reason ? `: ${esc(t.reason)}` : ''}</span></div>${t.landedPr ? `<div class="card good">Pull request: ${prLink(t.landedPr)}</div>` : ''}${brief}
 <h2>Steps</h2>${steps ? `<div class="card"><table>${steps}</table></div>` : '<p class="muted">No steps yet.</p>'}
 <h2>Reports</h2>${reports}${shots ? `<h2>Screenshots</h2><div class="shots">${shots}</div>` : ''}
 <h2>Timeline</h2><div class="card"><table>${lines}</table></div>`);

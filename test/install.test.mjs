@@ -187,6 +187,7 @@ test('a fresh install writes every skill, the three hooks with absolute Node pat
     setupCommand: 'npm install --no-package-lock',
     riskyPaths: [],
     checks: [],
+    landing: 'local',
     pushAfterLanding: false,
     retentionDays: 3,
   });

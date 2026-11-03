@@ -74,7 +74,8 @@ folder inside it (the project root is found through git, or `JH_PROJECT`). Input
   goes through `take-report` (or the Stop hook), which checks it against the report schema.
 - `ledger.mjs show T --json` -> the task's projection `{task, kind, duty, title, parent, after, origin, createdAt,
   updatedAt, worktree, workflowResolved, steps: [{ordinal, duty, state, starts, model, effort, provider, pid,
-  nativeSessionId, startedAt}], currentStep, state, reason, waiting?, landing?, runningStep?, alive?, landedCommit?}`
+  nativeSessionId, startedAt}], currentStep, state, reason, waiting?, landing?, runningStep?, alive?, landedCommit?, landedPr?}`
+  (`landedPr`, the pull request's URL, when the task landed by pull request)
   plus `text` (the brief), `lastSeq` (the task's newest seq), `views` and `events` (the task's lines). `views` is
   `[{ordinal, resetSeq, current, overall}]` for each ordinal from 1 to the highest a workflow, a placement or a step
   event names (step 1 for a single task; gaps are filled up to ordinal 100, and a higher ordinal that is named still

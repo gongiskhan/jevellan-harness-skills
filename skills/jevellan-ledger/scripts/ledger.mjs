@@ -539,7 +539,7 @@ function status(argv) {
   }
   if (view.recent.length) {
     out.push('Finished in the last 24 hours:');
-    for (const r of view.recent) out.push(`  ${r.task}  ${r.title} (${r.state}${r.commit ? `, ${r.commit.slice(0, 7)}` : ''})`);
+    for (const r of view.recent) out.push(`  ${r.task}  ${r.title} (${r.state}${r.pr ? `, pull request ${r.pr}` : r.commit ? `, ${r.commit.slice(0, 7)}` : ''})`);
   }
   for (const l of view.lost) out.push(`Marked lost: ${l.task} step ${l.step} (#${l.seq})`);
   print(false, null, out.join('\n'));

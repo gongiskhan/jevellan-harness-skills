@@ -332,6 +332,7 @@ export function projectTask(info, { alive = pidAlive } = {}) {
   if (landed) {
     result.state = 'done';
     result.landedCommit = landed.event.data?.commit ?? null;
+    if (landed.event.data?.pr) result.landedPr = landed.event.data.pr;
     result.landedAt = landed.event.t;
     return result;
   }

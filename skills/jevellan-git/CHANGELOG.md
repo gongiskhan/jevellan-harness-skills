@@ -1,5 +1,21 @@
 # Changelog: jevellan-git
 
+## 0.3.0
+
+- Landing by pull request (`.jevellan/project.json` `"landing": "pr"`, docs/decisions.md H-041). `worktree.mjs create`
+  fetches origin and starts a parentless task from `origin/<defaultBranch>`, refusing when the fetch fails.
+  `land.mjs` compares with `origin/<defaultBranch>` only, merges it into the task branch, runs the checks, pushes the
+  task branch (never forced, never the default branch) and opens or updates the pull request with gh (`--repo` from
+  origin's URL, the body on stdin); ask-owner opens it as a draft and asks, "Land now" marks it ready. It records
+  `task.landed {pr, commit, target, method: "pr"}`, reuses an open pull request, records one merged on GitHub as
+  landed and refuses one closed without merging. `landing` must be `"local"` or `"pr"`; `pushAfterLanding: true` with
+  `"pr"` refuses. Local landing is unchanged.
+- `riskyPaths` entries may be patterns: `*` within a name, `?` one character, `**` any number of folders
+  (`clients/mcp-server/**`, `api/scripts/migrate*`, `**/migrations`); a pattern also covers everything below a folder it
+  names. A path without a wildcard is a prefix, as before.
+- The description and the policy sections are unchanged, so the policy hash is too; the Interface section documents
+  the new mode.
+
 ## 0.2.0
 
 - Decoupled from the other skills: `worktree.mjs`, `land.mjs` and `evals/run.mjs` reach the ledger only through the

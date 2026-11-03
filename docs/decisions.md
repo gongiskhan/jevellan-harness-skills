@@ -518,3 +518,55 @@ H7 and H8 runs, the trigger-eval runs of the other fifteen skills) keep the name
 The trigger evals of `jevellan-placement` and `jevellan-coordinator` were run again (three runs per case) and merged
 into `evals/results.json` with the other fifteen skills' measurement of H-030 (`run-trigger-evals.mjs --merge`, which
 names which skill was measured when); H11 reads the merged file.
+
+## H-041 Landing by pull request (owner request, 0.3.0)
+
+The owner asked for a second landing mode for projects whose default branch is shared and reviewed on GitHub
+(ekoa-code first, whose local main was 129 commits behind origin). `.jevellan/project.json` gains `"landing"`:
+`"local"` (the default, everything before 0.3.0) or `"pr"`; any other value refuses, so a typo never lands locally by
+surprise. With `"pr"`, for a task without a parent:
+
+- `worktree.mjs create` runs `git fetch origin` and starts the task branch from `origin/<defaultBranch>`, never from the
+  local default branch, which may be stale. A failed fetch refuses instead of warning: starting from an old base is
+  exactly what this mode avoids. `task.worktree` records `base: "origin/<defaultBranch>"`.
+- `land.mjs` never reads, moves or pushes the local default branch. Every comparison is with
+  `origin/<defaultBranch>`: the changed files Jev sees, the "no commits of its own" refusal (checked after the fetch and
+  before any merge, which would always add one), and the merge. It merges `origin/<defaultBranch>` into the task branch
+  rather than rebasing, so the branch on origin only ever moves forward and is never force-pushed; a second landing
+  after a crash finds the merge already there and pushes nothing new. The checks run once: the three rounds of local
+  landing exist because a fast-forward races a moving local branch, and a pull request has no such race.
+- The push is `git push origin refs/heads/<branch>:refs/heads/<branch>`, never forced, refused when the task branch is
+  named like the default branch. A rejected push is exit 2 and no pull request is opened or changed.
+- gh opens the pull request: `gh pr create --base <defaultBranch> --head <branch> --title <task title> --body-file -`
+  (the body on stdin, so nothing long or secret is on a command line), always with `--repo [host/]owner/repo` read from
+  origin's configured URL, because a checkout with several remotes (ekoa-code has four) leaves gh unable to choose one
+  without a prompt. gh runs with the owner's HOME (its login), PATH and the session bus a keyring login needs, prompts
+  off, and nothing from providers or Jev. `JH_GH_BIN` replaces it in tests.
+- The body holds the done steps' final summaries, the landing checks and their results, the tests the steps reported,
+  and the evidence (screenshot captions and the files in the task's evidence folder, named inside that folder, so the
+  body carries neither machine paths nor the harness's folder names), masked by the redactor and kept under 60 000
+  characters. No attribution of any kind, in the title or the body.
+- The ledger keeps twenty event kinds: the pull request is `task.landed {pr, commit, target, method: "pr"}`, and the
+  ledger's projection shows it as `landedPr`, its status line and the viewer as a link. A landed task is one whose pull
+  request is open for review: nothing here merges it, touches the local default branch or deploys.
+- Jev's three routes keep their meaning and the policy text (and its hash) is unchanged: land and verify-then-land open
+  a ready pull request; ask-owner opens it as a draft and then asks the owner, with the pull request in the question and
+  in `task.asked`. "Land now" (`--force`) checks again and marks the draft ready (`gh pr ready`); "Leave it" archives
+  the worktree and leaves the draft open on GitHub for the owner to close (closing it is an outward action the harness
+  does not take). A merge conflict with `origin/<defaultBranch>` composes the two rules ("conflict: ask-owner" and
+  "ask-owner is a draft"): the branch is pushed as it is, the draft says the merge conflicts and the checks did not run,
+  and "Land now" then gets the implement step that resolves the conflict, as in local landing.
+- Before anything else landing looks the branch's pull request up (`gh pr list --state all`): an open one is reused (its
+  body updated, a draft marked ready when the route is land), so a crash between `gh pr create` and the ledger line
+  never opens a second one; one the owner merged on GitHub is recorded as landed (`merged: true`); one closed without
+  merging refuses, naming it. Pull requests from forks with a branch of the same name are not the task's.
+- `pushAfterLanding: true` with `"pr"` refuses (it pushes the default branch). A child task keeps landing into its
+  parent's branch locally and is never pushed (D-048); only the parent opens a pull request.
+- `riskyPaths` entries may be patterns (`*`, `?`, `**`), because the owner writes them that way
+  (`clients/mcp-server/**`) and a prefix match would never flag such an entry; a path without a wildcard keeps its
+  prefix meaning, and a pattern that names a folder covers what is below it (`api/scripts/migrate*` covers both
+  `migrate-inbox.mjs` and `migrate/cli.ts`).
+- The coordinator's step 7 now says that a landing that opened a pull request has not reached the default branch, and
+  to give the owner the link; its CHANGELOG records the change. The trigger evals were not run again for it: the
+  change is in the running order, not in anything that decides when a skill triggers.
+

@@ -89,8 +89,8 @@ shared module by habit; the repository refuses it, and `npm test` fails when it 
 
 - Set by the runtimes for a worker and read by the hooks: `JH_TASK`, `JH_STEP`, `JH_DUTY`, `JH_PROJECT`, `JH_SESSION`,
   `JH_CWD` (the step's worktree).
-- For tests and second installations: `JH_HARNESS_HOME` (instead of `~/.jevellan-harness`), `JH_CLAUDE_BIN` and
-  `JH_CODEX_BIN` (fake binaries), `JH_JEV_URL` and `JH_ANTHROPIC_URL` (fake servers, loopback addresses only),
+- For tests and second installations: `JH_HARNESS_HOME` (instead of `~/.jevellan-harness`), `JH_CLAUDE_BIN`,
+  `JH_CODEX_BIN` and `JH_GH_BIN` (fake binaries), `JH_JEV_URL` and `JH_ANTHROPIC_URL` (fake servers, loopback addresses only),
   `JH_TEST_TMPDIR` (where the suites make their temporary folders).
 
 ## Testing

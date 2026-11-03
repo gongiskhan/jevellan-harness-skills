@@ -46,7 +46,7 @@ export function statusView(at, { now = Date.now() } = {}) {
   const open = tasks.filter((t) => OPEN_STATES.includes(t.state)).sort((a, b) => ORDER[a.state] - ORDER[b.state] || a.createdAt.localeCompare(b.createdAt));
   const recent = tasks
     .filter((t) => ['done', 'stopped'].includes(t.state) && now - Date.parse(t.updatedAt) < DAY)
-    .map((t) => ({ task: t.task, title: t.title, kind: t.kind, state: t.state, commit: t.landedCommit ?? null, at: t.landedAt ?? t.doneAt ?? t.updatedAt, reason: t.reason ?? null }));
+    .map((t) => ({ task: t.task, title: t.title, kind: t.kind, state: t.state, commit: t.landedCommit ?? null, ...(t.landedPr ? { pr: t.landedPr } : {}), at: t.landedAt ?? t.doneAt ?? t.updatedAt, reason: t.reason ?? null }));
   return { tasks: open, recent, lost: lost.map((e) => ({ seq: e.seq, task: e.task, step: e.step })) };
 }
 

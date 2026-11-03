@@ -18,12 +18,16 @@ import {
   buildLandingState,
   checkEnvironment,
   cut,
+  ghEnvironment,
+  githubRepo,
   landingFacts,
   landingPolicy,
   landingQuestions,
   landingSettings,
   parseNumstat,
   pathMatches,
+  pickPr,
+  prBody,
   refusedFiles,
   resolveChoice,
   runCheck,
@@ -95,6 +99,21 @@ describe('git output parsers', () => {
     assert.equal(pathMatches('src/billing', './src/billing/'), true);
     assert.equal(pathMatches('src/billing-old/x.js', 'src/billing'), false);
     assert.equal(pathMatches('anything', './'), false);
+  });
+
+  test('pathMatches with wildcards: * within a name, ** across folders, a pattern naming a folder covers what is below', () => {
+    assert.equal(pathMatches('clients/mcp-server/src/index.ts', 'clients/mcp-server/**'), true);
+    assert.equal(pathMatches('clients/mcp-server-old/x.ts', 'clients/mcp-server/**'), false);
+    assert.equal(pathMatches('.github/workflows/ci.yml', '.github/workflows/**'), true);
+    assert.equal(pathMatches('api/scripts/migrate-bell-inbox.mjs', 'api/scripts/migrate*'), true);
+    assert.equal(pathMatches('api/scripts/migrate/cli.ts', 'api/scripts/migrate*'), true);
+    assert.equal(pathMatches('api/scripts/other.mjs', 'api/scripts/migrate*'), false);
+    assert.equal(pathMatches('api/src/data/migrations/001.sql', '**/migrations'), true);
+    assert.equal(pathMatches('migrations/001.sql', '**/migrations/**'), true);
+    assert.equal(pathMatches('api/src/data/migrationsx/001.sql', '**/migrations'), false);
+    assert.equal(pathMatches('a/b.c/d.ts', 'a/b?c/**'), true);
+    assert.equal(pathMatches('a/b.c/d.ts', 'a/b.c'), true);
+    assert.equal(pathMatches('a/bxc/d.ts', 'a/b.c'), false);
   });
 
   test('refusedFiles reads the tab-indented names of a git refusal', () => {
@@ -206,8 +225,8 @@ describe('the landing state', () => {
     };
     assert.deepEqual(landingFacts(info), {
       steps: [
-        { ordinal: 1, duty: 'implement', state: 'done', summary: null, tested: null },
-        { ordinal: 2, duty: 'verify', state: 'done', summary: 'second try', tested: { command: 'npm test', passed: true, summary: 'green', at: 'new' } },
+        { ordinal: 1, duty: 'implement', state: 'done', summary: null, tested: null, screenshots: [] },
+        { ordinal: 2, duty: 'verify', state: 'done', summary: 'second try', tested: { command: 'npm test', passed: true, summary: 'green', at: 'new' }, screenshots: [] },
       ],
       corrections: ['verify failed (attempt 1): one test was red'],
     });
@@ -319,9 +338,11 @@ describe('the project settings', () => {
       checks: [{ name: 'npm test', command: 'npm test', timeoutMs: CHECK_TIMEOUT_MS }, { name: 'e2e', command: 'npm run e2e', timeoutMs: 1000 }],
       pushAfterLanding: true,
       guidance: 'g',
+      landing: 'local',
     });
     assert.deepEqual(landingSettings({ checks: [], testCommand: 'make test' }).checks, [{ name: 'make test', command: 'make test', timeoutMs: CHECK_TIMEOUT_MS }]);
-    assert.deepEqual(landingSettings({}), { riskyPaths: [], checks: [], pushAfterLanding: false, guidance: '' });
+    assert.deepEqual(landingSettings({}), { riskyPaths: [], checks: [], pushAfterLanding: false, guidance: '', landing: 'local' });
+    assert.equal(landingSettings({ landing: 'pr' }).landing, 'pr');
   });
 
   test('bad settings refuse naming the file and the field', () => {
@@ -333,7 +354,56 @@ describe('the project settings', () => {
       [{ checks: [{ command: 'x', timeoutMs: -1 }] }, 'checks[0].timeoutMs must be a positive integer'],
       [{ pushAfterLanding: 'yes' }, 'pushAfterLanding must be true or false'],
       [{ testCommand: 3 }, 'testCommand must be a command or null'],
+      [{ landing: 'github' }, 'landing must be "local" or "pr", not "github"'],
+      [{ landing: 'pr', pushAfterLanding: true }, 'pushAfterLanding pushes the default branch, which "landing": "pr" never does; set it to false'],
     ];
     for (const [config, message] of bad) assert.throws(() => landingSettings(config, 'p.json'), (e) => e.exitCode === 2 && e.message === `p.json: ${message}`, message);
+  });
+});
+
+describe('landing by pull request', () => {
+  test('githubRepo reads [host/]owner/repo from https, ssh and scp-like URLs; a local path is null', () => {
+    assert.equal(githubRepo('https://github.com/gongiskhan/ekoa-code.git'), 'gongiskhan/ekoa-code');
+    assert.equal(githubRepo('https://x-access-token@github.com/acme/widgets'), 'acme/widgets');
+    assert.equal(githubRepo('git@github.com:acme/widgets.git'), 'acme/widgets');
+    assert.equal(githubRepo('ssh://git@github.com/acme/widgets.git'), 'acme/widgets');
+    assert.equal(githubRepo('https://git.example.com:8443/team/app.git'), 'git.example.com/team/app');
+    assert.equal(githubRepo('/srv/git/app.git'), null);
+    assert.equal(githubRepo('ggomes@goncalos-mac-mini-1:Projects/ekoa-code'), 'goncalos-mac-mini-1/Projects/ekoa-code');
+    assert.equal(githubRepo(''), null);
+  });
+
+  test('pickPr prefers the open pull request of the branch, then a merged one, then a closed one; forks never count', () => {
+    const pr = (number, state, extra = {}) => ({ number, state, headRefName: 'jh/a-T1', isCrossRepository: false, ...extra });
+    assert.equal(pickPr([pr(1, 'CLOSED'), pr(2, 'MERGED'), pr(3, 'OPEN')], 'jh/a-T1').number, 3);
+    assert.equal(pickPr([pr(1, 'CLOSED'), pr(2, 'MERGED')], 'jh/a-T1').number, 2);
+    assert.equal(pickPr([pr(1, 'CLOSED')], 'jh/a-T1').number, 1);
+    assert.equal(pickPr([pr(4, 'OPEN', { isCrossRepository: true }), pr(5, 'OPEN', { headRefName: 'jh/other' })], 'jh/a-T1'), null);
+    assert.equal(pickPr(null, 'jh/a-T1'), null);
+  });
+
+  test('prBody: summaries, checks, the steps\' tests and the evidence; a draft says why; secrets masked; within the limit', () => {
+    const steps = [
+      { ordinal: 1, duty: 'implement', state: 'done', summary: 'Changed the thing. ANTHROPIC_API_KEY=' + 'a'.repeat(40), tested: null, screenshots: [] },
+      { ordinal: 2, duty: 'verify', state: 'done', summary: 'Verified.', tested: { command: 'npm test', passed: true, summary: 'all green' }, screenshots: [{ path: '/home/x/wt/.jevellan/evidence/home-390.png', caption: 'Home at 390 px' }] },
+      { ordinal: 3, duty: 'document', state: 'skipped', summary: null, tested: null, screenshots: [] },
+    ];
+    const checks = [{ command: 'npm test', passed: true, durationMs: 65000 }, { command: 'echo `x`', passed: true, durationMs: 1000 }];
+    const body = prBody({ into: 'main', steps, checks, evidence: ['home-390.png', 'tests.txt'], draftReason: 'Touches a risky area.' });
+    assert.ok(body.startsWith('**Draft for review.** Touches a risky area.\n\n## Summary\n\n### Implement\n\nChanged the thing. ANTHROPIC_API_KEY'));
+    assert.equal(body.includes('a'.repeat(40)), false, 'the key is masked');
+    assert.match(body, /## Checks\n\n- `npm test`: passed in 1 min 5 s\n- `` echo `x` ``: passed in 1 s\n/);
+    assert.match(body, /- verify: `npm test` passed: all green\n/);
+    assert.match(body, /## Evidence\n\n- `home-390\.png`: Home at 390 px\n- `tests\.txt`\n/);
+    assert.doesNotMatch(body, /\/home\/x|jevellan|claude|co-authored|generated with/i);
+    const one = prBody({ into: 'main', steps: [steps[1]], checks: [], evidence: [] });
+    assert.match(one, /^## Summary\n\nVerified\.\n\n## Checks\n\nNo landing checks are configured for this project\./);
+    const huge = prBody({ into: 'main', steps: [{ ...steps[0], summary: 'x'.repeat(5000) }, { ...steps[1], summary: 'y'.repeat(5000) }], checks, evidence: [], limit: 3000 });
+    assert.ok(huge.length <= 3000);
+  });
+
+  test('ghEnvironment is the owner\'s HOME, PATH and the session bus, prompts off, and nothing else', () => {
+    const env = ghEnvironment('/home/owner', { PATH: '/bin', HOME: '/elsewhere', JH_JEV_URL: 'x', ANTHROPIC_API_KEY: 'k', DBUS_SESSION_BUS_ADDRESS: 'unix:path=/run/user/1/bus' });
+    assert.deepEqual(env, { PATH: '/bin', DBUS_SESSION_BUS_ADDRESS: 'unix:path=/run/user/1/bus', HOME: '/home/owner', GH_PROMPT_DISABLED: '1', GH_NO_UPDATE_NOTIFIER: '1', GH_SPINNER_DISABLED: '1', NO_COLOR: '1', GIT_TERMINAL_PROMPT: '0' });
   });
 });

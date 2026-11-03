@@ -78,7 +78,8 @@ not improvise it".
 - `worktree.mjs create --task T [--base <branch>] [--json]` -> `{path, branch, base, baseCommit, setup?}`, without
   `--json` the path alone. `setup` is `{command, ms}` when the project setupCommand ran in a new worktree, and the
   command when it ran in an existing one. Exit 0 made, or already there; 2 refused (a parent without a worktree, a
-  branch or folder in the way, a failed setupCommand); 3 no such task.
+  branch or folder in the way, a failed setupCommand, and with `"landing": "pr"` a failed `git fetch origin` or an
+  origin without the default branch); 3 no such task.
 - `worktree.mjs archive --task T [--reason "..."] [--json]` ->
   `{archived: true, already, from, to, branch, stopped}`. Exit 0 archived, or archived before; 2 refused (a step is
   running, the worktree is locked or not registered); 3 no such task, or the task has no worktree.
@@ -89,3 +90,27 @@ not improvise it".
   2 refused; 3 no such task;
   6 verify-then-land, `{"route":"verify-then-land"}` (with `--json` also `task, reason, instructions, again`);
   7 ask-owner, `{task, route: "ask-owner", question, options, reason}`.
+
+Landing by pull request. `.jevellan/project.json` `"landing"` is `"local"` (the default: everything above) or `"pr"`.
+With `"pr"`, a task without a parent never touches the local default branch, which may be far behind origin, and the
+sentence above about pushing describes local landing only:
+
+- `worktree.mjs create` runs `git fetch origin` and starts the task branch from `origin/<defaultBranch>`; `base` is
+  `"origin/<defaultBranch>"`.
+- `land.mjs` checks the steps and the worktree as above, looks up the branch's pull request with `gh pr list` (one
+  merged on GitHub: exit 0, `{task, route: "land", landed: true, pr, merged: true, commit, target, method: "pr"}`; one
+  closed without merging: exit 2), runs `git fetch origin`, refuses a branch with no commits beyond
+  `origin/<defaultBranch>`, and decides as above (the changed files are taken against `origin/<defaultBranch>`). The
+  land route merges `origin/<defaultBranch>` into the task branch, runs the checks, pushes the task branch to origin
+  (never forced, never the default branch) and opens a pull request with `gh pr create --base <defaultBranch> --head
+  <branch>`, or updates the open one's body and marks a draft ready. Exit 0 prints `{task, route: "land", landed: true,
+  pr, draft: false, commit, target, method: "pr", forced, reason, checks, push}` and the ledger gets `task.landed
+  {pr, commit, target, method: "pr"}`. The title is the task's title; the body holds the final step summaries, the
+  checks and their results, the tests the steps ran and the evidence. Nothing merges the pull request or deploys.
+- ask-owner opens the pull request as a draft first, then exit 7 adds `pr` and `draft` (and `checks`) to the JSON and
+  `pr` to `task.asked`. "Land now" (`--force`) checks again and marks the pull request ready for review; "Leave it"
+  archives the worktree and leaves the draft open on GitHub for the owner. A merge conflict with
+  `origin/<defaultBranch>` is ask-owner too: the branch is pushed as it is and the draft says the checks did not run.
+- `pushAfterLanding` must be false. A child task still lands into its parent's branch locally and is never pushed.
+- gh runs with `--repo` taken from origin's URL and the owner's HOME; without gh, or with an origin URL that names no
+  host, owner and repository, landing refuses (exit 2).

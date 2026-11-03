@@ -425,6 +425,7 @@ export function detectProject(project) {
       setupCommand: setupCommandFor(project),
       riskyPaths: [],
       checks: [],
+      landing: 'local',
       pushAfterLanding: false,
       retentionDays: 3,
     },

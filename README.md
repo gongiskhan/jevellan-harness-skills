@@ -35,9 +35,24 @@ entries. `--skills-only` copies the skills and the exclude lines only, for a rep
 not run.
 
 `project.json` holds `defaultBranch`, `testCommand`, `devCommand`, `setupCommand` (run once in every new worktree, for
-example `npm ci`), `checks` (the landing checks; empty means the test command), `riskyPaths` (shown to Jev at landing),
-`pushAfterLanding` (false by default) and `retentionDays`. Check the detected values once; a project whose tests need
-an environment writes it into `testCommand`.
+example `npm ci`), `checks` (the landing checks; empty means the test command), `riskyPaths` (folders or files, or patterns with `*` and `**`, such as `deploy/**`; shown to Jev at landing),
+`landing` (`"local"` by default, or `"pr"`, below), `pushAfterLanding` (false by default) and `retentionDays`. Check
+the detected values once; a project whose tests need an environment writes it into `testCommand`.
+
+### Landing by pull request
+
+With `"landing": "pr"` a finished task becomes a pull request instead of a change to the local default branch, for a
+project whose default branch is shared and reviewed on GitHub. Each task's worktree starts from
+`origin/<defaultBranch>` after `git fetch origin` (never from the local default branch, which may be far behind).
+Landing does what it does locally up to and including the checks, with `origin/<defaultBranch>` merged into the task
+branch instead of the other way round; then it pushes the task branch (never the default branch, never forced) and
+opens a pull request with `gh pr create --base <defaultBranch> --head <branch>`: the task's title, and a body with the
+final step summaries, the checks and their results, the tests the steps ran and the evidence. The pull request's link
+goes into the ledger (`task.landed` with `pr`). When the landing policy routes the task to the owner, the pull request
+opens as a draft and the coordinator asks: "Land now" marks it ready for review, "Leave it" archives the worktree and
+leaves the draft for the owner to close. Nothing merges a pull request, touches the local default branch or deploys;
+the owner reviews and merges on GitHub. It needs `gh` logged in for the owner, an origin on a host gh knows,
+and `pushAfterLanding` false. A child task still lands into its parent's branch locally.
 
 ## Install as a plugin (Claude Code, auto-updated)
 
@@ -72,7 +87,7 @@ Claude Code then refreshes the marketplace in the background and installs a new 
 A client machine that must stay on one release pins the marketplace to its tag instead, and gets no updates:
 
 ```
-claude plugin marketplace add gongiskhan/jevellan-harness-skills#v0.2.1
+claude plugin marketplace add gongiskhan/jevellan-harness-skills#v0.3.0
 ```
 
 (Any release tag from v0.2.0 on carries the plugin; v0.1.0 predates it.) The skills appear namespaced

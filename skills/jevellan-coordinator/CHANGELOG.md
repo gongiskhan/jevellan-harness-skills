@@ -16,3 +16,10 @@ Changes made by the trigger-eval improvement loop (brief section 10); `evals/RES
 - "Running a task" now says to find a role's skill in the skill list by the first word of its description and never to call a skill by a name not in the list: with the placement skill removed, a session with this body in context still tried a skill name guessed from the role word once (the placement skill's case 9).
 
 ## 0.2.0 - Interface section added; body otherwise unchanged
+
+## 0.3.0 - step 7 names the pull request
+
+- Step 7 of "Running a task" now says that when landing opened a pull request (a project that lands by pull request,
+  docs/decisions.md H-041) the change is not on the default branch yet, and to give the owner the pull request's link.
+  The description is unchanged; the trigger evals were not run again for this line.
+

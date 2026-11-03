@@ -36,7 +36,7 @@ Each skill named here by its role tells you its exact commands; use it each time
    - After a done report, record step.done with the ledger skill before the next step; the ledger refuses it when the report does not allow it, and then the workflow's retry rule applies.
    - When you ask the owner a step's question, number its options too, so a one-word answer is unambiguous: "1. TXXXXXX Blue or Green? 1) Blue 2) Green". With several open questions, number each question and give its options letters ("1. ... a) Blue b) Green"). Map the owner's answer back to the option's label and resume the step through the runtime skill with that label, from the owner.
 6. After the last step, use the git skill to land the task, and follow what its answer says: landed, refused with a reason, one more verify step before landing, or a question for the owner ("Land now" or "Leave it").
-7. Tell the owner, briefly, what landed or what waits on them.
+7. Tell the owner, briefly, what landed or what waits on them. When landing opened a pull request (the project lands by pull request), the change is not on the default branch yet: give the owner the pull request's link to review and merge.
 
 A step's report is the worker's own account; read it before you act. You never write a report yourself, never start a step on a model you picked, and never do a step's work in this session, however small it looks: no editing project files, no running the project's tests or builds, no git commands other than git log and git show, and no subagents or workflows of your own for task work. If you notice you are about to do one of these, use the skill whose role covers it instead.
 

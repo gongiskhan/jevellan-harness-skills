@@ -11,7 +11,9 @@
 // (refused while the parent has no worktree), else project.json defaultBranch. `git fetch` runs first when the
 // repository has a remote, with HOME set to the owner's home (the skills run's D-079: a caller with another HOME has
 // no credential helper); a failed fetch is only a warning, because the local branch is still a valid base. The base
-// ref is the local branch, else origin/<base>. Then
+// ref is the local branch, else origin/<base>. With "landing": "pr" in project.json (H-041) a task on the default
+// branch starts from origin/<defaultBranch> after `git fetch origin`, never from the local default branch (which may be
+// far behind), and a failed fetch, or an origin without that branch, refuses. Then
 //   git worktree add --no-track -b jh/<slug>-<T> <harness home>/worktrees/<project>/<slug>-<T> <base commit>
 // followed by .jevellan/evidence/ inside the worktree, a .claude symlink to the project's .claude when these skills
 // run from the project's .claude/skills (so a worker in the worktree sees the same skills and hooks; skills that came
@@ -73,6 +75,9 @@ export const EXCLUDE_LINES = Object.freeze([
 export function isHarnessPath(file) {
   return file === '.jevellan' || file.startsWith('.jevellan/') || file === 'plan.md' || file === '.claude' || file === '.claude/';
 }
+
+/** project.json "landing": how a task reaches the default branch (H-041). */
+export const LANDING_MODES = Object.freeze(['local', 'pr']);
 
 export class GitSkillError extends Error {
   constructor(message, exitCode = 2) {
@@ -392,6 +397,21 @@ export function defaultBranch(root, config = readProjectConfig(root)) {
   return branch.trim();
 }
 
+// project.json "landing": "local" (the default: landing moves the local default branch) or "pr" (landing pushes the
+// task branch and opens a pull request). Anything else refuses, so a typo never lands locally by surprise.
+export function landingMode(config, file = 'project.json') {
+  const mode = config.landing ?? 'local';
+  if (!LANDING_MODES.includes(mode)) throw new GitSkillError(`${file}: landing must be "local" or "pr", not ${JSON.stringify(mode)}`);
+  return mode;
+}
+
+// Fetches origin for a task that lands by pull request, with the owner's HOME (credentials). Refuses on failure.
+export function fetchOrigin(root, why) {
+  if (!remotes(root).includes('origin')) throw new GitSkillError(`project.json sets "landing": "pr", but ${root} has no remote named origin`);
+  const r = git(root, ['fetch', '--quiet', '--no-prune', 'origin'], { permitted: [0, 1, 128], timeoutMs: 180000, env: gitEnv({ HOME: ownerHome() }) });
+  if (r.code !== 0) throw new GitSkillError(`git fetch origin failed (${firstLine(r.stderr) || `exit ${r.code}`}); ${why}`);
+}
+
 export function projectName(root) {
   return path.basename(root);
 }
@@ -561,8 +581,12 @@ async function create(argv) {
     return 0;
   }
 
-  const { base } = chooseBase(root, info, values.base);
+  const config = readProjectConfig(root);
+  const { base, from } = chooseBase(root, info, values.base);
   checkBranchName(root, base, 'the base');
+  // A task that lands by pull request starts from origin's default branch, fetched now (H-041).
+  const fromOrigin = from === 'default' && landingMode(config, projectPaths(root).projectJson) === 'pr';
+  const originRef = `refs/remotes/origin/${base}`;
   const name = `${slugify(info.created.data?.title)}-${task}`;
   const branch = `${BRANCH_PREFIX}${name}`;
   checkBranchName(root, branch, 'the task branch');
@@ -579,7 +603,7 @@ async function create(argv) {
       throw new GitSkillError(`the worktree ${wtPath} of ${branch} is registered but its folder is missing; restore it or run git worktree repair`);
     }
     // A create interrupted after `worktree add`: the fork point, not the base's head now (the base may have moved).
-    const baseRef = baseRefOf(root, base) ?? base;
+    const baseRef = (fromOrigin ? originRef : baseRefOf(root, base)) ?? base;
     const fork = git(root, ['merge-base', `refs/heads/${branch}`, baseRef], { permitted: [0, 1, 128] }).stdout.trim();
     baseCommit = fork || resolveRef(root, baseRef) || null;
   } else {
@@ -587,12 +611,20 @@ async function create(argv) {
       throw new GitSkillError(`the branch ${branch} already exists in ${root} without its worktree; this script never reuses or deletes a branch it did not make for this task`);
     }
     if (present(wtPath)) throw new GitSkillError(`${wtPath} exists and is not a worktree of ${root}; move it away (nothing here deletes it)`);
-    if (remotes(root).length) {
+    if (fromOrigin) {
+      fetchOrigin(root, `with "landing": "pr" a task starts from a fresh origin/${base}, so nothing was created`);
+    } else if (remotes(root).length) {
       const r = git(root, ['fetch', '--quiet', '--no-prune'], { permitted: [0, 1, 128], timeoutMs: 60000, env: gitEnv({ HOME: ownerHome() }) });
       if (r.code !== 0) warnings.push(`git fetch failed (${firstLine(r.stderr) || `exit ${r.code}`}); the worktree starts from the local ${base}`);
     }
-    const baseRef = baseRefOf(root, base);
-    if (!baseRef) throw new GitSkillError(`the base branch ${base} does not exist in ${root} (neither locally nor as origin/${base})`);
+    const baseRef = fromOrigin ? (resolveRef(root, originRef) ? originRef : null) : baseRefOf(root, base);
+    if (!baseRef) {
+      throw new GitSkillError(
+        fromOrigin
+          ? `origin has no branch ${base} (project.json defaultBranch); with "landing": "pr" a task starts from origin/${base}`
+          : `the base branch ${base} does not exist in ${root} (neither locally nor as origin/${base})`,
+      );
+    }
     baseCommit = resolveRef(root, baseRef);
     fs.mkdirSync(path.dirname(wtPath), { recursive: true });
     const release = acquire(path.join(projectPaths(root).locks, 'worktree.lock'), { timeoutMs: 120000, retryMs: 50, staleMs: 600000 });
@@ -609,7 +641,7 @@ async function create(argv) {
   const located = gitLocate(root);
   ensureExclude(root, located?.commonDir ?? path.join(root, '.git'));
 
-  const data = { branch, path: finalPath, base, baseCommit };
+  const data = { branch, path: finalPath, base: fromOrigin ? `origin/${base}` : base, baseCommit };
   // Decided on a fresh read and appended only if the task did not change since: another worktree recorded meanwhile
   // refuses, the same one recorded meanwhile (a concurrent create of this task) is not written twice.
   appendChecked(root, task, (fresh) => {
@@ -619,7 +651,7 @@ async function create(argv) {
     return { kind: 'task.worktree', session: process.env.JH_SESSION, data };
   });
   for (const w of warnings) warn(`warning: ${w}`);
-  const setup = runSetup(root, finalPath, readProjectConfig(root));
+  const setup = runSetup(root, finalPath, config);
   const failed = setupOutcome(setup, finalPath);
   if (failed) throw failed;
   print(values.json, setup.ran ? { ...data, setup: { command: setup.command, ms: setup.ms } } : data, finalPath);

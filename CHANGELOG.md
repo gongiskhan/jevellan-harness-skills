@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.3.0 - 2026-11-03
+
+- Landing by pull request (docs/decisions.md H-041): with `"landing": "pr"` in `.jevellan/project.json` a task's
+  worktree starts from a fresh `origin/<defaultBranch>`, and landing merges `origin/<defaultBranch>` into the task
+  branch, runs the checks, pushes the task branch and opens a pull request with gh (a draft when the landing policy
+  routes the task to the owner), recording its link in `task.landed`. It never merges, never touches the local default
+  branch and never deploys. `"local"` stays the default and behaves as before.
+- The ledger shows a landed pull request (`landedPr` in `show --json`, its status and its timeline line); the viewer
+  links it.
+- `riskyPaths` entries may be patterns with `*`, `?` and `**`; a plain path is a prefix, as before.
+- `install.mjs` writes `"landing": "local"` into a new `project.json`.
+
 ## 0.2.1 - 2026-11-02
 
 - The placement skill is named `jevellan-placement` (it was `jevellan-router`), so its folder name matches its role;
