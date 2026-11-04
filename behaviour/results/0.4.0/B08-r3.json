@@ -1,0 +1,42 @@
+{
+  "case": "B08",
+  "title": "A question to the owner stands on its own",
+  "label": "0.4.0",
+  "run": 3,
+  "id": "B08-0.4.0-r3",
+  "source": "B03-0.4.0-r3",
+  "startedAt": "2026-11-04T23:33:23.008Z",
+  "elapsedMs": 7642,
+  "verdict": "pass",
+  "checks": [
+    {
+      "name": "there is a question to judge",
+      "pass": true,
+      "detail": "110 words"
+    },
+    {
+      "name": "under 120 words",
+      "pass": true,
+      "detail": "110 words"
+    }
+  ],
+  "judge": {
+    "model": "claude-opus-5-5",
+    "effort": "medium",
+    "rubricHash": "80e07e70f466026b",
+    "ms": 7642,
+    "score": 0.85,
+    "reasons": [
+      "The question meets almost every criterion: it says what the task is (making credentials replaceable and removable in the panel, with the accounts page linking there), why it is asking (an unfinished overlapping change adds only a Substituir button), which option it recommends, and the default.",
+      "Each option says what will happen: one change to review and the other thread stops, the other change must be closed to avoid a conflict, or nothing starts yet.",
+      "Minor slip: 'merged' is version-control jargon used without explanation, and 'the general form' and 'work thread' are vague internal-sounding phrases.",
+      "It contains no internal ids or branch names, and at roughly 100 words it is under the 120-word limit."
+    ],
+    "costUsd": 0.0102446,
+    "threshold": 0.8,
+    "pass": true
+  },
+  "cost": {
+    "judgeUsd": 0.0102446
+  }
+}

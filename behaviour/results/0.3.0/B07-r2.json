@@ -75,5 +75,26 @@
   "projectDir": "/home/ggomes/jevellan-projects/jevellan-harness-evals/B07-0.3.0-r2",
   "evidenceFile": "/home/ggomes/.jevellan-harness/evals/behaviour/B07-0.3.0-r2/artifacts/evidence.json",
   "ledgerExcerpt": "/home/ggomes/.jevellan-harness/evals/behaviour/B07-0.3.0-r2/artifacts/ledger-excerpt.jsonl",
-  "transcript": "/home/ggomes/.claude/projects/-home-ggomes-jevellan-projects-jevellan-harness-evals-B07-0-3-0-r2-listing/a4f307b5-8065-4459-b9af-0f533dcb785c.jsonl"
+  "transcript": "/home/ggomes/.claude/projects/-home-ggomes-jevellan-projects-jevellan-harness-evals-B07-0-3-0-r2-listing/a4f307b5-8065-4459-b9af-0f533dcb785c.jsonl",
+  "reevaluatedAt": "2026-11-04T23:29:26.922Z",
+  "previous": {
+    "verdict": "fail",
+    "checks": [
+      {
+        "name": "the budget choice is recorded with its reason",
+        "pass": false,
+        "detail": "no decisions[] entry, note or step.message records the choice with a reason"
+      },
+      {
+        "name": "the owner is not asked about it",
+        "pass": false,
+        "detail": "needs-decision: The two fields on every row take a full page to about 2930 bytes against the 2400 budget. How should it fit?"
+      },
+      {
+        "name": "the owner's summary mentions the choice",
+        "pass": true,
+        "detail": "the last replies mention the budget choice"
+      }
+    ]
+  }
 }

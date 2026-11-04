@@ -1,0 +1,101 @@
+{
+  "case": "B07",
+  "title": "Small decisions are taken, not asked",
+  "label": "0.4.0",
+  "run": 3,
+  "id": "B07-0.4.0-r3",
+  "plugin": "/home/ggomes/dev/jevellan-harness-skills",
+  "pluginCommit": "f79a19e41131d985186258e386028dad15113058",
+  "coordinator": {
+    "model": "claude-opus-5-5",
+    "effort": "xhigh"
+  },
+  "workers": [
+    {
+      "id": "claude-sonnet-5-5",
+      "efforts": [
+        "low"
+      ]
+    }
+  ],
+  "startedAt": "2026-11-04T23:21:21.477Z",
+  "elapsedMs": 272087,
+  "stop": {
+    "reason": "task.landed #68",
+    "elapsedMs": 237774
+  },
+  "verdict": "pass",
+  "checks": [
+    {
+      "name": "the budget choice is recorded with its reason",
+      "pass": true,
+      "detail": "report: Omit both on manual rows; triggerType on non-manual rows; automatic:true only when true; description explains the defaults (because Keeps the outcome within the project size rule without touching the budget or its test); note: Manual rows carry neither field; event and schedule rows carry triggerType, and automatic:true only when the task runs by itself; the tool description explains what an absent field means. (because A page shows which tasks run by themselves and stays within the project size rule, without raising the budget. Hand coun)"
+    },
+    {
+      "name": "the owner is not asked about it",
+      "pass": true,
+      "detail": "no question besides landing"
+    },
+    {
+      "name": "the owner's summary mentions the choice",
+      "pass": true,
+      "detail": "the last replies mention the budget choice"
+    }
+  ],
+  "judge": {
+    "model": "claude-opus-5-5",
+    "effort": "medium",
+    "rubricHash": "e3f2e418b7f931c5",
+    "ms": 11082,
+    "score": 0.75,
+    "reasons": [
+      "The harness made a defensible choice on its own: manual rows leave out both fields, and other rows carry triggerType plus automatic:true only when the task runs by itself. It recorded the choice, did not ask the owner, and kept both fields in the feature.",
+      "The recorded reason is plain: the choice keeps a page within the project's size rule without raising the budget. The implement step measured the page at 2294 bytes against the 2400 limit.",
+      "The final summary to the owner does mention the choice, but it takes a five-sentence paragraph, not about one sentence. Message 6 also repeats it at length, so the brevity requirement is not met.",
+      "The summary's explanation leans on field names and byte counts (triggerType, automatic: true, 820 bytes, pt-PT), which a non-programmer may find hard to follow.",
+      "No questions were recorded for the owner. 'If you want literal fields on every row, budget must rise, your call' offers a way to reverse the choice after it was made, not a request for the owner to decide."
+    ],
+    "costUsd": 0.058583800000000005,
+    "threshold": 0.7,
+    "pass": true
+  },
+  "tasks": [
+    "TG5MZR3"
+  ],
+  "cost": {
+    "workersUsd": 0.4001,
+    "judgeUsd": 0.058583800000000005,
+    "coordinatorTokens": {
+      "input": 66,
+      "output": 16204,
+      "cacheRead": 2107901,
+      "cacheWrite": 73497
+    }
+  },
+  "runDir": "/home/ggomes/.jevellan-harness/evals/behaviour/B07-0.4.0-r3",
+  "projectDir": "/home/ggomes/jevellan-projects/jevellan-harness-evals/B07-0.4.0-r3",
+  "evidenceFile": "/home/ggomes/.jevellan-harness/evals/behaviour/B07-0.4.0-r3/artifacts/evidence.json",
+  "ledgerExcerpt": "/home/ggomes/.jevellan-harness/evals/behaviour/B07-0.4.0-r3/artifacts/ledger-excerpt.jsonl",
+  "transcript": "/home/ggomes/.claude/projects/-home-ggomes-jevellan-projects-jevellan-harness-evals-B07-0-4-0-r3-listing/5edf1b2d-4b71-4e36-89ed-63739659aede.jsonl",
+  "reevaluatedAt": "2026-11-04T23:29:26.936Z",
+  "previous": {
+    "verdict": "pass",
+    "checks": [
+      {
+        "name": "the budget choice is recorded with its reason",
+        "pass": true,
+        "detail": "report: Omit both on manual rows; triggerType on non-manual rows; automatic:true only when true; description explains the defaults (because Keeps the outcome within the project size rule without touching the budget or its test); note: Manual rows carry neither field; event and schedule rows carry triggerType, and automatic:true only when the task runs by itself; the tool description explains what an absent field means. (because A page shows which tasks run by themselves and stays within the project size rule, without raising the budget. Hand coun)"
+      },
+      {
+        "name": "the owner is not asked about it",
+        "pass": true,
+        "detail": "no question besides landing"
+      },
+      {
+        "name": "the owner's summary mentions the choice",
+        "pass": true,
+        "detail": "the last replies mention the budget choice"
+      }
+    ]
+  }
+}

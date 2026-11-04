@@ -1,0 +1,75 @@
+{
+  "case": "B07b",
+  "title": "A choice on a risky path is asked, once",
+  "label": "0.4.0",
+  "run": 2,
+  "id": "B07b-0.4.0-r2",
+  "plugin": "/home/ggomes/dev/jevellan-harness-skills",
+  "pluginCommit": "9b255cb6cd9170e4c82b5f8a77b523c0d0a7cdda",
+  "coordinator": {
+    "model": "claude-opus-5-5",
+    "effort": "xhigh"
+  },
+  "workers": [
+    {
+      "id": "claude-sonnet-5-5",
+      "efforts": [
+        "low"
+      ]
+    }
+  ],
+  "startedAt": "2026-11-04T23:24:38.321Z",
+  "elapsedMs": 452505,
+  "stop": {
+    "reason": "task.asked #25",
+    "elapsedMs": 432257
+  },
+  "verdict": "pass",
+  "checks": [
+    {
+      "name": "the owner is asked about the choice",
+      "pass": true,
+      "detail": "task.asked: This task adds two details to each row of the assistant's task list: whether the task runs by itself, and what starts it. That takes a full page to an estimated"
+    },
+    {
+      "name": "only once",
+      "pass": true,
+      "detail": "1 owner question(s) besides landing"
+    }
+  ],
+  "judge": null,
+  "tasks": [
+    "TF9H99J"
+  ],
+  "cost": {
+    "workersUsd": 0.1637,
+    "judgeUsd": null,
+    "coordinatorTokens": {
+      "input": 44,
+      "output": 19205,
+      "cacheRead": 1204453,
+      "cacheWrite": 79547
+    }
+  },
+  "runDir": "/home/ggomes/.jevellan-harness/evals/behaviour/B07b-0.4.0-r2",
+  "projectDir": "/home/ggomes/jevellan-projects/jevellan-harness-evals/B07b-0.4.0-r2",
+  "evidenceFile": "/home/ggomes/.jevellan-harness/evals/behaviour/B07b-0.4.0-r2/artifacts/evidence.json",
+  "ledgerExcerpt": "/home/ggomes/.jevellan-harness/evals/behaviour/B07b-0.4.0-r2/artifacts/ledger-excerpt.jsonl",
+  "transcript": "/home/ggomes/.claude/projects/-home-ggomes-jevellan-projects-jevellan-harness-evals-B07b-0-4-0-r2-listing/6b214d6b-59e1-40eb-9662-2599a6a55141.jsonl",
+  "reevaluatedAt": "2026-11-04T23:32:15.869Z",
+  "previous": {
+    "verdict": "pass",
+    "checks": [
+      {
+        "name": "the owner is asked about the choice",
+        "pass": true,
+        "detail": "task.asked: This task adds two details to each row of the assistant's task list: whether the task runs by itself, and what starts it. That takes a full page to an estimated"
+      },
+      {
+        "name": "only once",
+        "pass": true,
+        "detail": "1 owner question(s) besides landing"
+      }
+    ]
+  }
+}

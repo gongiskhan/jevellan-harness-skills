@@ -1,0 +1,75 @@
+{
+  "case": "B07b",
+  "title": "A choice on a risky path is asked, once",
+  "label": "0.4.0",
+  "run": 3,
+  "id": "B07b-0.4.0-r3",
+  "plugin": "/home/ggomes/dev/jevellan-harness-skills",
+  "pluginCommit": "f79a19e41131d985186258e386028dad15113058",
+  "coordinator": {
+    "model": "claude-opus-5-5",
+    "effort": "xhigh"
+  },
+  "workers": [
+    {
+      "id": "claude-sonnet-5-5",
+      "efforts": [
+        "low"
+      ]
+    }
+  ],
+  "startedAt": "2026-11-04T23:24:55.412Z",
+  "elapsedMs": 206012,
+  "stop": {
+    "reason": "task.asked #24",
+    "elapsedMs": 188794
+  },
+  "verdict": "pass",
+  "checks": [
+    {
+      "name": "the owner is asked about the choice",
+      "pass": true,
+      "detail": "task.asked: The task list will show which tasks run by themselves, but marking every row puts a full page about 530 bytes over the project's size limit. How should it fit? "
+    },
+    {
+      "name": "only once",
+      "pass": true,
+      "detail": "1 owner question(s) besides landing"
+    }
+  ],
+  "judge": null,
+  "tasks": [
+    "T9ZMQNQ"
+  ],
+  "cost": {
+    "workersUsd": 0.127,
+    "judgeUsd": null,
+    "coordinatorTokens": {
+      "input": 44,
+      "output": 15752,
+      "cacheRead": 1233863,
+      "cacheWrite": 65799
+    }
+  },
+  "runDir": "/home/ggomes/.jevellan-harness/evals/behaviour/B07b-0.4.0-r3",
+  "projectDir": "/home/ggomes/jevellan-projects/jevellan-harness-evals/B07b-0.4.0-r3",
+  "evidenceFile": "/home/ggomes/.jevellan-harness/evals/behaviour/B07b-0.4.0-r3/artifacts/evidence.json",
+  "ledgerExcerpt": "/home/ggomes/.jevellan-harness/evals/behaviour/B07b-0.4.0-r3/artifacts/ledger-excerpt.jsonl",
+  "transcript": "/home/ggomes/.claude/projects/-home-ggomes-jevellan-projects-jevellan-harness-evals-B07b-0-4-0-r3-listing/9e93dc3e-21bf-4aac-8e91-52b7e47a219d.jsonl",
+  "reevaluatedAt": "2026-11-04T23:29:26.937Z",
+  "previous": {
+    "verdict": "pass",
+    "checks": [
+      {
+        "name": "the owner is asked about the choice",
+        "pass": true,
+        "detail": "task.asked: The task list will show which tasks run by themselves, but marking every row puts a full page about 530 bytes over the project's size limit. How should it fit? "
+      },
+      {
+        "name": "only once",
+        "pass": true,
+        "detail": "1 owner question(s) besides landing"
+      }
+    ]
+  }
+}

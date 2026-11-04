@@ -32,3 +32,20 @@
     option labels. A question in plain words ("past its 2,400 limit", "nearly 3,000 bytes", options whose meanings give
     the sizes) is about the budget choice as much as one that says "budget". Before: 0.4.0 B07b r1 (after the riskyPaths
     fix) failed "the owner is asked about the choice" on such a question; after: it passes.
+- The 0.4.0 runs. B01 to B06, B09 and R01 ran on the skills of b69ee7a, with the implement duty's sentence about
+  never copying a secret from the environment (2986876) arriving during the sweep (later runs read it; it does not
+  touch what these cases measure). The first B07b runs on that text failed 0/3: the plan step took the budget
+  trade-off on a risky path itself and the coordinator accepted it. f79a19e makes the riskyPaths check come first in
+  the plan, implement and coordinator decision rules (the coordinator also checks what a step decided); B07 and B07b
+  were run again on it (B07 3/3, B07b 3/3) and B08 judged again from B03's and the new B07b's questions. The earlier
+  B07, B07b and B08 results are archived in `~/.jevellan-harness/archive/evals/0.4.0-before-riskypaths-first/`. The
+  other cases' fixtures have no riskyPaths, where f79a19e changes nothing. (Results written before 2026-11-04 23:40
+  record the repository's commit when the result was written, not when the run started; the runner now records the
+  latter.)
+- B02's 0.3.0 runs are on its final definition (answers a waiting coordinator, stops at what it measures); the earlier
+  ones are archived in `~/.jevellan-harness/archive/evals/baseline-0.3.0-old-definitions/`. B09's 0.3.0 runs predate
+  that definition but none of them asked before landing, which is the only point where the definitions differ.
+- Cost of a full run (every case, 3 runs, R01 2, B08 judged from B03 and B07b): 0.3.0 workers 12.61 USD, judge 0.51
+  USD, 185 run-minutes; 0.4.0 workers 7.84 USD, judge 0.66 USD, 134 run-minutes (0.4.0 stops earlier when work already
+  exists). Coordinators run on the owner's subscription: about 400k output tokens per full run. About 50 minutes of wall
+  time at 3 to 4 runs in parallel.

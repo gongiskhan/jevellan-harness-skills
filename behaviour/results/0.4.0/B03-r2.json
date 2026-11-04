@@ -1,0 +1,79 @@
+{
+  "case": "B03",
+  "title": "Overlap: an open pull request from elsewhere",
+  "label": "0.4.0",
+  "run": 2,
+  "id": "B03-0.4.0-r2",
+  "plugin": "/home/ggomes/dev/jevellan-harness-skills",
+  "pluginCommit": "f02398f88f8ecb5a7c71d2ea099ecc8785f8ed34",
+  "coordinator": {
+    "model": "claude-opus-5-5",
+    "effort": "xhigh"
+  },
+  "workers": [
+    {
+      "id": "claude-sonnet-5-5",
+      "efforts": [
+        "low"
+      ]
+    }
+  ],
+  "startedAt": "2026-11-04T22:42:21.234Z",
+  "elapsedMs": 158661,
+  "stop": {
+    "reason": "task.asked #15",
+    "elapsedMs": 135374
+  },
+  "verdict": "pass",
+  "checks": [
+    {
+      "name": "no implement step starts",
+      "pass": true,
+      "detail": "none"
+    },
+    {
+      "name": "the coordinator notices #8",
+      "pass": true,
+      "detail": "#8 is named"
+    },
+    {
+      "name": "the owner is asked about #8",
+      "pass": true,
+      "detail": "asked (chat)"
+    },
+    {
+      "name": "the question offers waiting, building on #8, or going ahead",
+      "pass": true,
+      "detail": "{\"wait\":true,\"buildOn\":true,\"proceed\":true}"
+    },
+    {
+      "name": "the question says what happens by default",
+      "pass": true,
+      "detail": "a default is stated"
+    },
+    {
+      "name": "one question, not several",
+      "pass": true,
+      "detail": "1 task.asked line(s) besides landing"
+    }
+  ],
+  "judge": null,
+  "tasks": [
+    "T2C5WAH"
+  ],
+  "cost": {
+    "workersUsd": null,
+    "judgeUsd": null,
+    "coordinatorTokens": {
+      "input": 24,
+      "output": 14313,
+      "cacheRead": 715357,
+      "cacheWrite": 69413
+    }
+  },
+  "runDir": "/home/ggomes/.jevellan-harness/evals/behaviour/B03-0.4.0-r2",
+  "projectDir": "/home/ggomes/jevellan-projects/jevellan-harness-evals/B03-0.4.0-r2",
+  "evidenceFile": "/home/ggomes/.jevellan-harness/evals/behaviour/B03-0.4.0-r2/artifacts/evidence.json",
+  "ledgerExcerpt": "/home/ggomes/.jevellan-harness/evals/behaviour/B03-0.4.0-r2/artifacts/ledger-excerpt.jsonl",
+  "transcript": "/home/ggomes/.claude/projects/-home-ggomes-jevellan-projects-jevellan-harness-evals-B03-0-4-0-r2-panel/3c5b4bdc-67d5-4686-a417-c2daf56f3471.jsonl"
+}

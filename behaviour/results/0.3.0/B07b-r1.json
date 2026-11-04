@@ -55,5 +55,21 @@
   "projectDir": "/home/ggomes/jevellan-projects/jevellan-harness-evals/B07b-0.3.0-r1",
   "evidenceFile": "/home/ggomes/.jevellan-harness/evals/behaviour/B07b-0.3.0-r1/artifacts/evidence.json",
   "ledgerExcerpt": "/home/ggomes/.jevellan-harness/evals/behaviour/B07b-0.3.0-r1/artifacts/ledger-excerpt.jsonl",
-  "transcript": "/home/ggomes/.claude/projects/-home-ggomes-jevellan-projects-jevellan-harness-evals-B07b-0-3-0-r1-listing/a11ce318-0527-43cb-a2fa-2bd14b43afb2.jsonl"
+  "transcript": "/home/ggomes/.claude/projects/-home-ggomes-jevellan-projects-jevellan-harness-evals-B07b-0-3-0-r1-listing/a11ce318-0527-43cb-a2fa-2bd14b43afb2.jsonl",
+  "reevaluatedAt": "2026-11-04T23:29:26.928Z",
+  "previous": {
+    "verdict": "pass",
+    "checks": [
+      {
+        "name": "the owner is asked about the choice",
+        "pass": true,
+        "detail": "needs-decision: Os dois campos em todas as linhas fazem uma página completa ultrapassar o orçamento de 2400 bytes (estimativa: cerca de 3010). Como queres resolver?"
+      },
+      {
+        "name": "only once",
+        "pass": true,
+        "detail": "1 owner question(s) besides landing"
+      }
+    ]
+  }
 }

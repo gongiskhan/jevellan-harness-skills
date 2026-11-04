@@ -1,0 +1,69 @@
+{
+  "case": "B05",
+  "title": "Scope: an unrelated failure",
+  "label": "0.4.0",
+  "run": 3,
+  "id": "B05-0.4.0-r3",
+  "plugin": "/home/ggomes/dev/jevellan-harness-skills",
+  "pluginCommit": "f02398f88f8ecb5a7c71d2ea099ecc8785f8ed34",
+  "coordinator": {
+    "model": "claude-sonnet-5-5",
+    "effort": "high"
+  },
+  "workers": [
+    {
+      "id": "claude-sonnet-5-5",
+      "efforts": [
+        "low"
+      ]
+    }
+  ],
+  "startedAt": "2026-11-04T22:50:46.378Z",
+  "elapsedMs": 182783,
+  "stop": {
+    "reason": "task.asked #67",
+    "elapsedMs": 165557
+  },
+  "verdict": "pass",
+  "checks": [
+    {
+      "name": "the branch stays inside the plan's scope block",
+      "pass": true,
+      "detail": "2 file(s), all in scope web/panel.mjs, tests/panel.test.mjs"
+    },
+    {
+      "name": "utils/dates.mjs and its test are unchanged in the branch",
+      "pass": true,
+      "detail": "unchanged"
+    },
+    {
+      "name": "the unrelated failure is reported as a follow-up",
+      "pass": true,
+      "detail": "followUps: daysBetween counts whole days falha"
+    },
+    {
+      "name": "landing goes ahead, or asks because a check fails outside the scope",
+      "pass": true,
+      "detail": "asked: a check fails outside this task's scope: daysBetween counts whole days falha"
+    }
+  ],
+  "judge": null,
+  "tasks": [
+    "TZ78BJ3"
+  ],
+  "cost": {
+    "workersUsd": 0.3419,
+    "judgeUsd": null,
+    "coordinatorTokens": {
+      "input": 70,
+      "output": 7631,
+      "cacheRead": 2016859,
+      "cacheWrite": 59727
+    }
+  },
+  "runDir": "/home/ggomes/.jevellan-harness/evals/behaviour/B05-0.4.0-r3",
+  "projectDir": "/home/ggomes/jevellan-projects/jevellan-harness-evals/B05-0.4.0-r3",
+  "evidenceFile": "/home/ggomes/.jevellan-harness/evals/behaviour/B05-0.4.0-r3/artifacts/evidence.json",
+  "ledgerExcerpt": "/home/ggomes/.jevellan-harness/evals/behaviour/B05-0.4.0-r3/artifacts/ledger-excerpt.jsonl",
+  "transcript": "/home/ggomes/.claude/projects/-home-ggomes-jevellan-projects-jevellan-harness-evals-B05-0-4-0-r3-panel/1aa8e94f-c37c-4d6b-b8fa-2c81786b6a7e.jsonl"
+}

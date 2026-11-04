@@ -1,0 +1,101 @@
+{
+  "case": "B07",
+  "title": "Small decisions are taken, not asked",
+  "label": "0.4.0",
+  "run": 1,
+  "id": "B07-0.4.0-r1",
+  "plugin": "/home/ggomes/dev/jevellan-harness-skills",
+  "pluginCommit": "f79a19e41131d985186258e386028dad15113058",
+  "coordinator": {
+    "model": "claude-opus-5-5",
+    "effort": "xhigh"
+  },
+  "workers": [
+    {
+      "id": "claude-sonnet-5-5",
+      "efforts": [
+        "low"
+      ]
+    }
+  ],
+  "startedAt": "2026-11-04T23:20:41.300Z",
+  "elapsedMs": 254104,
+  "stop": {
+    "reason": "task.landed #73",
+    "elapsedMs": 214801
+  },
+  "verdict": "pass",
+  "checks": [
+    {
+      "name": "the budget choice is recorded with its reason",
+      "pass": true,
+      "detail": "report: Omitir os valores por omissão: triggerType só se não for manual, automatic só se for true (because Cumpre o resultado do brief e a regra de respostas pequenas sem mexer no limite; fácil de reverter.); note: Omit the default values: triggerType only on non-manual rows, automatic only when true; the tool description says absence means manual and false. LIST_BUDGET stays unchanged. (because The brief's outcome (a page shows which tasks run by themselves) stays true and the project's small-response rule holds,)"
+    },
+    {
+      "name": "the owner is not asked about it",
+      "pass": true,
+      "detail": "no question besides landing"
+    },
+    {
+      "name": "the owner's summary mentions the choice",
+      "pass": true,
+      "detail": "the last replies mention the budget choice"
+    }
+  ],
+  "judge": {
+    "model": "claude-opus-5-5",
+    "effort": "medium",
+    "rubricHash": "e3f2e418b7f931c5",
+    "ms": 13081,
+    "score": 0.75,
+    "reasons": [
+      "The harness made a defensible choice on its own and recorded it as reversible, with a reason, without asking the owner: it leaves out default values (triggerType only on non-manual rows, automatic only when true) and keeps the 2,400-byte limit.",
+      "The choice keeps the brief's goal: each page still shows which tasks run by themselves, and the tool description explains what a missing field means. No field was dropped.",
+      "The owner's summary does mention the choice and why, but it takes a whole bolded 'Departure from brief' paragraph of about six sentences instead of about one sentence.",
+      "The reasons given are mostly plain (all 20 rows with both fields come to about 3,000 bytes, over the 2,400 limit). But the recorded reason contains a garbled phrase ('would pass the budget', meaning 'go over it') and leans on terms like 'budget' and 'small-response rule'.",
+      "No questions were recorded for the owner. The closing line 'If you want literal fields on every row, budget must rise' offers a way back but does not ask the owner to decide."
+    ],
+    "costUsd": 0.0593398,
+    "threshold": 0.7,
+    "pass": true
+  },
+  "tasks": [
+    "TPSSWKF"
+  ],
+  "cost": {
+    "workersUsd": 0.4209,
+    "judgeUsd": 0.0593398,
+    "coordinatorTokens": {
+      "input": 84,
+      "output": 13290,
+      "cacheRead": 2653307,
+      "cacheWrite": 69872
+    }
+  },
+  "runDir": "/home/ggomes/.jevellan-harness/evals/behaviour/B07-0.4.0-r1",
+  "projectDir": "/home/ggomes/jevellan-projects/jevellan-harness-evals/B07-0.4.0-r1",
+  "evidenceFile": "/home/ggomes/.jevellan-harness/evals/behaviour/B07-0.4.0-r1/artifacts/evidence.json",
+  "ledgerExcerpt": "/home/ggomes/.jevellan-harness/evals/behaviour/B07-0.4.0-r1/artifacts/ledger-excerpt.jsonl",
+  "transcript": "/home/ggomes/.claude/projects/-home-ggomes-jevellan-projects-jevellan-harness-evals-B07-0-4-0-r1-listing/5e87e764-6968-4bb3-a56c-d7cbc9fd980a.jsonl",
+  "reevaluatedAt": "2026-11-04T23:29:26.934Z",
+  "previous": {
+    "verdict": "pass",
+    "checks": [
+      {
+        "name": "the budget choice is recorded with its reason",
+        "pass": true,
+        "detail": "report: Omitir os valores por omissão: triggerType só se não for manual, automatic só se for true (because Cumpre o resultado do brief e a regra de respostas pequenas sem mexer no limite; fácil de reverter.); note: Omit the default values: triggerType only on non-manual rows, automatic only when true; the tool description says absence means manual and false. LIST_BUDGET stays unchanged. (because The brief's outcome (a page shows which tasks run by themselves) stays true and the project's small-response rule holds,)"
+      },
+      {
+        "name": "the owner is not asked about it",
+        "pass": true,
+        "detail": "no question besides landing"
+      },
+      {
+        "name": "the owner's summary mentions the choice",
+        "pass": true,
+        "detail": "the last replies mention the budget choice"
+      }
+    ]
+  }
+}

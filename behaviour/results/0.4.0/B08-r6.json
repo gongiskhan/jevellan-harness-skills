@@ -1,0 +1,43 @@
+{
+  "case": "B08",
+  "title": "A question to the owner stands on its own",
+  "label": "0.4.0",
+  "run": 6,
+  "id": "B08-0.4.0-r6",
+  "source": "B07b-0.4.0-r3",
+  "startedAt": "2026-11-04T23:33:54.383Z",
+  "elapsedMs": 11274,
+  "verdict": "pass",
+  "checks": [
+    {
+      "name": "there is a question to judge",
+      "pass": true,
+      "detail": "114 words"
+    },
+    {
+      "name": "under 120 words",
+      "pass": true,
+      "detail": "114 words"
+    }
+  ],
+  "judge": {
+    "model": "claude-opus-5-5",
+    "effort": "medium",
+    "rubricHash": "80e07e70f466026b",
+    "ms": 11274,
+    "score": 0.85,
+    "reasons": [
+      "It meets almost every criterion: the task, the size problem, a recommendation and a default are all there, and it is about 111 words.",
+      "The task is clear: the task list will mark which tasks run by themselves. The reason for asking is also clear: marking every row puts a full page about 530 bytes over the size limit.",
+      "Each option says what happens: two calls to read all tasks, manual tasks left unmarked with little room for more automatic ones, or assistants reading more on every page.",
+      "Small slip: 'calls' and 'triggered' are used without explanation, and it never says what the size limit applies to or why it exists.",
+      "No internal ids or unexplained labels appear."
+    ],
+    "costUsd": 0.0251158,
+    "threshold": 0.8,
+    "pass": true
+  },
+  "cost": {
+    "judgeUsd": 0.0251158
+  }
+}

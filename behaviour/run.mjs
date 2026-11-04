@@ -115,6 +115,8 @@ export async function runOnce(caseDef, { label, n, plugin }) {
   const run = newRun(caseDef, label, n, plugin);
   const h = { git, seedCommit, seedPush, updateGhState, installReadOnlyGh, readJson };
   const t0 = Date.now();
+  // The harness the run used: the plugin's commit when the run starts (a working tree may move on during a sweep).
+  const commitAtStart = pluginCommit(plugin);
   let coord = null;
   let transcript = null;
   let stop = { reason: 'not started', elapsedMs: 0 };
@@ -162,7 +164,7 @@ export async function runOnce(caseDef, { label, n, plugin }) {
     run: n,
     id: run.id,
     plugin: run.plugin,
-    pluginCommit: pluginCommit(run.plugin),
+    pluginCommit: commitAtStart,
     coordinator: caseDef.coordinator,
     workers: caseDef.workers,
     startedAt: new Date(t0).toISOString(),

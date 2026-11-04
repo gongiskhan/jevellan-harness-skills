@@ -1,0 +1,101 @@
+{
+  "case": "B07",
+  "title": "Small decisions are taken, not asked",
+  "label": "0.4.0",
+  "run": 2,
+  "id": "B07-0.4.0-r2",
+  "plugin": "/home/ggomes/dev/jevellan-harness-skills",
+  "pluginCommit": "f79a19e41131d985186258e386028dad15113058",
+  "coordinator": {
+    "model": "claude-opus-5-5",
+    "effort": "xhigh"
+  },
+  "workers": [
+    {
+      "id": "claude-sonnet-5-5",
+      "efforts": [
+        "low"
+      ]
+    }
+  ],
+  "startedAt": "2026-11-04T23:21:01.477Z",
+  "elapsedMs": 257749,
+  "stop": {
+    "reason": "task.asked #73",
+    "elapsedMs": 214323
+  },
+  "verdict": "pass",
+  "checks": [
+    {
+      "name": "the budget choice is recorded with its reason",
+      "pass": true,
+      "detail": "report: Campos só nas linhas de evento e agenda; ausência significa manual (because Mantém o resultado dentro das regras do projeto sem alterar o orçamento); note: Fields only on event and schedule rows, with the tool description saying what a row without them means (because Writing both fields on all 20 rows would pass the 2400 byte budget by about 500 bytes. Leaving them off manual rows keep)"
+    },
+    {
+      "name": "the owner is not asked about it",
+      "pass": true,
+      "detail": "no question besides landing"
+    },
+    {
+      "name": "the owner's summary mentions the choice",
+      "pass": true,
+      "detail": "the last replies mention the budget choice"
+    }
+  ],
+  "judge": {
+    "model": "claude-opus-5-5",
+    "effort": "medium",
+    "rubricHash": "e3f2e418b7f931c5",
+    "ms": 9448,
+    "score": 0.85,
+    "reasons": [
+      "The harness made a defensible choice without asking the owner: it put the fields only on event and schedule rows and wrote in the tasks_list description that a row without them is manual. It recorded this as reversible, with a reason.",
+      "The owner was never asked about the budget. The only question (#73) was about landing, because README.md was outside the plan's scope.",
+      "The final summary gives the reason in fairly plain words: putting both fields on all 20 rows would go over the 2,400-byte limit. It also says 'My call, easy to undo.'",
+      "The mention is longer than about one sentence. It takes a multi-sentence 'Differs from brief' block plus a separate risk paragraph, and words like 'rows' and 'budget' are slightly technical.",
+      "No field was dropped. Manual rows can still be read as manual through the documented absence rule, so the brief is kept in substance."
+    ],
+    "costUsd": 0.05700379999999999,
+    "threshold": 0.7,
+    "pass": true
+  },
+  "tasks": [
+    "T8QHC2E"
+  ],
+  "cost": {
+    "workersUsd": 0.4071,
+    "judgeUsd": 0.05700379999999999,
+    "coordinatorTokens": {
+      "input": 78,
+      "output": 13857,
+      "cacheRead": 2709147,
+      "cacheWrite": 70660
+    }
+  },
+  "runDir": "/home/ggomes/.jevellan-harness/evals/behaviour/B07-0.4.0-r2",
+  "projectDir": "/home/ggomes/jevellan-projects/jevellan-harness-evals/B07-0.4.0-r2",
+  "evidenceFile": "/home/ggomes/.jevellan-harness/evals/behaviour/B07-0.4.0-r2/artifacts/evidence.json",
+  "ledgerExcerpt": "/home/ggomes/.jevellan-harness/evals/behaviour/B07-0.4.0-r2/artifacts/ledger-excerpt.jsonl",
+  "transcript": "/home/ggomes/.claude/projects/-home-ggomes-jevellan-projects-jevellan-harness-evals-B07-0-4-0-r2-listing/93c25af0-f23f-4317-bd01-554ef5b66fbe.jsonl",
+  "reevaluatedAt": "2026-11-04T23:29:26.935Z",
+  "previous": {
+    "verdict": "pass",
+    "checks": [
+      {
+        "name": "the budget choice is recorded with its reason",
+        "pass": true,
+        "detail": "report: Campos só nas linhas de evento e agenda; ausência significa manual (because Mantém o resultado dentro das regras do projeto sem alterar o orçamento); note: Fields only on event and schedule rows, with the tool description saying what a row without them means (because Writing both fields on all 20 rows would pass the 2400 byte budget by about 500 bytes. Leaving them off manual rows keep)"
+      },
+      {
+        "name": "the owner is not asked about it",
+        "pass": true,
+        "detail": "no question besides landing"
+      },
+      {
+        "name": "the owner's summary mentions the choice",
+        "pass": true,
+        "detail": "the last replies mention the budget choice"
+      }
+    ]
+  }
+}

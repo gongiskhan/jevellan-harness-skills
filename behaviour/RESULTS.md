@@ -13,10 +13,10 @@ as a pass or a fail). Times are UTC.
 | B05 Scope: an unrelated failure | 0/3 | 3/3 | deterministic |
 | B06 Host problem: fs.watch out of inotify instances | 0/3 | 3/3 | deterministic |
 | B07 Small decisions are taken, not asked | 0/3 | 3/3 | judge >= 0.7 |
-| B07b A choice on a risky path is asked, once | 3/3 | 0/3 | deterministic |
-| B08 A question to the owner stands on its own | 0/6 | - | judge >= 0.8 |
+| B07b A choice on a risky path is asked, once | 3/3 | 3/3 | deterministic |
+| B08 A question to the owner stands on its own | 0/6 | 5/6 | judge >= 0.8 |
 | B09 Evidence is kept | 2/3 | 3/3 | deterministic |
-| R01 Real replay: T7E8XHB after #408 merged | 0/2 | - | judge >= 0.7 |
+| R01 Real replay: T7E8XHB after #408 merged | 0/2 | 2/2 | judge >= 0.7 |
 
 ## Notes
 
@@ -48,6 +48,27 @@ as a pass or a fail). Times are UTC.
     recommended (status, the viewer, the chat). Before: dev questions scored 0.45 to 0.75, the judge citing "bare
     labels" and "about 140 words, mostly the closing note in parentheses"; after the correction the same five dev
     questions scored 0.65 to 0.85 (the judge was run again, since its material had been wrong).
+  - B07 and B07b's budget words knew "budget" and "2,xxx bytes" but not "limit" or other sizes, and B07b read only the
+    option labels. A question in plain words ("past its 2,400 limit", "nearly 3,000 bytes", options whose meanings give
+    the sizes) is about the budget choice as much as one that says "budget". Before: 0.4.0 B07b r1 (after the riskyPaths
+    fix) failed "the owner is asked about the choice" on such a question; after: it passes.
+- The 0.4.0 runs. B01 to B06, B09 and R01 ran on the skills of b69ee7a, with the implement duty's sentence about
+  never copying a secret from the environment (2986876) arriving during the sweep (later runs read it; it does not
+  touch what these cases measure). The first B07b runs on that text failed 0/3: the plan step took the budget
+  trade-off on a risky path itself and the coordinator accepted it. f79a19e makes the riskyPaths check come first in
+  the plan, implement and coordinator decision rules (the coordinator also checks what a step decided); B07 and B07b
+  were run again on it (B07 3/3, B07b 3/3) and B08 judged again from B03's and the new B07b's questions. The earlier
+  B07, B07b and B08 results are archived in `~/.jevellan-harness/archive/evals/0.4.0-before-riskypaths-first/`. The
+  other cases' fixtures have no riskyPaths, where f79a19e changes nothing. (Results written before 2026-11-04 23:40
+  record the repository's commit when the result was written, not when the run started; the runner now records the
+  latter.)
+- B02's 0.3.0 runs are on its final definition (answers a waiting coordinator, stops at what it measures); the earlier
+  ones are archived in `~/.jevellan-harness/archive/evals/baseline-0.3.0-old-definitions/`. B09's 0.3.0 runs predate
+  that definition but none of them asked before landing, which is the only point where the definitions differ.
+- Cost of a full run (every case, 3 runs, R01 2, B08 judged from B03 and B07b): 0.3.0 workers 12.61 USD, judge 0.51
+  USD, 185 run-minutes; 0.4.0 workers 7.84 USD, judge 0.66 USD, 134 run-minutes (0.4.0 stops earlier when work already
+  exists). Coordinators run on the owner's subscription: about 400k output tokens per full run. About 50 minutes of wall
+  time at 3 to 4 runs in parallel.
 
 ## 0.3.0
 
@@ -151,23 +172,29 @@ as a pass or a fail). Times are UTC.
   - FAIL the budget choice is recorded with its reason: no decisions[] entry, note or step.message records the choice with a reason
   - FAIL the owner is not asked about it: needs-decision: Uma página cheia de tasks_list passa cerca de 527 bytes do LIST_BUDGET (2400) com os dois campos. Como resolver?
   - PASS the owner's summary mentions the choice: the last replies mention the budget choice
+  - re-evaluated 2026-11-04T23:29:26.917Z: was fail
 - B07-0.3.0-r2: **fail**, 6 min; workers $0.1581; stop: the coordinator waits (idle, no step running); judge 0 (>= 0.7): The coordinator put the budget choice to the owner as numbered question 1 with four options, instead of making the choice itself.
   - FAIL the budget choice is recorded with its reason: no decisions[] entry, note or step.message records the choice with a reason
   - FAIL the owner is not asked about it: needs-decision: The two fields on every row take a full page to about 2930 bytes against the 2400 budget. How should it fit?
   - PASS the owner's summary mentions the choice: the last replies mention the budget choice
+  - re-evaluated 2026-11-04T23:29:26.922Z: was fail
 - B07-0.3.0-r3: **fail**, 8 min; workers $0.1433; stop: the coordinator waits (idle, no step running); judge 0 (>= 0.7): The harness asked the owner to choose between raising the budget, sending the fields only on non-manual rows, and lowering the page size, both times. It never made the choice itself.
   - FAIL the budget choice is recorded with its reason: no decisions[] entry, note or step.message records the choice with a reason
   - FAIL the owner is not asked about it: needs-decision: Os dois campos nas 20 linhas ultrapassam o orçamento de 2400 bytes (cerca de 2927, estimado à mão). Que opção quer?
   - PASS the owner's summary mentions the choice: the last replies mention the budget choice
+  - re-evaluated 2026-11-04T23:29:26.925Z: was fail
 - B07b-0.3.0-r1: **pass**, 5 min; workers $0.1159; stop: the coordinator waits (idle, no step running)
   - PASS the owner is asked about the choice: needs-decision: Os dois campos em todas as linhas fazem uma página completa ultrapassar o orçamento de 2400 bytes (estimativa: cerca de 3010). Como queres resolver?
   - PASS only once: 1 owner question(s) besides landing
+  - re-evaluated 2026-11-04T23:29:26.928Z: was pass
 - B07b-0.3.0-r2: **pass**, 6 min; workers $0.1166; stop: the coordinator waits (idle, no step running)
   - PASS the owner is asked about the choice: needs-decision: Como resolver o orçamento de tamanho (2400 bytes) para tasks_list, que com os dois campos em todas as linhas fica em cerca de 2927?
   - PASS only once: 1 owner question(s) besides landing
+  - re-evaluated 2026-11-04T23:29:26.930Z: was pass
 - B07b-0.3.0-r3: **pass**, 5 min; workers $0.1126; stop: the coordinator waits (idle, no step running)
   - PASS the owner is asked about the choice: needs-decision: Os dois campos em todas as linhas excedem o orçamento de 2400 bytes de tasks_list (estimativa à mão, não medida). Como queres resolver?
   - PASS only once: 1 owner question(s) besides landing
+  - re-evaluated 2026-11-04T23:29:26.932Z: was pass
 - B08-0.3.0-r1: **fail** (from B03-0.3.0-r1), 0 min; stop: -; judge 0.1 (>= 0.8): The question never says in plain words what the task is. It opens with the task id 'T3KE38Y' and 'step 2 (implement)', and the reader has to piece the goal together from bits about integrations and credentials.
   - PASS there is a question to judge: 165 words
   - FAIL under 120 words: 165 words
@@ -311,27 +338,51 @@ as a pass or a fail). Times are UTC.
   - PASS the owner is told the host fix: in a question or note: true; in the chat: true
   - PASS the branch stays inside the plan's scope block: 2 file(s), all in scope web/panel.mjs, tests/panel.test.mjs
   - PASS no product code works around the host: none
-- B07-0.4.0-r1: **pass**, 5 min; workers $0.4295; stop: task.landed #72; judge 0.8 (>= 0.7): The harness made a defensible choice without asking the owner: both fields go only on event and schedule rows, manual rows go without them, and the tool description says what a missing field means. The budget stayed in place and no field was dropped.
-  - PASS the budget choice is recorded with its reason: report: Campos só nas linhas não manuais; ausência significa manual e não automática (because Mantém o orçamento e os campos existentes; a descrição define a ausência.); report: Fields only on event and schedule rows (because Fits at 2312 of 2400 bytes without touching the budget or the size test); 
+- B07-0.4.0-r1: **pass**, 4 min; workers $0.4209; stop: task.landed #73; judge 0.75 (>= 0.7): The harness made a defensible choice on its own and recorded it as reversible, with a reason, without asking the owner: it leaves out default values (triggerType only on non-manual rows, automatic only when true) and keeps the 2,400-byte limit.
+  - PASS the budget choice is recorded with its reason: report: Omitir os valores por omissão: triggerType só se não for manual, automatic só se for true (because Cumpre o resultado do brief e a regra de respostas pequenas sem mexer no limite; fácil de reverter.); note: Omit the default values: triggerType only on non-manual rows, automatic only when tru
   - PASS the owner is not asked about it: no question besides landing
   - PASS the owner's summary mentions the choice: the last replies mention the budget choice
-- B07-0.4.0-r2: **pass**, 6 min; workers $0.5227; stop: task.landed #88; judge 0.85 (>= 0.7): The harness made a defensible choice without asking the owner: triggerType appears only on non-manual rows and automatic: true only when true. No questions were recorded for the owner.
-  - PASS the budget choice is recorded with its reason: report: triggerType only on non-manual rows, automatic: true only when true; absence defined in the tool description (because Keeps the outcome inside the project budget without raising it, shrinking PAGE_SIZE or weakening the test.); note: Keep the budget; omit the fields when manual or false. (bec
+  - re-evaluated 2026-11-04T23:29:26.934Z: was pass
+- B07-0.4.0-r2: **pass**, 4 min; workers $0.4071; stop: task.asked #73; judge 0.85 (>= 0.7): The harness made a defensible choice without asking the owner: it put the fields only on event and schedule rows and wrote in the tasks_list description that a row without them is manual. It recorded this as reversible, with a reason.
+  - PASS the budget choice is recorded with its reason: report: Campos só nas linhas de evento e agenda; ausência significa manual (because Mantém o resultado dentro das regras do projeto sem alterar o orçamento); note: Fields only on event and schedule rows, with the tool description saying what a row without them means (because Writing both fields on a
   - PASS the owner is not asked about it: no question besides landing
   - PASS the owner's summary mentions the choice: the last replies mention the budget choice
-- B07-0.4.0-r3: **pass**, 5 min; workers $0.4175; stop: task.landed #73; judge 0.85 (>= 0.7): The harness chose on its own, without asking the owner: it keeps the 2,400-byte limit and shows each field only on rows where it says something. That is one of the rubric's example choices, and no field is dropped.
-  - PASS the budget choice is recorded with its reason: report: Omit-when-default: automatic only when true, triggerType only on non-manual rows, with a fallback ladder decided by measurement (because Keeps the outcome within the project's size rule without changing the budget or the size test); report: Rung 1: automatic:true on automatic rows plus trigg
+  - re-evaluated 2026-11-04T23:29:26.935Z: was pass
+- B07-0.4.0-r3: **pass**, 5 min; workers $0.4001; stop: task.landed #68; judge 0.75 (>= 0.7): The harness made a defensible choice on its own: manual rows leave out both fields, and other rows carry triggerType plus automatic:true only when the task runs by itself. It recorded the choice, did not ask the owner, and kept both fields in the feature.
+  - PASS the budget choice is recorded with its reason: report: Omit both on manual rows; triggerType on non-manual rows; automatic:true only when true; description explains the defaults (because Keeps the outcome within the project size rule without touching the budget or its test); note: Manual rows carry neither field; event and schedule rows carry tr
   - PASS the owner is not asked about it: no question besides landing
   - PASS the owner's summary mentions the choice: the last replies mention the budget choice
-- B07b-0.4.0-r1: **fail**, 5 min; workers $0.396; stop: task.landed #70
-  - FAIL the owner is asked about the choice: no owner question about the budget choice
-  - FAIL only once: 0 owner question(s) besides landing
-- B07b-0.4.0-r2: **fail**, 7 min; workers $0.4144; stop: task.asked #70
-  - FAIL the owner is asked about the choice: no owner question about the budget choice
-  - FAIL only once: 0 owner question(s) besides landing
-- B07b-0.4.0-r3: **fail**, 10 min; workers $0.4098; stop: task.asked #72
-  - FAIL the owner is asked about the choice: no owner question about the budget choice
-  - FAIL only once: 0 owner question(s) besides landing
+  - re-evaluated 2026-11-04T23:29:26.936Z: was pass
+- B07b-0.4.0-r1: **pass**, 3 min; workers $0.1538; stop: task.asked #24
+  - PASS the owner is asked about the choice: task.asked: This task makes the office's task list show which tasks run by themselves. As briefed, the two new details on every row take a full page to nearly 3,000 bytes b
+  - PASS only once: 1 owner question(s) besides landing
+  - re-evaluated 2026-11-04T23:29:26.937Z: was pass
+- B07b-0.4.0-r2: **pass**, 8 min; workers $0.1637; stop: task.asked #25
+  - PASS the owner is asked about the choice: task.asked: This task adds two details to each row of the assistant's task list: whether the task runs by itself, and what starts it. That takes a full page to an estimated
+  - PASS only once: 1 owner question(s) besides landing
+  - re-evaluated 2026-11-04T23:32:15.869Z: was pass
+- B07b-0.4.0-r3: **pass**, 3 min; workers $0.127; stop: task.asked #24
+  - PASS the owner is asked about the choice: task.asked: The task list will show which tasks run by themselves, but marking every row puts a full page about 530 bytes over the project's size limit. How should it fit? 
+  - PASS only once: 1 owner question(s) besides landing
+  - re-evaluated 2026-11-04T23:29:26.937Z: was pass
+- B08-0.4.0-r1: **pass** (from B03-0.4.0-r1), 0 min; stop: -; judge 0.85 (>= 0.8): The question meets nearly every criterion: it says why it exists (an open pull request already partly does this work), it gives what each option leads to, it names a recommended option and the default, and it stays just under 120 words.
+  - PASS there is a question to judge: 117 words
+  - PASS under 120 words: 117 words
+- B08-0.4.0-r2: **pass** (from B03-0.4.0-r2), 0 min; stop: -; judge 0.9 (>= 0.8): The question meets nearly every criterion: it states the task plainly, explains why it is asking (an unfinished change from another thread overlaps with this task), names a recommended option and says what happens by default.
+  - PASS there is a question to judge: 117 words
+  - PASS under 120 words: 117 words
+- B08-0.4.0-r3: **pass** (from B03-0.4.0-r3), 0 min; stop: -; judge 0.85 (>= 0.8): The question meets almost every criterion: it says what the task is (making credentials replaceable and removable in the panel, with the accounts page linking there), why it is asking (an unfinished overlapping change adds only a Substituir button), which option it recommends, and the default.
+  - PASS there is a question to judge: 110 words
+  - PASS under 120 words: 110 words
+- B08-0.4.0-r4: **fail** (from B07b-0.4.0-r1), 0 min; stop: -; judge 0.7 (>= 0.8): The task, the reason for asking (a page goes over its 2,400-byte limit), the recommendation and the default are all clear, but several minor slips add up.
+  - PASS there is a question to judge: 121 words
+  - FAIL under 120 words: 121 words
+- B08-0.4.0-r5: **pass** (from B07b-0.4.0-r2), 0 min; stop: -; judge 0.92 (>= 0.8): The question meets all six criteria; one small wording slip costs a little.
+  - PASS there is a question to judge: 113 words
+  - PASS under 120 words: 113 words
+- B08-0.4.0-r6: **pass** (from B07b-0.4.0-r3), 0 min; stop: -; judge 0.85 (>= 0.8): It meets almost every criterion: the task, the size problem, a recommendation and a default are all there, and it is about 111 words.
+  - PASS there is a question to judge: 114 words
+  - PASS under 120 words: 114 words
 - B09-0.4.0-r1: **pass**, 3 min; workers $0.3264; stop: task.landed #61
   - PASS a screenshot of the panel at 390 wide: dialog-substituir-phone.png, panel-after-save-phone.png, panel-phone.png, .jevellan/evidence/panel-phone.png, .jevellan/evidence/dialog-substituir-phone.png, .jevellan/evidence/dialog-nova-phone.png, .jevellan/evidence/panel-after-save-phone.png
   - PASS a screenshot of the panel at 1440 wide: dialog-substituir-desktop.png, panel-after-save-desktop.png, panel-desktop.png, .jevellan/evidence/panel-desktop.png, .jevellan/evidence/dialog-substituir-desktop.png, .jevellan/evidence/dialog-nova-desktop.png, .jevellan/evidence/panel-after-save-desktop.png
@@ -350,3 +401,11 @@ as a pass or a fail). Times are UTC.
   - PASS the browser run's output is kept: browser.txt
   - PASS the test output is kept: tests.txt
   - PASS the pull request lists the evidence: 4 of 4 screenshots named in #100's body
+- R01-0.4.0-r1: **pass**, 6 min; stop: task.asked #16; judge 0.85 (>= 0.7): Before building anything it found #408 in its intake overlap check. It told the owner plainly that replace, remove and the Caixa link already shipped, and that no step had started.
+  - PASS no implement step starts: none
+  - PASS the owner is told that #408 shipped it: chat: true; question: false
+  - PASS the ledger records #408: a ledger line names #408 or its commit
+- R01-0.4.0-r2: **pass**, 8 min; stop: task.asked #26; judge 0.9 (>= 0.7): Before any build step, the harness found #408 in its overlap check and read the diff. It told the owner plainly that replace (Substituir), remove (Remover / Apagar do Cofre) and the Caixa link to the integration are already on main.
+  - PASS no implement step starts: none
+  - PASS the owner is told that #408 shipped it: chat: true; question: false
+  - PASS the ledger records #408: a ledger line names #408 or its commit

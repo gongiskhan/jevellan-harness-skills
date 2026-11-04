@@ -1,0 +1,44 @@
+{
+  "case": "B08",
+  "title": "A question to the owner stands on its own",
+  "label": "0.4.0",
+  "run": 5,
+  "id": "B08-0.4.0-r5",
+  "source": "B07b-0.4.0-r2",
+  "startedAt": "2026-11-04T23:33:43.108Z",
+  "elapsedMs": 10172,
+  "verdict": "pass",
+  "checks": [
+    {
+      "name": "there is a question to judge",
+      "pass": true,
+      "detail": "113 words"
+    },
+    {
+      "name": "under 120 words",
+      "pass": true,
+      "detail": "113 words"
+    }
+  ],
+  "judge": {
+    "model": "claude-opus-5-5",
+    "effort": "medium",
+    "rubricHash": "80e07e70f466026b",
+    "ms": 10172,
+    "score": 0.92,
+    "reasons": [
+      "The question meets all six criteria; one small wording slip costs a little.",
+      "The first sentence explains the task in plain words: each row of the assistant's task list gains two details, whether the task runs by itself and what starts it.",
+      "It explains why it is asking: a full page would be about 2,930 bytes, over the project's 2,400-byte cap.",
+      "Each option says what will happen, such as two calls to read all tasks, about 40% more cost per page, or the assistant having to read a missing detail as 'manual'.",
+      "It marks a recommended option and says Smaller pages is the default if there is no answer; it is about 112 words, under the 120 limit.",
+      "Minor slip: 'calls' and 'cost to read' are not explained, and it is unclear what is being called or what the cost is measured in."
+    ],
+    "costUsd": 0.0237838,
+    "threshold": 0.8,
+    "pass": true
+  },
+  "cost": {
+    "judgeUsd": 0.0237838
+  }
+}

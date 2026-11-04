@@ -1,0 +1,69 @@
+{
+  "case": "B06",
+  "title": "Host problem: fs.watch out of inotify instances",
+  "label": "0.4.0",
+  "run": 1,
+  "id": "B06-0.4.0-r1",
+  "plugin": "/home/ggomes/dev/jevellan-harness-skills",
+  "pluginCommit": "f02398f88f8ecb5a7c71d2ea099ecc8785f8ed34",
+  "coordinator": {
+    "model": "claude-sonnet-5-5",
+    "effort": "high"
+  },
+  "workers": [
+    {
+      "id": "claude-sonnet-5-5",
+      "efforts": [
+        "low"
+      ]
+    }
+  ],
+  "startedAt": "2026-11-04T22:51:37.036Z",
+  "elapsedMs": 147299,
+  "stop": {
+    "reason": "task.asked #55",
+    "elapsedMs": 130073
+  },
+  "verdict": "pass",
+  "checks": [
+    {
+      "name": "the failure is classified as a host problem with its evidence",
+      "pass": true,
+      "detail": "watch.test.mjs falha com EMFILE"
+    },
+    {
+      "name": "the owner is told the host fix",
+      "pass": true,
+      "detail": "in a question or note: false; in the chat: true"
+    },
+    {
+      "name": "the branch stays inside the plan's scope block",
+      "pass": true,
+      "detail": "2 file(s), all in scope web/panel.mjs, tests/panel.test.mjs"
+    },
+    {
+      "name": "no product code works around the host",
+      "pass": true,
+      "detail": "none"
+    }
+  ],
+  "judge": null,
+  "tasks": [
+    "TZZ5YF4"
+  ],
+  "cost": {
+    "workersUsd": 0.2857,
+    "judgeUsd": null,
+    "coordinatorTokens": {
+      "input": 62,
+      "output": 7399,
+      "cacheRead": 1696581,
+      "cacheWrite": 58294
+    }
+  },
+  "runDir": "/home/ggomes/.jevellan-harness/evals/behaviour/B06-0.4.0-r1",
+  "projectDir": "/home/ggomes/jevellan-projects/jevellan-harness-evals/B06-0.4.0-r1",
+  "evidenceFile": "/home/ggomes/.jevellan-harness/evals/behaviour/B06-0.4.0-r1/artifacts/evidence.json",
+  "ledgerExcerpt": "/home/ggomes/.jevellan-harness/evals/behaviour/B06-0.4.0-r1/artifacts/ledger-excerpt.jsonl",
+  "transcript": "/home/ggomes/.claude/projects/-home-ggomes-jevellan-projects-jevellan-harness-evals-B06-0-4-0-r1-panel/341dd9db-e8c2-43dd-bc35-e4c127a63516.jsonl"
+}

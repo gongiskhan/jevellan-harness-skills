@@ -1,0 +1,43 @@
+{
+  "case": "B08",
+  "title": "A question to the owner stands on its own",
+  "label": "0.4.0",
+  "run": 4,
+  "id": "B08-0.4.0-r4",
+  "source": "B07b-0.4.0-r1",
+  "startedAt": "2026-11-04T23:33:32.934Z",
+  "elapsedMs": 9924,
+  "verdict": "fail",
+  "checks": [
+    {
+      "name": "there is a question to judge",
+      "pass": true,
+      "detail": "121 words"
+    },
+    {
+      "name": "under 120 words",
+      "pass": false,
+      "detail": "121 words"
+    }
+  ],
+  "judge": {
+    "model": "claude-opus-5-5",
+    "effort": "medium",
+    "rubricHash": "80e07e70f466026b",
+    "ms": 9924,
+    "score": 0.7,
+    "reasons": [
+      "The task, the reason for asking (a page goes over its 2,400-byte limit), the recommendation and the default are all clear, but several minor slips add up.",
+      "The word count is right around 120 and slightly over by my count, so the length limit is borderline.",
+      "Some wording is vague: it never names the 'two new details', 'trigger type' is internal jargon, and it doesn't say which 'tool' or 'page' it means.",
+      "Option 3's effect, 'The assistant reads more', doesn't tell the reader what will actually happen or what it costs.",
+      "Options 1 and 2 do state their effects in plain terms, with sizes and what is shown."
+    ],
+    "costUsd": 0.0245638,
+    "threshold": 0.8,
+    "pass": false
+  },
+  "cost": {
+    "judgeUsd": 0.0245638
+  }
+}

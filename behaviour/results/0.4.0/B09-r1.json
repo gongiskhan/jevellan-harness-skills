@@ -1,0 +1,74 @@
+{
+  "case": "B09",
+  "title": "Evidence is kept",
+  "label": "0.4.0",
+  "run": 1,
+  "id": "B09-0.4.0-r1",
+  "plugin": "/home/ggomes/dev/jevellan-harness-skills",
+  "pluginCommit": "f02398f88f8ecb5a7c71d2ea099ecc8785f8ed34",
+  "coordinator": {
+    "model": "claude-sonnet-5-5",
+    "effort": "high"
+  },
+  "workers": [
+    {
+      "id": "claude-sonnet-5-5",
+      "efforts": [
+        "low"
+      ]
+    }
+  ],
+  "startedAt": "2026-11-04T23:03:57.934Z",
+  "elapsedMs": 196022,
+  "stop": {
+    "reason": "task.landed #61",
+    "elapsedMs": 175786
+  },
+  "verdict": "pass",
+  "checks": [
+    {
+      "name": "a screenshot of the panel at 390 wide",
+      "pass": true,
+      "detail": "dialog-substituir-phone.png, panel-after-save-phone.png, panel-phone.png, .jevellan/evidence/panel-phone.png, .jevellan/evidence/dialog-substituir-phone.png, .jevellan/evidence/dialog-nova-phone.png, .jevellan/evidence/panel-after-save-phone.png"
+    },
+    {
+      "name": "a screenshot of the panel at 1440 wide",
+      "pass": true,
+      "detail": "dialog-substituir-desktop.png, panel-after-save-desktop.png, panel-desktop.png, .jevellan/evidence/panel-desktop.png, .jevellan/evidence/dialog-substituir-desktop.png, .jevellan/evidence/dialog-nova-desktop.png, .jevellan/evidence/panel-after-save-desktop.png"
+    },
+    {
+      "name": "the browser run's output is kept",
+      "pass": true,
+      "detail": "browser.txt"
+    },
+    {
+      "name": "the test output is kept",
+      "pass": true,
+      "detail": "tests.txt"
+    },
+    {
+      "name": "the pull request lists the evidence",
+      "pass": true,
+      "detail": "8 of 8 screenshots named in #100's body"
+    }
+  ],
+  "judge": null,
+  "tasks": [
+    "T56GH5C"
+  ],
+  "cost": {
+    "workersUsd": 0.3264,
+    "judgeUsd": null,
+    "coordinatorTokens": {
+      "input": 72,
+      "output": 8109,
+      "cacheRead": 2125399,
+      "cacheWrite": 61775
+    }
+  },
+  "runDir": "/home/ggomes/.jevellan-harness/evals/behaviour/B09-0.4.0-r1",
+  "projectDir": "/home/ggomes/jevellan-projects/jevellan-harness-evals/B09-0.4.0-r1",
+  "evidenceFile": "/home/ggomes/.jevellan-harness/evals/behaviour/B09-0.4.0-r1/artifacts/evidence.json",
+  "ledgerExcerpt": "/home/ggomes/.jevellan-harness/evals/behaviour/B09-0.4.0-r1/artifacts/ledger-excerpt.jsonl",
+  "transcript": "/home/ggomes/.claude/projects/-home-ggomes-jevellan-projects-jevellan-harness-evals-B09-0-4-0-r1-panel/3947157e-7e30-4c37-a0c2-d66cacff240c.jsonl"
+}

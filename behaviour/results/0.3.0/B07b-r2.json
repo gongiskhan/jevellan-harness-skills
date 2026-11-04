@@ -55,5 +55,21 @@
   "projectDir": "/home/ggomes/jevellan-projects/jevellan-harness-evals/B07b-0.3.0-r2",
   "evidenceFile": "/home/ggomes/.jevellan-harness/evals/behaviour/B07b-0.3.0-r2/artifacts/evidence.json",
   "ledgerExcerpt": "/home/ggomes/.jevellan-harness/evals/behaviour/B07b-0.3.0-r2/artifacts/ledger-excerpt.jsonl",
-  "transcript": "/home/ggomes/.claude/projects/-home-ggomes-jevellan-projects-jevellan-harness-evals-B07b-0-3-0-r2-listing/032eb63e-8bda-4c9b-8cb3-6ea0c4759606.jsonl"
+  "transcript": "/home/ggomes/.claude/projects/-home-ggomes-jevellan-projects-jevellan-harness-evals-B07b-0-3-0-r2-listing/032eb63e-8bda-4c9b-8cb3-6ea0c4759606.jsonl",
+  "reevaluatedAt": "2026-11-04T23:29:26.930Z",
+  "previous": {
+    "verdict": "pass",
+    "checks": [
+      {
+        "name": "the owner is asked about the choice",
+        "pass": true,
+        "detail": "needs-decision: Como resolver o orçamento de tamanho (2400 bytes) para tasks_list, que com os dois campos em todas as linhas fica em cerca de 2927?"
+      },
+      {
+        "name": "only once",
+        "pass": true,
+        "detail": "1 owner question(s) besides landing"
+      }
+    ]
+  }
 }

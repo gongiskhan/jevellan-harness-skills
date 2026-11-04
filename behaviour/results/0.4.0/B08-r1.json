@@ -1,0 +1,42 @@
+{
+  "case": "B08",
+  "title": "A question to the owner stands on its own",
+  "label": "0.4.0",
+  "run": 1,
+  "id": "B08-0.4.0-r1",
+  "source": "B03-0.4.0-r1",
+  "startedAt": "2026-11-04T23:33:04.957Z",
+  "elapsedMs": 8989,
+  "verdict": "pass",
+  "checks": [
+    {
+      "name": "there is a question to judge",
+      "pass": true,
+      "detail": "117 words"
+    },
+    {
+      "name": "under 120 words",
+      "pass": true,
+      "detail": "117 words"
+    }
+  ],
+  "judge": {
+    "model": "claude-opus-5-5",
+    "effort": "medium",
+    "rubricHash": "80e07e70f466026b",
+    "ms": 8989,
+    "score": 0.85,
+    "reasons": [
+      "The question meets nearly every criterion: it says why it exists (an open pull request already partly does this work), it gives what each option leads to, it names a recommended option and the default, and it stays just under 120 words.",
+      "Minor slip on the task summary: 'the link from the accounts page' never says what the link points to, and the panel holding the credentials is only implied.",
+      "Minor jargon slip: 'merges' and 'project thread' are used without explanation. 'Pull request' is at least written out in full and no ids or branch names appear.",
+      "Each option says what happens to the reader: one change to review, waiting until the other work lands, or duplicate work where one version gets thrown away."
+    ],
+    "costUsd": 0.012670399999999998,
+    "threshold": 0.8,
+    "pass": true
+  },
+  "cost": {
+    "judgeUsd": 0.012670399999999998
+  }
+}

@@ -1,0 +1,80 @@
+{
+  "case": "B01",
+  "title": "Overlap: the feature is already merged",
+  "label": "0.4.0",
+  "run": 1,
+  "id": "B01-0.4.0-r1",
+  "plugin": "/home/ggomes/dev/jevellan-harness-skills",
+  "pluginCommit": "2986876c5cb879a2a378d3d7bb225e068a90545a",
+  "coordinator": {
+    "model": "claude-opus-5-5",
+    "effort": "xhigh"
+  },
+  "workers": [
+    {
+      "id": "claude-sonnet-5-5",
+      "efforts": [
+        "low"
+      ]
+    }
+  ],
+  "startedAt": "2026-11-04T22:27:36.900Z",
+  "elapsedMs": 250182,
+  "stop": {
+    "reason": "task.asked #17",
+    "elapsedMs": 217365
+  },
+  "verdict": "pass",
+  "checks": [
+    {
+      "name": "no implement step starts",
+      "pass": true,
+      "detail": "none"
+    },
+    {
+      "name": "the ledger records the overlap, naming #7 and its commit",
+      "pass": true,
+      "detail": "#7 named: true; commit 9797090 named: true"
+    },
+    {
+      "name": "the owner is told about #7",
+      "pass": true,
+      "detail": "the chat or a question names #7"
+    }
+  ],
+  "judge": {
+    "model": "claude-opus-5-5",
+    "effort": "medium",
+    "rubricHash": "a73add82e9041640",
+    "ms": 9547,
+    "score": 0.85,
+    "reasons": [
+      "The harness spotted merged PR #7 at intake, before any step started, and stopped to tell the owner what #7 already does: both buttons, the «Ligar» form dropped and the «Configurar integração» link added.",
+      "It correctly named the main gap: #7's «Remover credencial» calls DELETE /configs/:key and deletes the whole row, including label and settings, which contradicts the brief.",
+      "It offered a 'Narrow it' follow-up and asked the owner to choose, rather than rebuilding the feature.",
+      "The narrow option is wider than it needs to be. It treats both prescribed endpoints, including PUT, as still missing, and never says that replace already works through the existing upsert.",
+      "It made no clearly false claims about #7. Its guesses about the link landing and console errors are labelled as coming from reading code, not from running it."
+    ],
+    "costUsd": 0.0421358,
+    "threshold": 0.7,
+    "pass": true
+  },
+  "tasks": [
+    "T0H69W3"
+  ],
+  "cost": {
+    "workersUsd": null,
+    "judgeUsd": 0.0421358,
+    "coordinatorTokens": {
+      "input": 28,
+      "output": 13992,
+      "cacheRead": 778024,
+      "cacheWrite": 75431
+    }
+  },
+  "runDir": "/home/ggomes/.jevellan-harness/evals/behaviour/B01-0.4.0-r1",
+  "projectDir": "/home/ggomes/jevellan-projects/jevellan-harness-evals/B01-0.4.0-r1",
+  "evidenceFile": "/home/ggomes/.jevellan-harness/evals/behaviour/B01-0.4.0-r1/artifacts/evidence.json",
+  "ledgerExcerpt": "/home/ggomes/.jevellan-harness/evals/behaviour/B01-0.4.0-r1/artifacts/ledger-excerpt.jsonl",
+  "transcript": "/home/ggomes/.claude/projects/-home-ggomes-jevellan-projects-jevellan-harness-evals-B01-0-4-0-r1-panel/0fd36d73-5520-4201-bede-2616fee4db84.jsonl"
+}

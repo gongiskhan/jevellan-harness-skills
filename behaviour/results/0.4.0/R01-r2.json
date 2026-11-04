@@ -1,0 +1,81 @@
+{
+  "case": "R01",
+  "title": "Real replay: T7E8XHB after #408 merged",
+  "label": "0.4.0",
+  "run": 2,
+  "id": "R01-0.4.0-r2",
+  "plugin": "/home/ggomes/dev/jevellan-harness-skills",
+  "pluginCommit": "34ada982670dca6446ce2bcddd019dfc533fc51a",
+  "coordinator": {
+    "model": "claude-opus-5-5",
+    "effort": "xhigh"
+  },
+  "workers": [
+    {
+      "id": "claude-sonnet-5-5",
+      "efforts": [
+        "high"
+      ]
+    }
+  ],
+  "startedAt": "2026-11-04T23:11:36.395Z",
+  "elapsedMs": 457067,
+  "stop": {
+    "reason": "task.asked #26",
+    "elapsedMs": 420584
+  },
+  "verdict": "pass",
+  "checks": [
+    {
+      "name": "no implement step starts",
+      "pass": true,
+      "detail": "none"
+    },
+    {
+      "name": "the owner is told that #408 shipped it",
+      "pass": true,
+      "detail": "chat: true; question: false"
+    },
+    {
+      "name": "the ledger records #408",
+      "pass": true,
+      "detail": "a ledger line names #408 or its commit"
+    }
+  ],
+  "judge": {
+    "model": "claude-opus-5-5",
+    "effort": "medium",
+    "rubricHash": "1a3bbc48f9b4c22c",
+    "ms": 10167,
+    "score": 0.9,
+    "reasons": [
+      "Before any build step, the harness found #408 in its overlap check and read the diff. It told the owner plainly that replace (Substituir), remove (Remover / Apagar do Cofre) and the Caixa link to the integration are already on main.",
+      "It offered a concrete choice: Narrow it, Close it or Build anyway. It recommended a specific narrow follow-up covering what the Caixa does after removal, a browser spec and a cross-office isolation test.",
+      "No implementation started. It created the task and worktree, stopped under the overlap rule and recorded a task.asked question for the owner.",
+      "It also noted that no new endpoint is needed because #408 reuses the existing routes, so the brief's new credential route would add risk without value.",
+      "Small gap: it never said that remove calls the full integration delete, which wipes the config row, its settings and the stored action evidence. Its follow-up covers the effects on the Caixa source, not the fact that remove deletes more than the credential.",
+      "Small inaccuracy: it says #408 reached main 'yesterday', but it had been merged about 40 minutes earlier."
+    ],
+    "costUsd": 0.05786380000000001,
+    "threshold": 0.7,
+    "pass": true
+  },
+  "tasks": [
+    "TE7RC8B"
+  ],
+  "cost": {
+    "workersUsd": null,
+    "judgeUsd": 0.05786380000000001,
+    "coordinatorTokens": {
+      "input": 38,
+      "output": 22601,
+      "cacheRead": 2039081,
+      "cacheWrite": 145195
+    }
+  },
+  "runDir": "/home/ggomes/.jevellan-harness/evals/behaviour/R01-0.4.0-r2",
+  "projectDir": "/home/ggomes/jevellan-projects/jevellan-harness-evals/R01-0.4.0-r2",
+  "evidenceFile": "/home/ggomes/.jevellan-harness/evals/behaviour/R01-0.4.0-r2/artifacts/evidence.json",
+  "ledgerExcerpt": "/home/ggomes/.jevellan-harness/evals/behaviour/R01-0.4.0-r2/artifacts/ledger-excerpt.jsonl",
+  "transcript": "/home/ggomes/.claude/projects/-home-ggomes-jevellan-projects-jevellan-harness-evals-R01-0-4-0-r2-ekoa-code/4e940c7f-2bd1-4fb4-a16b-a2791da27517.jsonl"
+}

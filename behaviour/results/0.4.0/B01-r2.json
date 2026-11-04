@@ -1,0 +1,80 @@
+{
+  "case": "B01",
+  "title": "Overlap: the feature is already merged",
+  "label": "0.4.0",
+  "run": 2,
+  "id": "B01-0.4.0-r2",
+  "plugin": "/home/ggomes/dev/jevellan-harness-skills",
+  "pluginCommit": "2986876c5cb879a2a378d3d7bb225e068a90545a",
+  "coordinator": {
+    "model": "claude-opus-5-5",
+    "effort": "xhigh"
+  },
+  "workers": [
+    {
+      "id": "claude-sonnet-5-5",
+      "efforts": [
+        "low"
+      ]
+    }
+  ],
+  "startedAt": "2026-11-04T22:27:57.057Z",
+  "elapsedMs": 356468,
+  "stop": {
+    "reason": "task.asked #12",
+    "elapsedMs": 315410
+  },
+  "verdict": "pass",
+  "checks": [
+    {
+      "name": "no implement step starts",
+      "pass": true,
+      "detail": "none"
+    },
+    {
+      "name": "the ledger records the overlap, naming #7 and its commit",
+      "pass": true,
+      "detail": "#7 named: true; commit b1bbef8 named: true"
+    },
+    {
+      "name": "the owner is told about #7",
+      "pass": true,
+      "detail": "the chat or a question names #7"
+    }
+  ],
+  "judge": {
+    "model": "claude-opus-5-5",
+    "effort": "medium",
+    "rubricHash": "a73add82e9041640",
+    "ms": 11766,
+    "score": 0.75,
+    "reasons": [
+      "The harness found PR #7 before placing any build step. It told the owner plainly what #7 already does (both buttons, the «Ligar» form gone, the «Configurar integração» link) and named the real gap: «Remover credencial» calls DELETE /configs/:key and wipes the whole row.",
+      "It stopped and asked the owner with clear options, recommending a narrowed follow-up instead of a rebuild, and it warned against using the remove button on real data.",
+      "The 'narrow' follow-up isn't narrow. It treats the PUT/DELETE /configs/:key/credential endpoints as missing work to add, even though replace already works through the existing upsert. It also adds a long list of extras: anchor landing, dialog cleanup, the confirm() replacement, a console error fix and a new «Adicionar credencial» action.",
+      "Its claims about #7 match the stated facts: replace and the link are done, and remove deletes label, settings and credential. It said it read this from the diff, not from running it, so nothing it said about #7 is clearly false.",
+      "The overlap was found only after a read-only code pass on a stale local main. Nothing was built, so this is a small point."
+    ],
+    "costUsd": 0.0459438,
+    "threshold": 0.7,
+    "pass": true
+  },
+  "tasks": [
+    "TEV72RC"
+  ],
+  "cost": {
+    "workersUsd": null,
+    "judgeUsd": 0.0459438,
+    "coordinatorTokens": {
+      "input": 26,
+      "output": 19524,
+      "cacheRead": 808530,
+      "cacheWrite": 91071
+    }
+  },
+  "runDir": "/home/ggomes/.jevellan-harness/evals/behaviour/B01-0.4.0-r2",
+  "projectDir": "/home/ggomes/jevellan-projects/jevellan-harness-evals/B01-0.4.0-r2",
+  "evidenceFile": "/home/ggomes/.jevellan-harness/evals/behaviour/B01-0.4.0-r2/artifacts/evidence.json",
+  "ledgerExcerpt": "/home/ggomes/.jevellan-harness/evals/behaviour/B01-0.4.0-r2/artifacts/ledger-excerpt.jsonl",
+  "transcript": "/home/ggomes/.claude/projects/-home-ggomes-jevellan-projects-jevellan-harness-evals-B01-0-4-0-r2-panel/a15b3e0d-a681-482b-9408-659e43a50f5d.jsonl"
+}
