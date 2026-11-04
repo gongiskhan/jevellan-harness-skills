@@ -28,3 +28,7 @@
     recommended (status, the viewer, the chat). Before: dev questions scored 0.45 to 0.75, the judge citing "bare
     labels" and "about 140 words, mostly the closing note in parentheses"; after the correction the same five dev
     questions scored 0.65 to 0.85 (the judge was run again, since its material had been wrong).
+  - B07 and B07b's budget words knew "budget" and "2,xxx bytes" but not "limit" or other sizes, and B07b read only the
+    option labels. A question in plain words ("past its 2,400 limit", "nearly 3,000 bytes", options whose meanings give
+    the sizes) is about the budget choice as much as one that says "budget". Before: 0.4.0 B07b r1 (after the riskyPaths
+    fix) failed "the owner is asked about the choice" on such a question; after: it passes.

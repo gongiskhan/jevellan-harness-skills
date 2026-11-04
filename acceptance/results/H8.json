@@ -2,66 +2,68 @@
   "id": "H8",
   "title": "Needs-decision",
   "status": "passed",
-  "startedAt": "2026-11-02T11:27:43.926Z",
-  "finishedAt": "2026-11-02T11:30:13.336Z",
-  "elapsedMs": 149410,
+  "startedAt": "2026-11-04T23:23:03.566Z",
+  "finishedAt": "2026-11-04T23:28:14.975Z",
+  "elapsedMs": 311409,
   "passed": 8,
   "total": 8,
   "timings": {
-    "request to done report": 115168
+    "request to done report": 272414
   },
   "notes": [
     "after the decision: task.landed",
-    "Skill invocations: jevellan-coordinator, jevellan-ledger, jevellan-git, jevellan-router, jevellan-runtime-claude"
+    "Skill invocations: jevellan-coordinator, jevellan-ledger, jevellan-git, jevellan-placement, jevellan-runtime-claude",
+    "re-checked at 2026-11-04T23:28:54.845Z: the slip analyser split a quoted node -e script on its ; and read its => as a redirect; fixed in acceptance/coord.mjs (quoted strings are emptied before the split); the first analysis said: Bash \"process.stdin.on(\"data\",d=>s+=d).on(\"end\",()=>{for(const e of JSON.parse(s).events){if(/colou?r/i.test(e.data.title+e.da\": wrote /home/ggomes/jevellan-projects/jevellan-harness-sandbox/s+=d).on(\"\",()=>{for(const outside .jevellan | Bash \"process.stdin.on(\"data\",d=>s+=d).on(\"end\",()=>{const t=J",
+    "re-checked at 2026-11-04T23:29:19.903Z: the slip analyser split a quoted node -e script on its ; and read its => as a redirect, and did not expand a variable the same command set to the coordinator's /tmp scratchpad; both fixed in acceptance/coord.mjs; the first analysis said: Bash \"} > $SP/T2QNNNG-step1-prompt.md\": wrote /home/ggomes/jevellan-projects/jevellan-harness-sandbox/$SP/T2QNNNG-step1-prompt.md outside .jevellan"
   ],
   "checks": [
     {
       "name": "the skills are installed",
       "ok": true,
       "detail": "",
-      "at": "2026-11-02T11:27:44.018Z"
+      "at": "2026-11-04T23:23:03.692Z"
     },
     {
       "name": "the step reported needs-decision",
       "ok": true,
-      "detail": "T1KES8Q: Blue or Green? [Blue, Green]",
-      "at": "2026-11-02T11:29:08.768Z"
+      "detail": "T2QNNNG: Blue or Green? [Blue, Green]",
+      "at": "2026-11-04T23:26:44.029Z"
     },
     {
       "name": "the question is \"Blue or Green?\" with two options",
       "ok": true,
       "detail": "",
-      "at": "2026-11-02T11:29:08.768Z"
+      "at": "2026-11-04T23:26:44.030Z"
     },
     {
       "name": "the coordinator surfaced the question with numbered options",
       "ok": true,
-      "detail": "The needs-decision path now works for T1KES8Q, though not on the first attempt. The ledger shows the task waiting on you with the question exactly \"Blue or Green?\" and the options Blue and Green. The worker has changed nothing and made no commits. The first report was rejected because each option ca",
-      "at": "2026-11-02T11:29:22.811Z"
+      "detail": "Worker asked, as brief said. Nothing changed or committed yet. README already says `Sandbox colour: Blue` from earlier run of this test (T2XWRMC, commit `c270696`). I ran task anyway because you want path tested, and told worker to keep exactly one colour line. This differs from your brief in two wa",
+      "at": "2026-11-04T23:27:18.224Z"
     },
     {
       "name": "the coordinator resumed the step through the runtime with the answer",
       "ok": true,
-      "detail": "coordinator: Your needs-decision report was rejected as invalid: options[0] has an unknown field \"value\". Each option may only have \"label\" (and optionally \"description\"). Make no file changes and no commits. Write .jevellan/report.json again with status needs-decision, question exactly \"Blue or Green?\", and options exactly [{\"label\":\"Blue\"},{\"label\":\"Green\"}], keep your summary, then end your turn.",
-      "at": "2026-11-02T11:29:29.532Z"
+      "detail": "owner: Blue",
+      "at": "2026-11-04T23:27:24.980Z"
     },
     {
       "name": "the step then reports done",
       "ok": true,
-      "detail": "done: The owner chose Blue, so README.md now has one new line after the existing paragraph: \"The colour of this sandbox is Blue.\" The rest of the README is unchanged. The change is committed as 6e54b01 on j",
-      "at": "2026-11-02T11:29:39.543Z"
+      "detail": "done: The owner answered Blue. README.md already has exactly one line, 'Sandbox colour: Blue', directly after the intro paragraph and before '## Requirements', so it already names the answered colour. I cha",
+      "at": "2026-11-04T23:27:40.063Z"
     },
     {
       "name": "zero slips",
       "ok": true,
       "detail": "",
-      "at": "2026-11-02T11:30:11.599Z"
+      "at": "2026-11-04T23:28:13.234Z"
     },
     {
       "name": "the README on main names Blue",
       "ok": true,
       "detail": "",
-      "at": "2026-11-02T11:30:13.335Z"
+      "at": "2026-11-04T23:28:14.974Z"
     }
   ]
 }

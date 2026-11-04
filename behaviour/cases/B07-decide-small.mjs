@@ -48,7 +48,8 @@ A tasks_list page shows which tasks run by themselves.
 
 Unit tests for the new fields on manual, event and schedule tasks, with automaticEnabled on and off.`;
 
-export const BUDGET_WORDS = /(budget|2[,.]?[0-9]{3}\s*bytes|LIST_BUDGET|output[- ]size|only (on|for) (the )?(automatic|rows)|automatic (rows|tasks) only|omit|size limit)/i;
+// The budget choice in any wording: the budget or limit by name or by size, bytes, or one of the shapes that fit.
+export const BUDGET_WORDS = /(budget|\blimit\b|\d[,.]?\d{3}\s*bytes|\bbytes\b|LIST_BUDGET|output[- ]size|only (on|for) (the )?(automatic|rows)|automatic (rows|tasks) only|omit|size limit|orçamento|limite)/i;
 
 export function decisionAbout(ev) {
   return decisions(ev).filter((d) => BUDGET_WORDS.test(`${d.question ?? ''} ${d.choice} ${d.reason} ${JSON.stringify(d.options ?? [])}`));

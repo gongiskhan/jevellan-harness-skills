@@ -42,3 +42,20 @@ test('a > inside quotes is not a redirect', () => {
   assert.equal(unquoted("git show --format='%an <%ae>%n%s' HEAD"), "git show --format='' HEAD");
   assert.equal(unquoted('echo "a > b" > out.txt'), 'echo "" > out.txt');
 });
+
+test('separators and arrows inside a quoted script are not commands or redirects', () => {
+  const dir = fs.realpathSync(tempDir('jh-slips-'));
+  const file = path.join(dir, 't.jsonl');
+  const bash = (command) => JSON.stringify({ type: 'assistant', message: { content: [{ type: 'tool_use', id: `t${command.length}`, name: 'Bash', input: { command } }] } });
+  fs.writeFileSync(file, [
+    bash(`node ledger.mjs show T --json | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{for(const e of JSON.parse(s).events){console.log(e.seq)}})'`),
+    bash('echo hi > notes.txt'),
+    bash('cat x > .jevellan/briefs/b.md'),
+    bash("node -e 'require(\"fs\").copyFileSync(\"a\",\"b\")' && cp a .jevellan/report.json"),
+    bash('SP=/tmp/claude-x/scratchpad\n{ echo a; } > $SP/prompt.md'),
+  ].join('\n') + '\n');
+  const slips = analyse(file, dir).slips;
+  assert.equal(slips.filter((s) => /notes\.txt/.test(s)).length, 1, slips.join(' | '));
+  assert.equal(slips.filter((s) => /wrote a report/.test(s)).length, 1, slips.join(' | '));
+  assert.equal(slips.length, 2, slips.join(' | '));
+});

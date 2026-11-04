@@ -5,7 +5,7 @@
 // input beyond the request and zero slips. Passed three times in a row: each run is recorded in
 // acceptance/results/H6-runs.json, and H6 passes when the last three runs passed.
 //
-//   node acceptance/h06-chain.mjs [--clone]     --clone runs on a fresh clone of the sandbox's baseline; without it,
+//   node acceptance/h06-chain.mjs [--clone]     --clone runs on a fresh clone of the sandbox's baseline (61fc71a); without it,
 //                                                on the sandbox itself (whose main then keeps the landing)
 
 import fs from 'node:fs';
@@ -29,7 +29,10 @@ function prepare() {
   fs.mkdirSync(base, { recursive: true });
   sh('git', ['clone', '--quiet', '--local', '--branch', 'main', SANDBOX, dir]);
   sh('git', ['-C', dir, 'remote', 'remove', 'origin']);
-  const baseline = git(SANDBOX, ['rev-parse', 'main']);
+  // The sandbox's baseline (H-024), not its main: main has since gained a README that documents the commands (H6 runs
+  // that landed on the sandbox itself), and from 0.4.0 the coordinator's overlap check rightly stops a task that is
+  // already done.
+  const baseline = git(SANDBOX, ['rev-parse', '61fc71a']);
   sh('git', ['-C', dir, 'reset', '--quiet', '--hard', baseline]);
   const inst = sh(NODE, [path.join(REPO, 'install.mjs'), dir, '--json']);
   if (inst.status !== 0) throw new Error(inst.stderr);

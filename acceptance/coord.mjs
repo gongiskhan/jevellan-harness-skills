@@ -203,15 +203,20 @@ export function analyse(file, project) {
     if (['Agent', 'Task', 'Workflow'].includes(t.name)) slips.push(`${t.name}: the coordinator ran a subagent or workflow for task work`);
     if (t.name === 'Bash') {
       const command = stripHeredocs(String(t.input.command ?? ''));
-      for (const part of command.split(/&&|\|\||;|\n|\|/).map((s) => s.trim()).filter(Boolean)) {
+      // Split the command with its quoted strings emptied first: a ; | or > inside a quoted script (node -e '...=>...')
+      // is not a separator or a redirect. The report check reads the original, whose paths may be quoted.
+      if (/(?:>|tee|cp |mv )[^\n]*report\.json/.test(command)) slips.push(`Bash "${command.slice(0, 120)}": the coordinator wrote a report`);
+      const vars = Object.fromEntries([...command.matchAll(/(?:^|[\s;&|])([A-Za-z_][A-Za-z0-9_]*)=([^\s;&|'"]+)/g)].map((m) => [m[1], m[2]]));
+      for (const part of unquoted(command).split(/&&|\|\||;|\n|\|/).map((s) => s.trim()).filter(Boolean)) {
         const git = /^(?:cd [^ ]+ )?git(?:\s+-C\s+\S+)?(?:\s+--no-pager)?\s+([a-z-]+)(.*)$/.exec(part);
         if (git && !readOnlyGit(git[1], git[2])) slips.push(`Bash "${part.slice(0, 120)}": git ${git[1]} run by the coordinator`);
         if (/^(npm|npx|pnpm|yarn|vitest|playwright|tsx|tsc)\b/.test(part)) slips.push(`Bash "${part.slice(0, 120)}": the coordinator ran project code or tests`);
         if (/^claude\b/.test(part)) slips.push(`Bash "${part.slice(0, 120)}": the coordinator started a session itself`);
-        if (/report\.json/.test(part) && />|tee|cp |mv /.test(part)) slips.push(`Bash "${part.slice(0, 120)}": the coordinator wrote a report`);
-        const redirect = /(?:^|[^0-9&])>{1,2}\s*([^\s|&;]+)/.exec(unquoted(part));
+        const redirect = /(?:^|[^0-9&])>{1,2}\s*([^\s|&;]+)/.exec(part);
         if (redirect && !/^\/dev\/null$/.test(redirect[1])) {
-          const target = path.resolve(root, redirect[1].replace(/^["']|["']$/g, ''));
+          // A variable the same command set (SP=/tmp/.../scratchpad) is expanded; others stay as written.
+          const expanded = redirect[1].replace(/^["']|["']$/g, '').replace(/\$\{?([A-Za-z_][A-Za-z0-9_]*)\}?/g, (m, name) => vars[name] ?? m);
+          const target = path.resolve(root, expanded);
           if (!harnessFolder(target)) slips.push(`Bash "${part.slice(0, 120)}": wrote ${target} outside .jevellan`);
         }
       }

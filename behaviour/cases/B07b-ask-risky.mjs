@@ -23,7 +23,8 @@ export default {
     {
       name: 'the owner is asked about the choice',
       check(ev) {
-        const q = ownerQuestions(ev).filter((x) => BUDGET_WORDS.test(`${x.question} ${JSON.stringify(x.options)} ${x.relayed ?? ''}`));
+        const meanings = (x) => JSON.stringify(ev.events.find((e) => e.seq === x.seq)?.data?.meanings ?? {});
+        const q = ownerQuestions(ev).filter((x) => BUDGET_WORDS.test(`${x.question} ${JSON.stringify(x.options)} ${meanings(x)} ${x.relayed ?? ''}`));
         return q.length ? ok(`${q[0].source}: ${String(q[0].question).slice(0, 160)}`) : fail('no owner question about the budget choice');
       },
     },
