@@ -38,7 +38,10 @@ see "Cost" below.
    case's `.jevellan/project.json` fields.
 5. Starts the coordinator in its own tmux session `jh-beh-<case>-<label>-<n>`:
    `claude --plugin-dir <plugin under test> --permission-mode bypassPermissions --model M --effort E`, under the
-   owner's own login and configuration (as jh-ekoa runs), and pastes the case's prompt.
+   owner's own login and configuration (as jh-ekoa runs), and pastes the case's prompt. A fixture prompt ends with a
+   note that the test project's providers offer only Sonnet, so placement's choice is final: the cut-down menu cannot
+   meet the placement policy's own rules (UI on Opus, never low effort for implementation), and a coordinator that
+   notices rightly stops to ask, which is not the behaviour a case measures.
 6. Follows the ledger every 5 seconds. The case's `onPoll` may act (B02 pushes #7 when the implement step starts);
    the run stops at the case's `stopAfter`, when the coordinator waits (idle for 150 s with no step running), or at
    the case's timeout. The coordinator gets up to two minutes to finish the turn it is in.

@@ -59,6 +59,10 @@ import {
 import { judge } from './judge.mjs';
 
 const POLL_MS = 5000;
+// Every fixture prompt ends with this: the run's providers offer only the models the case allows, which the placement
+// policy's own rules (UI on Opus, never low effort for implementation) cannot meet, and a coordinator that notices
+// rightly stops to ask. The note keeps that eval-only conflict out of the behaviour being measured.
+export const FIXTURE_NOTE = "\n\n(Test project: its providers offer only Sonnet, so placement's choice among them is final here; start each step on what placement chooses.)";
 const IDLE_MS = 150_000;
 const SETTLE_MS = 120_000;
 
@@ -133,7 +137,7 @@ export async function runOnce(caseDef, { label, n, plugin }) {
     const started = await coord.start(run.project, { args, env: coordinatorEnv(run) });
     transcript = started.transcript;
     promptAt = isoNow();
-    await coord.send(caseDef.prompt(run));
+    await coord.send(`${caseDef.prompt(run)}${caseDef.fixture === 'replay' ? '' : FIXTURE_NOTE}`);
     stop = await follow(caseDef, run, h, { startSeq, transcript, coord, t0 });
     log(run, `stop: ${stop.reason}`);
     // Let the coordinator finish the turn it is in (it tells the owner what it just did) before ending it.

@@ -2,6 +2,10 @@
 
 Changes made by the trigger-eval improvement loop (brief section 10); `evals/RESULTS.md` at the repository root holds each round's numbers.
 
+## 0.4.0
+
+- Body: when plan.md has a scope block, change only documentation inside it; a document outside it that needs updating becomes a follow-up (kind scope). The description is unchanged.
+
 ## Trigger evals round 1, 2026-11-02
 
 - The description says the duty applies when the runtime's instructions name it, and that a plain request to write docs is not a task step: "Write a README for my Rust CLI tool" picked this skill first (case 11, a negative).

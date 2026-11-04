@@ -20,6 +20,15 @@ const question = {
 const ask = (root, task, data) => cli(root, ['ask', '--task', task, '--data', JSON.stringify(data), '--json']);
 const show = (root, task) => cli(root, ['show', task, '--json']).json();
 
+describe('codeTerms', () => {
+  test('finds code and internal names, not links or plain words', async () => {
+    const { codeTerms } = await import('../scripts/ledger.mjs');
+    assert.deepEqual(codeTerms('the 2,400-byte limit, an e-mail, the owner\'s pull request https://github.com/acme/x/pull/8'), []);
+    assert.deepEqual(codeTerms('commit 8e3aae1 and abc'), ['8e3aae1']);
+    assert.deepEqual(codeTerms('DELETE /configs/:key in server.mjs'), ['DELETE /configs/:key']);
+  });
+});
+
 describe('ask', () => {
   test('records a coordinator question and the task waits on the owner', () => {
     const root = makeRepo();
@@ -39,7 +48,7 @@ describe('ask', () => {
     const status = cli(root, ['status']);
     assert.match(status.stdout, /Question: You asked for a Substituir button/);
     assert.match(line.data.question, /If you do not choose, I will Build on it\./);
-    assert.match(status.stdout, /\(recommended: Build on it\)/);
+    assert.match(status.stdout, /2\) Build on it: I continue from that pull request and add only what is missing \(recommended\)/);
   });
 
   test('refuses a question that does not stand on its own', () => {
@@ -53,6 +62,9 @@ describe('ask', () => {
       [{ ...question, extra: 1 }, /unknown field "extra"/],
       [{ ...question, question: '' }, /question is required/],
       [{ ...question, question: 'What should I do?' }, /must say, in its own words, that "Build on it" is what happens/],
+      [{ ...question, question: `${question.question} It changes \`tasks_list\`.` }, /uses code or internal names \(`tasks_list`, tasks_list\)/],
+      [{ ...question, options: [{ label: 'Wait', means: 'until POST /configs/:key is merged' }, ...question.options.slice(1)] }, /uses code or internal names \(POST \/configs\/:key\)/],
+      [{ ...question, question: `${question.question} See web/panel.mjs and triggerType.` }, /web\/panel\.mjs, triggerType/],
     ];
     for (const [data, message] of cases) {
       const r = ask(root, s.task, data);

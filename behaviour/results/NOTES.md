@@ -16,3 +16,15 @@
     B03 r1 failed "the question says what happens by default" while its question said "that is what I will do if your
     reply does not choose" in r2; after: such a sentence counts. (r1's chat did not state a default at all and still
     fails.)
+- 2026-11-04, the second 0.3.0 sweep (B01 to B05 finished) was stopped and archived
+  (`~/.jevellan-harness/archive/evals/baseline-0.3.0-before-env-note/`): a dev run showed a Sonnet coordinator stopping to
+  ask because the run's Sonnet-only menu breaks the placement policy's rules (UI on Opus, never low for implementation).
+  Every fixture prompt now ends with a note that the test project's providers offer only Sonnet and placement's choice
+  is final. B04's plan worker is pinned to Sonnet at high (production placed plan steps on Opus at high; at medium no
+  plan weighed the prescribed endpoint against what exists). That sweep's finished runs: B01 0/3, B02 0/3, B03 0/3,
+  B04 0/3 (Sonnet medium), B05 0/2. The numbers below are from the sweep after.
+  - B08's material (what the judge reads) showed a recorded question's options as bare labels and added the record's
+    internal `reason`. What the owner is shown is the question and each option with what it means and which one is
+    recommended (status, the viewer, the chat). Before: dev questions scored 0.45 to 0.75, the judge citing "bare
+    labels" and "about 140 words, mostly the closing note in parentheses"; after the correction the same five dev
+    questions scored 0.65 to 0.85 (the judge was run again, since its material had been wrong).

@@ -26,7 +26,9 @@ export function describe(task) {
     const label = w.source === 'landing' ? 'Landing' : w.source === 'coordinator' ? 'Question' : w.status;
     if (w.question) lines.push(`          ${label}: ${w.question}`);
     else if (w.summary) lines.push(`          ${w.status}: ${w.summary.replace(/\s+/g, ' ').slice(0, 200)}`);
-    if (w.options?.length) lines.push(`          ${optionsText(w.options)}${w.recommended ? ` (recommended: ${w.recommended})` : ''}`);
+    if (w.source === 'coordinator' && w.options?.length) {
+      for (const [i, o] of w.options.entries()) lines.push(`          ${i + 1}) ${o}${w.meanings?.[o] ? `: ${w.meanings[o]}` : ''}${w.recommended === o ? ' (recommended)' : ''}`);
+    } else if (w.options?.length) lines.push(`          ${optionsText(w.options)}`);
   }
   if (task.state === 'running' && task.alive === false) lines.push('          (process gone)');
   if (task.state === 'landing') lines.push(`          route ${task.landing?.route}${task.landing?.reason ? `: ${task.landing.reason}` : ''}`);

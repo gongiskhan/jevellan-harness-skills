@@ -9,9 +9,17 @@ import { chatQuestions, fail, ok, ownerQuestions, verdict } from '../checks.mjs'
 export function questionText(ev) {
   const q = ownerQuestions(ev)[0];
   if (q) {
-    const options = (q.options ?? []).map((o, i) => `${i + 1}) ${typeof o === 'string' ? o : `${o.label}${o.description ? `: ${o.description}` : ''}`}`).join('\n');
     if (q.source === 'needs-decision') return q.relayed;
-    return [q.question, options, q.reason ? `(${q.reason})` : ''].filter(Boolean).join('\n');
+    // What the owner sees of a recorded question: the text and each option with what it means (a coordinator's ask
+    // records the meanings and the recommended option beside the labels).
+    const asked = ev.events.find((e) => e.seq === q.seq)?.data ?? {};
+    const options = (q.options ?? []).map((o, i) => {
+      const label = typeof o === 'string' ? o : o.label;
+      const means = asked.meanings?.[label] ?? (typeof o === 'string' ? '' : o.description ?? '');
+      return `${i + 1}) ${label}${means ? `: ${means}` : ''}${asked.recommended === label ? ' (recommended)' : ''}`;
+    }).join('\n');
+    // The record's reason is the coordinator's note for the ledger; the owner is shown the question and the options.
+    return [q.question, options].filter(Boolean).join('\n');
   }
   return chatQuestions(ev)[0]?.text ?? null;
 }

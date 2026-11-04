@@ -463,6 +463,23 @@ function record(argv) {
 export const QUESTION_WORDS = 120;
 const words = (text) => String(text ?? '').trim().split(/\s+/).filter(Boolean).length;
 
+// Code and internal names an owner cannot be expected to read: backticks, an HTTP method with a path, a file path,
+// snake_case or camelCase identifiers, commit hashes. Links (http, https) are fine: the owner can open them.
+export function codeTerms(text) {
+  const plain = String(text ?? '').replace(/https?:\/\/\S+/g, ' ');
+  const found = new Set();
+  const add = (re) => {
+    for (const m of plain.matchAll(re)) found.add(m[0].trim());
+  };
+  add(/`[^`]*`/g);
+  add(/\b(GET|POST|PUT|PATCH|DELETE)\s+\/\S*/g);
+  add(/(?<![\w@])(?:[\w.-]+\/)+[\w.-]+\.[a-z0-9]{1,5}\b/gi);
+  add(/\b[a-z][a-z0-9]*_[a-z0-9_]+\b/g);
+  add(/\b[a-z]+[A-Z][A-Za-z0-9]*\b/g);
+  add(/\b(?=[0-9a-f]*[a-f])(?=[0-9a-f]*[0-9])[0-9a-f]{7,40}\b/g);
+  return [...found];
+}
+
 export function openQuestion(events) {
   const asked = [...events].reverse().find((e) => e.kind === 'task.asked' && e.data?.source === 'coordinator');
   if (!asked) return null;
@@ -490,6 +507,8 @@ export function checkQuestion(data) {
   if (!labels.has(data.recommended)) bad('recommended must be one of the options\' labels: the option you recommend, which you take when the reply does not choose');
   if (!data.question.includes(data.recommended)) bad(`the question must say, in its own words, that "${data.recommended}" is what happens when the owner's reply does not choose: name that option's label in it`);
   if (data.reason !== undefined && (typeof data.reason !== 'string' || data.reason.length > 300)) bad('reason must be a short text');
+  const jargon = codeTerms([data.question, ...data.options.flatMap((o) => [o.label, o.means])].join('\n'));
+  if (jargon.length) bad(`the question uses code or internal names (${jargon.slice(0, 4).join(', ')}): say what each is in plain words for an owner who has forgotten the task`);
   const total = words(data.question) + data.options.reduce((n, o) => n + words(o.label) + words(o.means), 0);
   if (total > QUESTION_WORDS) bad(`the question and its options are ${total} words; keep them under ${QUESTION_WORDS}`);
   return { question: data.question.trim(), options: data.options.map((o) => o.label), meanings: Object.fromEntries(data.options.map((o) => [o.label, o.means])), recommended: data.recommended, reason: data.reason ?? '', source: 'coordinator', words: total };
