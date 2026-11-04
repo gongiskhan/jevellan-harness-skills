@@ -1117,7 +1117,9 @@ async function prRoute(ctx, { forced, reason, draft }) {
     if (!outside) throw error;
     results = [...(error.results ?? []), { name: error.failed.name, command: ctx.settings.checks.find((c) => c.name === error.failed.name)?.command ?? error.failed.name, passed: false, round: 1 }];
     if (!forced) {
-      const why = `a check fails outside this task's scope: ${outside}`;
+      // When the owner was going to be asked anyway (a guard's reason), both reasons are kept.
+      const failing = `a check fails outside this task's scope: ${outside}`;
+      const why = draft && reason ? `${reason}; and ${failing}` : failing;
       append(ctx, 'landing.decided', { route: 'ask-owner', source: 'checks', reason: why });
       pushBranch(wt.path, branch, into, pushEnv);
       const pr = ensurePr(ctx.gh, wt.path, { existing: ctx.existingPr, draft: true, title, body: body({ checks: results, draftReason: why }), into, branch });
