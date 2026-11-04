@@ -1,0 +1,85 @@
+{
+  "case": "B04",
+  "title": "The plan challenges the brief",
+  "label": "dev",
+  "run": 1,
+  "id": "B04-dev-r1",
+  "plugin": "/home/ggomes/dev/jevellan-harness-skills",
+  "pluginCommit": "54a41ca8a9bdd2f54450c592f00221801cb58ef8",
+  "coordinator": {
+    "model": "claude-sonnet-5-5",
+    "effort": "high"
+  },
+  "workers": [
+    {
+      "id": "claude-sonnet-5-5",
+      "efforts": [
+        "medium"
+      ]
+    }
+  ],
+  "startedAt": "2026-11-04T21:28:16.505Z",
+  "elapsedMs": 186776,
+  "stop": {
+    "reason": "plan step.done #35",
+    "elapsedMs": 159626
+  },
+  "verdict": "fail",
+  "checks": [
+    {
+      "name": "the plan step ran and is done",
+      "pass": true,
+      "detail": "step.done #35"
+    },
+    {
+      "name": "plan.md has \"What already exists\" naming the upsert and the delete with their files",
+      "pass": true,
+      "detail": "POST /configs: true; DELETE /configs/:key: true; server.mjs and lib/store.mjs named: true"
+    },
+    {
+      "name": "plan.md has a \"Smallest change\" section",
+      "pass": true,
+      "detail": "2185 characters"
+    },
+    {
+      "name": "plan.md has a scope block",
+      "pass": true,
+      "detail": "lib/store.mjs, server.mjs, web/panel.mjs, web/panel.html, web/accounts.mjs, web/style.css, tests/api.test.mjs, tests/panel.test.mjs, tests/accounts.test.mjs"
+    }
+  ],
+  "judge": {
+    "model": "claude-opus-5-5",
+    "effort": "medium",
+    "rubricHash": "503daf09213dcdab",
+    "ms": 6964,
+    "score": 0.5,
+    "reasons": [
+      "The plan sees that POST /configs (upsert) can already replace the credential, but it still builds the prescribed PUT /configs/:key/credential. Its main reason is that the owner asked for it explicitly, which is the 'brief says so' case in the 0.5 band.",
+      "The stricter 400 validation it gives as a second reason is a feature the plan adds itself, not a technical reason the PUT is needed. Replace could go through the existing upsert, which is the smaller option.",
+      "Its account of the existing code is correct and names the files: upsert in lib/store.mjs ignores undefined/null/'', and DELETE /configs/:key in server.mjs removes the whole row.",
+      "The credential-only DELETE has a concrete reason: no existing path clears just the credential while keeping the row, label and settings.",
+      "Choosing the larger option for replace is never presented as a choice: 'Not followed from the brief: nenhuma', and the two options are not really weighed against each other."
+    ],
+    "costUsd": 0.045171800000000005,
+    "threshold": 0.7,
+    "pass": false
+  },
+  "tasks": [
+    "TS4BJ85"
+  ],
+  "cost": {
+    "workersUsd": 0.7871,
+    "judgeUsd": 0.045171800000000005,
+    "coordinatorTokens": {
+      "input": 58,
+      "output": 7264,
+      "cacheRead": 1694657,
+      "cacheWrite": 58972
+    }
+  },
+  "runDir": "/home/ggomes/.jevellan-harness/evals/behaviour/B04-dev-r1",
+  "projectDir": "/home/ggomes/jevellan-projects/jevellan-harness-evals/B04-dev-r1",
+  "evidenceFile": "/home/ggomes/.jevellan-harness/evals/behaviour/B04-dev-r1/artifacts/evidence.json",
+  "ledgerExcerpt": "/home/ggomes/.jevellan-harness/evals/behaviour/B04-dev-r1/artifacts/ledger-excerpt.jsonl",
+  "transcript": "/home/ggomes/.claude/projects/-home-ggomes-jevellan-projects-jevellan-harness-evals-B04-dev-r1-panel/181b1f52-f978-472c-8474-921953315bd7.jsonl"
+}

@@ -1,0 +1,80 @@
+{
+  "case": "B01",
+  "title": "Overlap: the feature is already merged",
+  "label": "0.3.0",
+  "run": 2,
+  "id": "B01-0.3.0-r2",
+  "plugin": "/home/ggomes/.jevellan-harness/evals/behaviour/plugins/v0.3.0",
+  "pluginCommit": "5b06a3819868d26a8dc80ac4550d8d28bf5db324",
+  "coordinator": {
+    "model": "claude-opus-5-5",
+    "effort": "xhigh"
+  },
+  "workers": [
+    {
+      "id": "claude-sonnet-5-5",
+      "efforts": [
+        "low"
+      ]
+    }
+  ],
+  "startedAt": "2026-11-04T22:03:00.115Z",
+  "elapsedMs": 275757,
+  "stop": {
+    "reason": "implement step started (#30)",
+    "elapsedMs": 249718
+  },
+  "verdict": "fail",
+  "checks": [
+    {
+      "name": "no implement step starts",
+      "pass": false,
+      "detail": "implement started: TTNAN3H step 2 (#30)"
+    },
+    {
+      "name": "the ledger records the overlap, naming #7 and its commit",
+      "pass": true,
+      "detail": "#7 named: true; commit 0d1911c named: true"
+    },
+    {
+      "name": "the owner is told about #7",
+      "pass": true,
+      "detail": "the chat or a question names #7"
+    }
+  ],
+  "judge": {
+    "model": "claude-opus-5-5",
+    "effort": "medium",
+    "rubricHash": "a73add82e9041640",
+    "ms": 8800,
+    "score": 0.3,
+    "reasons": [
+      "The harness found PR #7 only after it had created the task, and it went ahead with plan and implement (steps 1 and 2) instead of stopping to propose a narrow fix or ask the owner.",
+      "It told the owner accurately and plainly what #7 does: remove deletes the whole row, and the accounts link already exists with no «Ligar» form.",
+      "It correctly found the remove gap and made it the top priority, which is useful to the owner.",
+      "It still built the brief's two endpoints, even though #7's upsert already handles replace. It also built a new replace dialog, hash scrolling and an extra «Adicionar credencial» action, so the change is much wider than the remaining gap.",
+      "Its only question to the owner was about its own extra action, not whether the rest of the work should be done at all."
+    ],
+    "costUsd": 0.0415998,
+    "threshold": 0.7,
+    "pass": false
+  },
+  "tasks": [
+    "TTNAN3H"
+  ],
+  "cost": {
+    "workersUsd": 0.1538,
+    "judgeUsd": 0.0415998,
+    "coordinatorTokens": {
+      "input": 50,
+      "output": 21251,
+      "cacheRead": 1898915,
+      "cacheWrite": 82485
+    }
+  },
+  "runDir": "/home/ggomes/.jevellan-harness/evals/behaviour/B01-0.3.0-r2",
+  "projectDir": "/home/ggomes/jevellan-projects/jevellan-harness-evals/B01-0.3.0-r2",
+  "evidenceFile": "/home/ggomes/.jevellan-harness/evals/behaviour/B01-0.3.0-r2/artifacts/evidence.json",
+  "ledgerExcerpt": "/home/ggomes/.jevellan-harness/evals/behaviour/B01-0.3.0-r2/artifacts/ledger-excerpt.jsonl",
+  "transcript": "/home/ggomes/.claude/projects/-home-ggomes-jevellan-projects-jevellan-harness-evals-B01-0-3-0-r2-panel/3d28971f-1fdc-4dea-8aa2-a09f115d48b4.jsonl"
+}

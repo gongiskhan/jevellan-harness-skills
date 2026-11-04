@@ -1,0 +1,43 @@
+{
+  "case": "B08",
+  "title": "A question to the owner stands on its own",
+  "label": "dev",
+  "run": 5,
+  "id": "B08-dev-r5",
+  "source": "B07b-dev-r3",
+  "startedAt": "2026-11-04T22:06:00.296Z",
+  "elapsedMs": 12528,
+  "verdict": "pass",
+  "checks": [
+    {
+      "name": "there is a question to judge",
+      "pass": true,
+      "detail": "107 words"
+    },
+    {
+      "name": "under 120 words",
+      "pass": true,
+      "detail": "107 words"
+    }
+  ],
+  "judge": {
+    "model": "claude-opus-5-5",
+    "effort": "medium",
+    "rubricHash": "80e07e70f466026b",
+    "ms": 12528,
+    "score": 0.8,
+    "reasons": [
+      "The question is clear and has everything required: the conflict (2,930 bytes against a 2,400-byte limit), a recommended option, a default if there's no answer, and it's about 104 words.",
+      "Small slip on the task: 'the task list' and its 'page' and 'calls' are never said to be an API response or a listing, so the reader has to guess what the byte limit applies to.",
+      "Small slip in option 1: 'Over about 7 such tasks per page it overflows' doesn't say what overflowing would mean for the reader.",
+      "Mild unexplained terms: 'Event and schedule rows' and 'rows' are only partly explained by 'run by themselves'.",
+      "There are no internal ids, and options 2 and 3 state their consequences plainly (two calls; a higher limit)."
+    ],
+    "costUsd": 0.0277918,
+    "threshold": 0.8,
+    "pass": true
+  },
+  "cost": {
+    "judgeUsd": 0.0277918
+  }
+}

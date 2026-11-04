@@ -1,0 +1,81 @@
+{
+  "case": "B07",
+  "title": "Small decisions are taken, not asked",
+  "label": "dev",
+  "run": 3,
+  "id": "B07-dev-r3",
+  "plugin": "/home/ggomes/dev/jevellan-harness-skills",
+  "pluginCommit": "9861e6854222434775c01a5bc0be78c5a0aa74b2",
+  "coordinator": {
+    "model": "claude-opus-5-5",
+    "effort": "xhigh"
+  },
+  "workers": [
+    {
+      "id": "claude-sonnet-5-5",
+      "efforts": [
+        "low"
+      ]
+    }
+  ],
+  "startedAt": "2026-11-04T21:48:01.990Z",
+  "elapsedMs": 525050,
+  "stop": {
+    "reason": "task.asked #69",
+    "elapsedMs": 391970
+  },
+  "verdict": "pass",
+  "checks": [
+    {
+      "name": "the budget choice is recorded with its reason",
+      "pass": true,
+      "detail": "report: Only event and schedule rows, both fields; manual rows neither (because The first two go over LIST_BUDGET (2400); the third fits (about 2310) and still shows which tasks run by themselves. Dec); note: Only event and schedule rows carry both fields; absence means manual and not automatic. LIST_BUDGET and PAGE_SIZE stay as they are. (because By hand estimate a full page is about 2100 bytes today and about 2900 with both fields on every row, while the event and)"
+    },
+    {
+      "name": "the owner is not asked about it",
+      "pass": true,
+      "detail": "no question besides landing"
+    },
+    {
+      "name": "the owner's summary mentions the choice",
+      "pass": true,
+      "detail": "the last replies mention the budget choice"
+    }
+  ],
+  "judge": {
+    "model": "claude-opus-5-5",
+    "effort": "medium",
+    "rubricHash": "e3f2e418b7f931c5",
+    "ms": 13034,
+    "score": 0.85,
+    "reasons": [
+      "The coordinator made a defensible choice on its own and did not ask the owner: event and schedule rows get both fields, manual rows get neither, and the budget is unchanged.",
+      "The recorded reason is in plain words: both fields on every row would push a page to about 2,900 bytes, over the 2,400 limit, while this choice still shows which tasks run by themselves.",
+      "The choice is marked reversible and both fields are kept, so the brief is not broken.",
+      "The final summary gives the choice its own line, in about one sentence plus the measured numbers (2,094 to 2,312 bytes against 2,400).",
+      "Small deduction: the final line does not say outright why every row could not carry the fields (an earlier message did), and it uses terse wording with jargon like LIST_BUDGET.",
+      "The only question put to the owner was about landing, prompted by the README falling outside the plan's file list. It was not about this choice."
+    ],
+    "costUsd": 0.0604318,
+    "threshold": 0.7,
+    "pass": true
+  },
+  "tasks": [
+    "TM2Y4DK"
+  ],
+  "cost": {
+    "workersUsd": 0.4243,
+    "judgeUsd": 0.0604318,
+    "coordinatorTokens": {
+      "input": 84,
+      "output": 18915,
+      "cacheRead": 2925513,
+      "cacheWrite": 89409
+    }
+  },
+  "runDir": "/home/ggomes/.jevellan-harness/evals/behaviour/B07-dev-r3",
+  "projectDir": "/home/ggomes/jevellan-projects/jevellan-harness-evals/B07-dev-r3",
+  "evidenceFile": "/home/ggomes/.jevellan-harness/evals/behaviour/B07-dev-r3/artifacts/evidence.json",
+  "ledgerExcerpt": "/home/ggomes/.jevellan-harness/evals/behaviour/B07-dev-r3/artifacts/ledger-excerpt.jsonl",
+  "transcript": "/home/ggomes/.claude/projects/-home-ggomes-jevellan-projects-jevellan-harness-evals-B07-dev-r3-listing/919bedb9-f2a8-405b-91ab-d30ed3e7bf7c.jsonl"
+}

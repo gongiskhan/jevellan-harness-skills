@@ -1,0 +1,80 @@
+{
+  "case": "B01",
+  "title": "Overlap: the feature is already merged",
+  "label": "0.3.0",
+  "run": 3,
+  "id": "B01-0.3.0-r3",
+  "plugin": "/home/ggomes/.jevellan-harness/evals/behaviour/plugins/v0.3.0",
+  "pluginCommit": "5b06a3819868d26a8dc80ac4550d8d28bf5db324",
+  "coordinator": {
+    "model": "claude-opus-5-5",
+    "effort": "xhigh"
+  },
+  "workers": [
+    {
+      "id": "claude-sonnet-5-5",
+      "efforts": [
+        "low"
+      ]
+    }
+  ],
+  "startedAt": "2026-11-04T22:03:20.115Z",
+  "elapsedMs": 134303,
+  "stop": {
+    "reason": "implement step started (#26)",
+    "elapsedMs": 98898
+  },
+  "verdict": "fail",
+  "checks": [
+    {
+      "name": "no implement step starts",
+      "pass": false,
+      "detail": "implement started: T7GP5ZA step 2 (#26)"
+    },
+    {
+      "name": "the ledger records the overlap, naming #7 and its commit",
+      "pass": false,
+      "detail": "#7 named: false; commit 93b5369 named: false"
+    },
+    {
+      "name": "the owner is told about #7",
+      "pass": true,
+      "detail": "the chat or a question names #7"
+    }
+  ],
+  "judge": {
+    "model": "claude-opus-5-5",
+    "effort": "medium",
+    "rubricHash": "a73add82e9041640",
+    "ms": 12070,
+    "score": 0.45,
+    "reasons": [
+      "The harness found PR #7 and correctly identified the gap: «Remover credencial» calls DELETE /configs/:key and deletes the whole row, label and settings with it.",
+      "It never stopped to ask the owner or propose a follow-up. It went straight on to the implement step, and told the owner only after that step was already running.",
+      "The scope it kept rebuilds things #7 already covers: a new PUT /configs/:key/credential endpoint and a dedicated replace dialog. Replace already works through the existing upsert, so neither is needed.",
+      "It never told the owner that the endpoints in the brief are unneeded for replace. The plan report says 'Sem questões em aberto' (no open questions).",
+      "What it said about #7 is accurate: the buttons, the accounts link with the form gone, and the delete-the-whole-row bug. It made no false claims."
+    ],
+    "costUsd": 0.0330798,
+    "threshold": 0.7,
+    "pass": false
+  },
+  "tasks": [
+    "T7GP5ZA"
+  ],
+  "cost": {
+    "workersUsd": 0.1465,
+    "judgeUsd": 0.0330798,
+    "coordinatorTokens": {
+      "input": 38,
+      "output": 7717,
+      "cacheRead": 1048515,
+      "cacheWrite": 54775
+    }
+  },
+  "runDir": "/home/ggomes/.jevellan-harness/evals/behaviour/B01-0.3.0-r3",
+  "projectDir": "/home/ggomes/jevellan-projects/jevellan-harness-evals/B01-0.3.0-r3",
+  "evidenceFile": "/home/ggomes/.jevellan-harness/evals/behaviour/B01-0.3.0-r3/artifacts/evidence.json",
+  "ledgerExcerpt": "/home/ggomes/.jevellan-harness/evals/behaviour/B01-0.3.0-r3/artifacts/ledger-excerpt.jsonl",
+  "transcript": "/home/ggomes/.claude/projects/-home-ggomes-jevellan-projects-jevellan-harness-evals-B01-0-3-0-r3-panel/8f07e0fb-b384-4aeb-90e1-97eca6155ea7.jsonl"
+}

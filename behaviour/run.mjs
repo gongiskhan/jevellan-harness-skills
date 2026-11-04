@@ -206,6 +206,15 @@ async function follow(caseDef, run, h, { startSeq, transcript, coord, t0 }) {
     const reason = caseDef.stopAfter(state, run);
     if (reason) return { reason, elapsedMs: Date.now() - t0 };
     const idle = state.running.length === 0 && Date.now() - lastChange > IDLE_MS && fs.existsSync(transcript) && analyse(transcript, run.project).idle;
+    // A case that measures what happens later in a run answers like an owner who trusts the recommendation, at most
+    // ownerReplies.max times; the replies are logged in the evidence.
+    const replies = run.hookLog.filter((x) => x.what === 'owner replied').length;
+    if (idle && caseDef.ownerReplies && replies < caseDef.ownerReplies.max) {
+      await coord.send(caseDef.ownerReplies.text);
+      run.hookLog.push({ what: 'owner replied', seq, at: new Date().toISOString(), text: caseDef.ownerReplies.text });
+      lastChange = Date.now();
+      continue;
+    }
     if (idle) return { reason: 'the coordinator waits (idle, no step running)', elapsedMs: Date.now() - t0 };
   }
   return { reason: `timeout after ${caseDef.timeoutMin ?? 20} min`, elapsedMs: Date.now() - t0, timeout: true };

@@ -44,7 +44,9 @@ see "Cost" below.
    notices rightly stops to ask, which is not the behaviour a case measures.
 6. Follows the ledger every 5 seconds. The case's `onPoll` may act (B02 pushes #7 when the implement step starts);
    the run stops at the case's `stopAfter`, when the coordinator waits (idle for 150 s with no step running), or at
-   the case's timeout. The coordinator gets up to two minutes to finish the turn it is in.
+   the case's timeout. A case that measures what happens later in a run (B02, B09) instead answers a waiting
+   coordinator "Go with what you recommend." at most twice; the replies are in the evidence. The coordinator gets up to
+   two minutes to finish the turn it is in.
 7. Ends the coordinator, the workers the ledger shows running and anything else running in the run's folders.
 8. Collects the evidence (`artifacts/evidence.json`), runs the checks and the judge, and writes
    `results/<label>/<case>-r<n>.json`.

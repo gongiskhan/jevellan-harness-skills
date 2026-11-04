@@ -1,0 +1,74 @@
+{
+  "case": "B09",
+  "title": "Evidence is kept",
+  "label": "dev",
+  "run": 2,
+  "id": "B09-dev-r2",
+  "plugin": "/home/ggomes/dev/jevellan-harness-skills",
+  "pluginCommit": "7ee53112b9369bcf92c60bc1f17523884cf82655",
+  "coordinator": {
+    "model": "claude-sonnet-5-5",
+    "effort": "high"
+  },
+  "workers": [
+    {
+      "id": "claude-sonnet-5-5",
+      "efforts": [
+        "low"
+      ]
+    }
+  ],
+  "startedAt": "2026-11-04T22:05:01.986Z",
+  "elapsedMs": 221134,
+  "stop": {
+    "reason": "task.landed #57",
+    "elapsedMs": 200893
+  },
+  "verdict": "fail",
+  "checks": [
+    {
+      "name": "a screenshot of the panel at 390 wide",
+      "pass": true,
+      "detail": "panel-390.png, v-panel-phone.png, .jevellan/evidence/panel-390.png, .jevellan/evidence/form-390.png, .jevellan/evidence/v-panel-phone.png"
+    },
+    {
+      "name": "a screenshot of the panel at 1440 wide",
+      "pass": true,
+      "detail": "panel-1440.png, v-panel-desktop.png, .jevellan/evidence/panel-1440.png, .jevellan/evidence/form-1440.png, .jevellan/evidence/v-panel-desktop.png"
+    },
+    {
+      "name": "the browser run's output is kept",
+      "pass": false,
+      "detail": "no browser output file (verify's testsRun names a browser run: true)"
+    },
+    {
+      "name": "the test output is kept",
+      "pass": true,
+      "detail": "tests.txt"
+    },
+    {
+      "name": "the pull request lists the evidence",
+      "pass": true,
+      "detail": "8 of 8 screenshots named in #100's body"
+    }
+  ],
+  "judge": null,
+  "tasks": [
+    "TC98JJE"
+  ],
+  "cost": {
+    "workersUsd": 0.3196,
+    "judgeUsd": null,
+    "coordinatorTokens": {
+      "input": 68,
+      "output": 6976,
+      "cacheRead": 1914771,
+      "cacheWrite": 57581
+    }
+  },
+  "runDir": "/home/ggomes/.jevellan-harness/evals/behaviour/B09-dev-r2",
+  "projectDir": "/home/ggomes/jevellan-projects/jevellan-harness-evals/B09-dev-r2",
+  "evidenceFile": "/home/ggomes/.jevellan-harness/evals/behaviour/B09-dev-r2/artifacts/evidence.json",
+  "ledgerExcerpt": "/home/ggomes/.jevellan-harness/evals/behaviour/B09-dev-r2/artifacts/ledger-excerpt.jsonl",
+  "transcript": "/home/ggomes/.claude/projects/-home-ggomes-jevellan-projects-jevellan-harness-evals-B09-dev-r2-panel/b2b83e11-97b6-42c7-9b84-d44ee08830fc.jsonl"
+}

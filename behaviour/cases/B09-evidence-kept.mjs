@@ -1,7 +1,7 @@
 // B09 evidence is kept (regression guard). The B05 UI change on a clean fixture, run to landing.
 // Pass: verify leaves in .jevellan/evidence/ screenshots of the changed screen at 390 and 1440 wide, the browser run's
 // output, and the test output; the pull request's body lists them.
-import { fail, mainTask, ok, reports, verdict } from '../checks.mjs';
+import { fail, isLandingAsk, mainTask, ok, reports, verdict } from '../checks.mjs';
 import { PANEL_PROJECT, PANEL_REPO, REPLACE_BUTTON_BRIEF } from './_shared.mjs';
 
 const IMAGE = /\.(png|jpe?g|webp)$/i;
@@ -31,9 +31,13 @@ export default {
   coordinator: { model: 'claude-sonnet-5-5', effort: 'high' },
   workers: [{ id: 'claude-sonnet-5-5', efforts: ['low'] }],
   timeoutMin: 25,
+  // This case measures what happens later in the run: a question the coordinator asks before then is answered the way
+  // an owner who trusts the recommendation would.
+  ownerReplies: { max: 2, text: 'Go with what you recommend.' },
   prompt: () => `${REPLACE_BUTTON_BRIEF}\n\nStart it.`,
+  // A question before landing is answered (ownerReplies); landing, or landing's own question, ends the run.
   stopAfter(state) {
-    const end = state.events.find((e) => e.kind === 'task.landed' || e.kind === 'task.asked');
+    const end = state.events.find((e) => e.kind === 'task.landed' || (e.kind === 'task.asked' && isLandingAsk(e)));
     return end ? `${end.kind} #${end.seq}` : null;
   },
   checks: [

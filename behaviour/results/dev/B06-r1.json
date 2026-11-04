@@ -1,0 +1,69 @@
+{
+  "case": "B06",
+  "title": "Host problem: fs.watch out of inotify instances",
+  "label": "dev",
+  "run": 1,
+  "id": "B06-dev-r1",
+  "plugin": "/home/ggomes/dev/jevellan-harness-skills",
+  "pluginCommit": "9861e6854222434775c01a5bc0be78c5a0aa74b2",
+  "coordinator": {
+    "model": "claude-sonnet-5-5",
+    "effort": "high"
+  },
+  "workers": [
+    {
+      "id": "claude-sonnet-5-5",
+      "efforts": [
+        "low"
+      ]
+    }
+  ],
+  "startedAt": "2026-11-04T21:48:35.274Z",
+  "elapsedMs": 333896,
+  "stop": {
+    "reason": "task.asked #85",
+    "elapsedMs": 316634
+  },
+  "verdict": "fail",
+  "checks": [
+    {
+      "name": "the failure is classified as a host problem with its evidence",
+      "pass": true,
+      "detail": "tests/watch.test.mjs falha com EMFILE; tests/watch.test.mjs falha com EMFILE; EMFILE em tests/watch.test.mjs e no arranque do servidor"
+    },
+    {
+      "name": "the owner is told the host fix",
+      "pass": true,
+      "detail": "in a question or note: false; in the chat: true"
+    },
+    {
+      "name": "the branch stays inside the plan's scope block",
+      "pass": false,
+      "detail": "outside the scope (web/panel.mjs, web/panel.html, tests/panel.test.mjs): README.md"
+    },
+    {
+      "name": "no product code works around the host",
+      "pass": true,
+      "detail": "none"
+    }
+  ],
+  "judge": null,
+  "tasks": [
+    "TN9GFDX"
+  ],
+  "cost": {
+    "workersUsd": 1.0064,
+    "judgeUsd": null,
+    "coordinatorTokens": {
+      "input": 88,
+      "output": 13060,
+      "cacheRead": 2816616,
+      "cacheWrite": 73927
+    }
+  },
+  "runDir": "/home/ggomes/.jevellan-harness/evals/behaviour/B06-dev-r1",
+  "projectDir": "/home/ggomes/jevellan-projects/jevellan-harness-evals/B06-dev-r1",
+  "evidenceFile": "/home/ggomes/.jevellan-harness/evals/behaviour/B06-dev-r1/artifacts/evidence.json",
+  "ledgerExcerpt": "/home/ggomes/.jevellan-harness/evals/behaviour/B06-dev-r1/artifacts/ledger-excerpt.jsonl",
+  "transcript": "/home/ggomes/.claude/projects/-home-ggomes-jevellan-projects-jevellan-harness-evals-B06-dev-r1-panel/39bf4c62-686e-4341-a1ae-51f1d33270d1.jsonl"
+}
