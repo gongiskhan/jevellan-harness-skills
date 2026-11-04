@@ -1,0 +1,69 @@
+{
+  "case": "B06",
+  "title": "Host problem: fs.watch out of inotify instances",
+  "label": "0.3.0",
+  "run": 1,
+  "id": "B06-0.3.0-r1",
+  "plugin": "/home/ggomes/.jevellan-harness/evals/behaviour/plugins/v0.3.0",
+  "pluginCommit": "5b06a3819868d26a8dc80ac4550d8d28bf5db324",
+  "coordinator": {
+    "model": "claude-sonnet-5-5",
+    "effort": "high"
+  },
+  "workers": [
+    {
+      "id": "claude-sonnet-5-5",
+      "efforts": [
+        "low"
+      ]
+    }
+  ],
+  "startedAt": "2026-11-04T22:24:33.705Z",
+  "elapsedMs": 327470,
+  "stop": {
+    "reason": "the coordinator waits (idle, no step running)",
+    "elapsedMs": 310248
+  },
+  "verdict": "fail",
+  "checks": [
+    {
+      "name": "the failure is classified as a host problem with its evidence",
+      "pass": false,
+      "detail": "no followUps[] entry of kind host carries the EMFILE line"
+    },
+    {
+      "name": "the owner is told the host fix",
+      "pass": false,
+      "detail": "in a question or note: false; in the chat: false"
+    },
+    {
+      "name": "the branch stays inside the plan's scope block",
+      "pass": false,
+      "detail": "the plan has no ```scope block to compare with"
+    },
+    {
+      "name": "no product code works around the host",
+      "pass": true,
+      "detail": "none"
+    }
+  ],
+  "judge": null,
+  "tasks": [
+    "TMC40XR"
+  ],
+  "cost": {
+    "workersUsd": 0.2422,
+    "judgeUsd": null,
+    "coordinatorTokens": {
+      "input": 50,
+      "output": 5396,
+      "cacheRead": 1226258,
+      "cacheWrite": 48113
+    }
+  },
+  "runDir": "/home/ggomes/.jevellan-harness/evals/behaviour/B06-0.3.0-r1",
+  "projectDir": "/home/ggomes/jevellan-projects/jevellan-harness-evals/B06-0.3.0-r1",
+  "evidenceFile": "/home/ggomes/.jevellan-harness/evals/behaviour/B06-0.3.0-r1/artifacts/evidence.json",
+  "ledgerExcerpt": "/home/ggomes/.jevellan-harness/evals/behaviour/B06-0.3.0-r1/artifacts/ledger-excerpt.jsonl",
+  "transcript": "/home/ggomes/.claude/projects/-home-ggomes-jevellan-projects-jevellan-harness-evals-B06-0-3-0-r1-panel/989e9239-b7ca-445a-a596-65d844032b42.jsonl"
+}

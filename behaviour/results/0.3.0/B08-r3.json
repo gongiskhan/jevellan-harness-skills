@@ -1,0 +1,35 @@
+{
+  "case": "B08",
+  "title": "A question to the owner stands on its own",
+  "label": "0.3.0",
+  "run": 3,
+  "id": "B08-0.3.0-r3",
+  "source": "B03-0.3.0-r3",
+  "startedAt": "2026-11-04T22:57:38.445Z",
+  "elapsedMs": 0,
+  "verdict": "fail",
+  "checks": [
+    {
+      "name": "there is a question to judge",
+      "pass": false,
+      "detail": "the source run asked the owner nothing"
+    },
+    {
+      "name": "under 120 words",
+      "pass": false,
+      "detail": "no question"
+    }
+  ],
+  "judge": {
+    "score": 0,
+    "reasons": [
+      "nothing to judge"
+    ],
+    "skipped": true,
+    "threshold": 0.8,
+    "pass": false
+  },
+  "cost": {
+    "judgeUsd": null
+  }
+}

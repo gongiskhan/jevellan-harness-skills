@@ -1,0 +1,43 @@
+{
+  "case": "B08",
+  "title": "A question to the owner stands on its own",
+  "label": "0.3.0",
+  "run": 6,
+  "id": "B08-0.3.0-r6",
+  "source": "B07b-0.3.0-r3",
+  "startedAt": "2026-11-04T22:58:04.867Z",
+  "elapsedMs": 9248,
+  "verdict": "fail",
+  "checks": [
+    {
+      "name": "there is a question to judge",
+      "pass": true,
+      "detail": "213 words"
+    },
+    {
+      "name": "under 120 words",
+      "pass": false,
+      "detail": "213 words"
+    }
+  ],
+  "judge": {
+    "model": "claude-opus-5-5",
+    "effort": "medium",
+    "rubricHash": "80e07e70f466026b",
+    "ms": 9248,
+    "score": 0.25,
+    "reasons": [
+      "The task is never stated in plain words. A reader who has forgotten it has to piece together from the options that two fields (`automatic`, `triggerType`) are being added to the `tasks_list` output under a size limit.",
+      "It uses the internal id T91BFC0 with no description. Jargon like `LIST_BUDGET`, `PAGE_SIZE`, 'budget', 'fixture', `task_get` and `triggerType` is never explained.",
+      "At roughly 200 words it is well over the 120-word limit, and the clipped, telegraphic phrasing makes it harder to read.",
+      "Why the question exists comes through: the size limit is too small, backed by byte estimates.",
+      "The options mostly say what happens to the reader (field shape changes, about 800 more bytes per page, more pages). A recommendation is given (option 1), and the default is stated: nothing gets built until the owner answers."
+    ],
+    "costUsd": 0.013607800000000001,
+    "threshold": 0.8,
+    "pass": false
+  },
+  "cost": {
+    "judgeUsd": 0.013607800000000001
+  }
+}

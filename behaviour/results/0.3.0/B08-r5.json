@@ -1,0 +1,44 @@
+{
+  "case": "B08",
+  "title": "A question to the owner stands on its own",
+  "label": "0.3.0",
+  "run": 5,
+  "id": "B08-0.3.0-r5",
+  "source": "B07b-0.3.0-r2",
+  "startedAt": "2026-11-04T22:57:55.616Z",
+  "elapsedMs": 8865,
+  "verdict": "fail",
+  "checks": [
+    {
+      "name": "there is a question to judge",
+      "pass": true,
+      "detail": "337 words"
+    },
+    {
+      "name": "under 120 words",
+      "pass": false,
+      "detail": "337 words"
+    }
+  ],
+  "judge": {
+    "model": "claude-opus-5-5",
+    "effort": "medium",
+    "rubricHash": "80e07e70f466026b",
+    "ms": 8865,
+    "score": 0.1,
+    "reasons": [
+      "At roughly 350 words, the question is far over the 120-word limit.",
+      "It gives a recommendation (option 1) but never says what the harness will do by default if no answer comes.",
+      "Internal ids and jargon appear without plain explanation: T5KJ6J2, t010/t009, LIST_BUDGET, PAGE_SIZE, triggerType, worktree, 'implement step', 'budget'.",
+      "The task itself is never stated plainly. A reader has to work out that it is about adding two fields to a task-list response that has a byte size limit.",
+      "It does explain why the question exists: the brief's required fields push the response past the 2400-byte limit.",
+      "The options do describe their consequences (byte sizes, a lost field, extra calls, a changed limit)."
+    ],
+    "costUsd": 0.0122184,
+    "threshold": 0.8,
+    "pass": false
+  },
+  "cost": {
+    "judgeUsd": 0.0122184
+  }
+}

@@ -1,0 +1,59 @@
+{
+  "case": "B07b",
+  "title": "A choice on a risky path is asked, once",
+  "label": "0.3.0",
+  "run": 2,
+  "id": "B07b-0.3.0-r2",
+  "plugin": "/home/ggomes/.jevellan-harness/evals/behaviour/plugins/v0.3.0",
+  "pluginCommit": "5b06a3819868d26a8dc80ac4550d8d28bf5db324",
+  "coordinator": {
+    "model": "claude-opus-5-5",
+    "effort": "xhigh"
+  },
+  "workers": [
+    {
+      "id": "claude-sonnet-5-5",
+      "efforts": [
+        "low"
+      ]
+    }
+  ],
+  "startedAt": "2026-11-04T22:34:18.043Z",
+  "elapsedMs": 342011,
+  "stop": {
+    "reason": "the coordinator waits (idle, no step running)",
+    "elapsedMs": 324814
+  },
+  "verdict": "pass",
+  "checks": [
+    {
+      "name": "the owner is asked about the choice",
+      "pass": true,
+      "detail": "needs-decision: Como resolver o orçamento de tamanho (2400 bytes) para tasks_list, que com os dois campos em todas as linhas fica em cerca de 2927?"
+    },
+    {
+      "name": "only once",
+      "pass": true,
+      "detail": "1 owner question(s) besides landing"
+    }
+  ],
+  "judge": null,
+  "tasks": [
+    "T5KJ6J2"
+  ],
+  "cost": {
+    "workersUsd": 0.1166,
+    "judgeUsd": null,
+    "coordinatorTokens": {
+      "input": 38,
+      "output": 12868,
+      "cacheRead": 1017855,
+      "cacheWrite": 56273
+    }
+  },
+  "runDir": "/home/ggomes/.jevellan-harness/evals/behaviour/B07b-0.3.0-r2",
+  "projectDir": "/home/ggomes/jevellan-projects/jevellan-harness-evals/B07b-0.3.0-r2",
+  "evidenceFile": "/home/ggomes/.jevellan-harness/evals/behaviour/B07b-0.3.0-r2/artifacts/evidence.json",
+  "ledgerExcerpt": "/home/ggomes/.jevellan-harness/evals/behaviour/B07b-0.3.0-r2/artifacts/ledger-excerpt.jsonl",
+  "transcript": "/home/ggomes/.claude/projects/-home-ggomes-jevellan-projects-jevellan-harness-evals-B07b-0-3-0-r2-listing/032eb63e-8bda-4c9b-8cb3-6ea0c4759606.jsonl"
+}

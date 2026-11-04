@@ -1,0 +1,84 @@
+{
+  "case": "B04",
+  "title": "The plan challenges the brief",
+  "label": "0.3.0",
+  "run": 2,
+  "id": "B04-0.3.0-r2",
+  "plugin": "/home/ggomes/.jevellan-harness/evals/behaviour/plugins/v0.3.0",
+  "pluginCommit": "5b06a3819868d26a8dc80ac4550d8d28bf5db324",
+  "coordinator": {
+    "model": "claude-sonnet-5-5",
+    "effort": "high"
+  },
+  "workers": [
+    {
+      "id": "claude-sonnet-5-5",
+      "efforts": [
+        "high"
+      ]
+    }
+  ],
+  "startedAt": "2026-11-04T22:17:35.966Z",
+  "elapsedMs": 153720,
+  "stop": {
+    "reason": "plan step.done #20",
+    "elapsedMs": 119857
+  },
+  "verdict": "fail",
+  "checks": [
+    {
+      "name": "the plan step ran and is done",
+      "pass": true,
+      "detail": "step.done #20"
+    },
+    {
+      "name": "plan.md has \"What already exists\" naming the upsert and the delete with their files",
+      "pass": false,
+      "detail": "no \"What already exists\" section"
+    },
+    {
+      "name": "plan.md has a \"Smallest change\" section",
+      "pass": false,
+      "detail": "missing"
+    },
+    {
+      "name": "plan.md has a scope block",
+      "pass": false,
+      "detail": "no ```scope block"
+    }
+  ],
+  "judge": {
+    "model": "claude-opus-5-5",
+    "effort": "medium",
+    "rubricHash": "503daf09213dcdab",
+    "ms": 10628,
+    "score": 0.5,
+    "reasons": [
+      "The plan builds both endpoints the brief prescribes. It never considers handling replace by re-posting {key, credential} to the existing POST /configs upsert, and it gives no technical reason the PUT is needed.",
+      "It describes the upsert in lib/store.mjs correctly (blank values are ignored), and that is a sound, concrete reason why removal needs a separate server path.",
+      "It mentions the existing whole-row DELETE /configs/:key only in the tests and decisions sections. It never lists it among the existing API alongside the upsert, and never sets it against a credential-only removal that keeps the row.",
+      "Its only reasons for the PUT are design choices (it never creates a row, it returns the masked row), not why the upsert can't do the job. The plan follows the brief's mechanism as written and never says it has weighed departing from it."
+    ],
+    "costUsd": 0.0507798,
+    "threshold": 0.7,
+    "pass": false
+  },
+  "tasks": [
+    "TPMRNJ3"
+  ],
+  "cost": {
+    "workersUsd": 0.2165,
+    "judgeUsd": 0.0507798,
+    "coordinatorTokens": {
+      "input": 40,
+      "output": 4466,
+      "cacheRead": 1005113,
+      "cacheWrite": 47936
+    }
+  },
+  "runDir": "/home/ggomes/.jevellan-harness/evals/behaviour/B04-0.3.0-r2",
+  "projectDir": "/home/ggomes/jevellan-projects/jevellan-harness-evals/B04-0.3.0-r2",
+  "evidenceFile": "/home/ggomes/.jevellan-harness/evals/behaviour/B04-0.3.0-r2/artifacts/evidence.json",
+  "ledgerExcerpt": "/home/ggomes/.jevellan-harness/evals/behaviour/B04-0.3.0-r2/artifacts/ledger-excerpt.jsonl",
+  "transcript": "/home/ggomes/.claude/projects/-home-ggomes-jevellan-projects-jevellan-harness-evals-B04-0-3-0-r2-panel/fd01417c-4538-411a-8f39-14d29703c51a.jsonl"
+}

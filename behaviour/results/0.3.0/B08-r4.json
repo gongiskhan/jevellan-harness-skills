@@ -1,0 +1,44 @@
+{
+  "case": "B08",
+  "title": "A question to the owner stands on its own",
+  "label": "0.3.0",
+  "run": 4,
+  "id": "B08-0.3.0-r4",
+  "source": "B07b-0.3.0-r1",
+  "startedAt": "2026-11-04T22:57:46.747Z",
+  "elapsedMs": 8300,
+  "verdict": "fail",
+  "checks": [
+    {
+      "name": "there is a question to judge",
+      "pass": true,
+      "detail": "206 words"
+    },
+    {
+      "name": "under 120 words",
+      "pass": false,
+      "detail": "206 words"
+    }
+  ],
+  "judge": {
+    "model": "claude-opus-5-5",
+    "effort": "medium",
+    "rubricHash": "80e07e70f466026b",
+    "ms": 8300,
+    "score": 0.1,
+    "reasons": [
+      "The question runs to about 200 words, well over the 120-word limit.",
+      "It recommends option 1 but never says what the harness will do if no answer comes.",
+      "The task ID T180JQ6 appears with no plain description, and code names like LIST_BUDGET, PAGE_SIZE, task_get and triggerType are left unexplained, as is jargon like 'guard moves'.",
+      "The task itself (adding two fields, triggerType and automatic, to each row of the tasks_list output) has to be pieced together; it is never stated plainly.",
+      "The reason for asking is clear: the estimated page size of about 3010 bytes would exceed the 2400-byte limit.",
+      "Each option mostly explains what it would mean in practice, such as more paging calls or dropping a field the owner asked for."
+    ],
+    "costUsd": 0.01346,
+    "threshold": 0.8,
+    "pass": false
+  },
+  "cost": {
+    "judgeUsd": 0.01346
+  }
+}

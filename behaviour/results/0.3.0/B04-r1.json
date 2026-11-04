@@ -1,0 +1,85 @@
+{
+  "case": "B04",
+  "title": "The plan challenges the brief",
+  "label": "0.3.0",
+  "run": 1,
+  "id": "B04-0.3.0-r1",
+  "plugin": "/home/ggomes/.jevellan-harness/evals/behaviour/plugins/v0.3.0",
+  "pluginCommit": "5b06a3819868d26a8dc80ac4550d8d28bf5db324",
+  "coordinator": {
+    "model": "claude-sonnet-5-5",
+    "effort": "high"
+  },
+  "workers": [
+    {
+      "id": "claude-sonnet-5-5",
+      "efforts": [
+        "high"
+      ]
+    }
+  ],
+  "startedAt": "2026-11-04T22:15:03.043Z",
+  "elapsedMs": 152905,
+  "stop": {
+    "reason": "plan step.done #20",
+    "elapsedMs": 124808
+  },
+  "verdict": "fail",
+  "checks": [
+    {
+      "name": "the plan step ran and is done",
+      "pass": true,
+      "detail": "step.done #20"
+    },
+    {
+      "name": "plan.md has \"What already exists\" naming the upsert and the delete with their files",
+      "pass": false,
+      "detail": "no \"What already exists\" section"
+    },
+    {
+      "name": "plan.md has a \"Smallest change\" section",
+      "pass": false,
+      "detail": "missing"
+    },
+    {
+      "name": "plan.md has a scope block",
+      "pass": false,
+      "detail": "no ```scope block"
+    }
+  ],
+  "judge": {
+    "model": "claude-opus-5-5",
+    "effort": "medium",
+    "rubricHash": "503daf09213dcdab",
+    "ms": 7888,
+    "score": 0.5,
+    "reasons": [
+      "The plan correctly describes the existing API: upsert in lib/store.mjs ignores blank values and remove(key) deletes the whole row. But it never asks whether replace could reuse POST /configs, and it builds the prescribed PUT anyway.",
+      "Its only reason for the PUT concerns how the PUT behaves (an unknown key returns 404 and creates no row). It gives no technical reason why the existing upsert cannot do the replace.",
+      "The credential-only DELETE has a concrete justification: the upsert ignores null and the existing delete removes the whole row.",
+      "The plan follows the brief's mechanism exactly and never considers skipping any part of it, so it has no departures to state or justify.",
+      "It even notes that POST /configs with a credential still exists, but does not see that this already covers replace."
+    ],
+    "costUsd": 0.0510758,
+    "threshold": 0.7,
+    "pass": false
+  },
+  "tasks": [
+    "TFH6FR6"
+  ],
+  "cost": {
+    "workersUsd": 0.1946,
+    "judgeUsd": 0.0510758,
+    "coordinatorTokens": {
+      "input": 42,
+      "output": 4403,
+      "cacheRead": 1069110,
+      "cacheWrite": 46545
+    }
+  },
+  "runDir": "/home/ggomes/.jevellan-harness/evals/behaviour/B04-0.3.0-r1",
+  "projectDir": "/home/ggomes/jevellan-projects/jevellan-harness-evals/B04-0.3.0-r1",
+  "evidenceFile": "/home/ggomes/.jevellan-harness/evals/behaviour/B04-0.3.0-r1/artifacts/evidence.json",
+  "ledgerExcerpt": "/home/ggomes/.jevellan-harness/evals/behaviour/B04-0.3.0-r1/artifacts/ledger-excerpt.jsonl",
+  "transcript": "/home/ggomes/.claude/projects/-home-ggomes-jevellan-projects-jevellan-harness-evals-B04-0-3-0-r1-panel/be2386be-3855-4e86-a7c2-45226b9f4a4b.jsonl"
+}

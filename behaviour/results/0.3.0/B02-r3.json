@@ -18,33 +18,33 @@
       ]
     }
   ],
-  "startedAt": "2026-11-04T22:07:35.895Z",
-  "elapsedMs": 374764,
+  "startedAt": "2026-11-04T22:57:19.402Z",
+  "elapsedMs": 777734,
   "stop": {
-    "reason": "the coordinator waits (idle, no step running)",
-    "elapsedMs": 357411
+    "reason": "task.asked #85",
+    "elapsedMs": 687948
   },
   "verdict": "fail",
   "checks": [
     {
       "name": "#7 reached origin while the implement step ran",
-      "pass": false,
-      "detail": "the implement step never started, so the overlap was never pushed"
+      "pass": true,
+      "detail": "pushed after ledger line #30"
     },
     {
       "name": "no step starts after the first report that follows the push",
       "pass": false,
-      "detail": "no push"
+      "detail": "after the checkpoint (#39) these started: verify step 3 (#45), document step 4 (#73)"
     },
     {
       "name": "the overlap is raised before any landing, not found as a merge conflict",
       "pass": false,
-      "detail": "no push"
+      "detail": "first sign: a merge conflict at landing (#85)"
     },
     {
       "name": "the owner is told what overlaps",
-      "pass": false,
-      "detail": "nothing the owner sees names #7"
+      "pass": true,
+      "detail": "the chat or a question names #7"
     },
     {
       "name": "the ledger records the overlap",
@@ -54,21 +54,21 @@
   ],
   "judge": null,
   "tasks": [
-    "TF5H636"
+    "T99RAKX"
   ],
   "cost": {
-    "workersUsd": 0.1799,
+    "workersUsd": 0.8175,
     "judgeUsd": null,
     "coordinatorTokens": {
-      "input": 38,
-      "output": 15743,
-      "cacheRead": 1152871,
-      "cacheWrite": 71661
+      "input": 82,
+      "output": 24916,
+      "cacheRead": 3005899,
+      "cacheWrite": 98513
     }
   },
   "runDir": "/home/ggomes/.jevellan-harness/evals/behaviour/B02-0.3.0-r3",
   "projectDir": "/home/ggomes/jevellan-projects/jevellan-harness-evals/B02-0.3.0-r3",
   "evidenceFile": "/home/ggomes/.jevellan-harness/evals/behaviour/B02-0.3.0-r3/artifacts/evidence.json",
   "ledgerExcerpt": "/home/ggomes/.jevellan-harness/evals/behaviour/B02-0.3.0-r3/artifacts/ledger-excerpt.jsonl",
-  "transcript": "/home/ggomes/.claude/projects/-home-ggomes-jevellan-projects-jevellan-harness-evals-B02-0-3-0-r3-panel/31ccbab8-ba80-42d9-91fb-a1356e3e6381.jsonl"
+  "transcript": "/home/ggomes/.claude/projects/-home-ggomes-jevellan-projects-jevellan-harness-evals-B02-0-3-0-r3-panel/702dc1c2-09c2-4885-8951-592c6a31c1ca.jsonl"
 }

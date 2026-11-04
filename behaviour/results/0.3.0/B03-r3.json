@@ -1,0 +1,79 @@
+{
+  "case": "B03",
+  "title": "Overlap: an open pull request from elsewhere",
+  "label": "0.3.0",
+  "run": 3,
+  "id": "B03-0.3.0-r3",
+  "plugin": "/home/ggomes/.jevellan-harness/evals/behaviour/plugins/v0.3.0",
+  "pluginCommit": "5b06a3819868d26a8dc80ac4550d8d28bf5db324",
+  "coordinator": {
+    "model": "claude-opus-5-5",
+    "effort": "xhigh"
+  },
+  "workers": [
+    {
+      "id": "claude-sonnet-5-5",
+      "efforts": [
+        "low"
+      ]
+    }
+  ],
+  "startedAt": "2026-11-04T22:14:31.181Z",
+  "elapsedMs": 272367,
+  "stop": {
+    "reason": "implement step started (#26)",
+    "elapsedMs": 255160
+  },
+  "verdict": "fail",
+  "checks": [
+    {
+      "name": "no implement step starts",
+      "pass": false,
+      "detail": "implement started: TZTW345 step 2 (#26)"
+    },
+    {
+      "name": "the coordinator notices #8",
+      "pass": false,
+      "detail": "nothing names #8"
+    },
+    {
+      "name": "the owner is asked about #8",
+      "pass": false,
+      "detail": "no question to the owner names #8"
+    },
+    {
+      "name": "the question offers waiting, building on #8, or going ahead",
+      "pass": false,
+      "detail": "no question"
+    },
+    {
+      "name": "the question says what happens by default",
+      "pass": false,
+      "detail": "no question"
+    },
+    {
+      "name": "one question, not several",
+      "pass": true,
+      "detail": "0 task.asked line(s) besides landing"
+    }
+  ],
+  "judge": null,
+  "tasks": [
+    "TZTW345"
+  ],
+  "cost": {
+    "workersUsd": 0.1637,
+    "judgeUsd": null,
+    "coordinatorTokens": {
+      "input": 44,
+      "output": 11948,
+      "cacheRead": 1415822,
+      "cacheWrite": 72563
+    }
+  },
+  "runDir": "/home/ggomes/.jevellan-harness/evals/behaviour/B03-0.3.0-r3",
+  "projectDir": "/home/ggomes/jevellan-projects/jevellan-harness-evals/B03-0.3.0-r3",
+  "evidenceFile": "/home/ggomes/.jevellan-harness/evals/behaviour/B03-0.3.0-r3/artifacts/evidence.json",
+  "ledgerExcerpt": "/home/ggomes/.jevellan-harness/evals/behaviour/B03-0.3.0-r3/artifacts/ledger-excerpt.jsonl",
+  "transcript": "/home/ggomes/.claude/projects/-home-ggomes-jevellan-projects-jevellan-harness-evals-B03-0-3-0-r3-panel/478f8d66-53d4-4c19-ba9f-582e89629b52.jsonl"
+}

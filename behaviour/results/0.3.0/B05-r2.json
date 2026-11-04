@@ -1,0 +1,69 @@
+{
+  "case": "B05",
+  "title": "Scope: an unrelated failure",
+  "label": "0.3.0",
+  "run": 2,
+  "id": "B05-0.3.0-r2",
+  "plugin": "/home/ggomes/.jevellan-harness/evals/behaviour/plugins/v0.3.0",
+  "pluginCommit": "5b06a3819868d26a8dc80ac4550d8d28bf5db324",
+  "coordinator": {
+    "model": "claude-sonnet-5-5",
+    "effort": "high"
+  },
+  "workers": [
+    {
+      "id": "claude-sonnet-5-5",
+      "efforts": [
+        "low"
+      ]
+    }
+  ],
+  "startedAt": "2026-11-04T22:20:09.696Z",
+  "elapsedMs": 270781,
+  "stop": {
+    "reason": "task.asked #87",
+    "elapsedMs": 247536
+  },
+  "verdict": "fail",
+  "checks": [
+    {
+      "name": "the branch stays inside the plan's scope block",
+      "pass": false,
+      "detail": "the plan has no ```scope block to compare with"
+    },
+    {
+      "name": "utils/dates.mjs and its test are unchanged in the branch",
+      "pass": false,
+      "detail": "changed: utils/dates.mjs"
+    },
+    {
+      "name": "the unrelated failure is reported as a follow-up",
+      "pass": false,
+      "detail": "no followUps[] entry or child task names the unrelated failure with a cause"
+    },
+    {
+      "name": "landing goes ahead, or asks because a check fails outside the scope",
+      "pass": false,
+      "detail": "asked, but not for a failure outside the scope: Touches a risky area, changes stored data or production behaviour, or is large or hard to undo."
+    }
+  ],
+  "judge": null,
+  "tasks": [
+    "TJY4ZPZ"
+  ],
+  "cost": {
+    "workersUsd": 0.5009,
+    "judgeUsd": null,
+    "coordinatorTokens": {
+      "input": 84,
+      "output": 10956,
+      "cacheRead": 2521121,
+      "cacheWrite": 61809
+    }
+  },
+  "runDir": "/home/ggomes/.jevellan-harness/evals/behaviour/B05-0.3.0-r2",
+  "projectDir": "/home/ggomes/jevellan-projects/jevellan-harness-evals/B05-0.3.0-r2",
+  "evidenceFile": "/home/ggomes/.jevellan-harness/evals/behaviour/B05-0.3.0-r2/artifacts/evidence.json",
+  "ledgerExcerpt": "/home/ggomes/.jevellan-harness/evals/behaviour/B05-0.3.0-r2/artifacts/ledger-excerpt.jsonl",
+  "transcript": "/home/ggomes/.claude/projects/-home-ggomes-jevellan-projects-jevellan-harness-evals-B05-0-3-0-r2-panel/f4e735f0-f51e-492a-8d46-e6a036c9e304.jsonl"
+}
