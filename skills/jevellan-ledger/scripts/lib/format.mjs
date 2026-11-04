@@ -25,7 +25,7 @@ export function detail(event) {
     case 'step.message':
       return `${d.direction}: ${clip(d.text, 140)}`;
     case 'step.report':
-      return `${d.status}${d.synthesized ? ' (synthesized)' : ''}: ${clip(d.summary, 160)}${d.question ? ` | Q: ${clip(d.question, 120)}` : ''}`;
+      return `${d.status}${d.synthesized ? ' (synthesized)' : ''}: ${clip(d.summary, 160)}${d.question ? ` | Q: ${clip(d.question, 120)}` : ''}${d.decisions?.length ? ` | ${d.decisions.length} decision(s)` : ''}${d.followUps?.length ? ` | ${d.followUps.length} follow-up(s)` : ''}`;
     case 'step.done':
       return `step ${d.ordinal ?? event.step} done`;
     case 'step.failed':
@@ -50,7 +50,7 @@ export function detail(event) {
       if (d.pr) return `pull request ${d.pr}${d.merged ? ' (merged)' : ''}${d.commit ? ` at ${String(d.commit).slice(0, 12)}` : ''}`;
       return `commit ${String(d.commit ?? '').slice(0, 12)}${d.target ? ` on ${d.target}` : ''}`;
     case 'task.asked':
-      return `${clip(d.question, 120)} [${(d.options ?? []).map((o) => (typeof o === 'string' ? o : o.label)).join(' | ')}]`;
+      return `${d.source === 'coordinator' ? 'Question: ' : ''}${clip(d.question, 120)} [${(d.options ?? []).map((o) => (typeof o === 'string' ? o : o.label)).join(' | ')}]${d.recommended ? ` recommended: ${d.recommended}` : ''}`;
     case 'note':
       return clip(d.text, 160);
     default:

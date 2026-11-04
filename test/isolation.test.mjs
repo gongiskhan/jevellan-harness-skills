@@ -37,6 +37,7 @@ const TABLE = {
   git: {
     'worktree.mjs': { args: ['create', '--task', TASK, '--json'], roles: ['ledger'] },
     'land.mjs': { args: ['--task', TASK, '--json'], roles: ['ledger'] },
+    'overlap.mjs': { args: ['--task', TASK, '--json'], roles: ['ledger'] },
   },
   placement: {
     'route.mjs': { args: ['--task', TASK, '--step', '1', '--duty', 'investigate', '--json'], roles: ['ledger', 'duty', 'runtime'] },

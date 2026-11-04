@@ -2,6 +2,13 @@
 
 Changes made by the trigger-eval improvement loop (brief section 10); `evals/RESULTS.md` at the repository root holds each round's numbers.
 
+## 0.4.0
+
+- Body: the overlap check before the first step and before each later one, judged by what each item did; a decision
+  rule for small choices (decide, record, mention) and a fixed shape for questions, recorded with the ledger's ask;
+  follow-ups (never sent back to implement); the final summary names the decisions and follow-ups. The description is
+  unchanged. Trigger evals run again for 0.4.0.
+
 ## Trigger evals round 1, 2026-11-02
 
 - The role-missing sentence now says how to tell a role (the first word of a skill's description) and to stop without trying any skill name: with the placement skill removed, sessions tried a skill name guessed from the role word before reporting the role missing (the placement skill's cases 9 and 10), and the brief says such a session must invoke nothing.

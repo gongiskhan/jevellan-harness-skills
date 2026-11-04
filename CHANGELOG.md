@@ -1,5 +1,26 @@
 # Changelog
 
+## 0.4.0 - 2026-11-04
+
+From the first real week on ekoa-code (msg-harness-004; docs/decisions.md H-042, H-043).
+
+- Behaviour evals (`behaviour/`): real coordinator sessions on small fixture repositories, scored on what the harness
+  did: the ledger, the reports, plan.md, the branches, the GitHub calls and what the owner was told. Eleven cases
+  (overlap with merged, landing and open work, the plan challenging the brief, scope, host problems, small decisions,
+  questions that stand alone, kept evidence, and the real ekoa-code replay), each checked on hand-written evidence in
+  `npm test`. Results in `behaviour/RESULTS.md`, with 0.3.0's baseline.
+- Overlap: the git skill's `overlap.mjs` lists the recent commits, the open and merged pull requests and the other open
+  tasks related to a task and records the check; the coordinator runs it before the first step and before each later
+  one and judges it (go on, narrow, close, wait). Landing by pull request checks once more before merging origin in.
+- Scope: plan.md gains "What already exists", "Smallest change" and a ```scope block; implement stays inside it;
+  landing asks the owner when the branch goes beyond it and lists outside files in the pull request.
+- Follow-ups and decisions: reports may carry `followUps[]` (a failure outside the task's scope, a host problem, work
+  outside the plan) and `decisions[]` (choices the worker made itself). Neither is fixed or asked in the task: the
+  coordinator tells the owner, a landing check failing for such a reason becomes the owner's question with a draft
+  pull request, and the pull request lists both.
+- Questions: the ledger's `ask` records a coordinator's question for the owner in a fixed shape (what the task is,
+  options that say what they mean, the recommendation, under 120 words, one open at a time) and `answer` its reply.
+
 ## 0.3.0 - 2026-11-03
 
 - Landing by pull request (docs/decisions.md H-041): with `"landing": "pr"` in `.jevellan/project.json` a task's

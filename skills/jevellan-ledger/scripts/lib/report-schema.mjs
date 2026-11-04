@@ -24,9 +24,18 @@ export const LIMITS = {
   limitations: 4000,
   ownerCommands: 5,
   why: 300,
+  decisions: 10,
+  followUps: 10,
+  decisionText: 600,
+  followUpText: 600,
 };
 
-const KEYS = ['status', 'summary', 'question', 'options', 'testsRun', 'changedFiles', 'screenshots', 'limitations', 'ownerCommands'];
+// decisions[]: a choice the worker made itself (in scope, reversible, outside the project's risky paths), with its
+// reason, so the coordinator can tell the owner in one sentence. followUps[]: something found that is not this
+// task's to fix: a failure outside the task's scope, a host problem, or work outside the plan's scope.
+export const FOLLOW_UP_KINDS = ['unrelated-failure', 'host', 'scope'];
+
+const KEYS = ['status', 'summary', 'question', 'options', 'testsRun', 'changedFiles', 'screenshots', 'limitations', 'ownerCommands', 'decisions', 'followUps'];
 
 const isObject = (value) => value !== null && typeof value === 'object' && !Array.isArray(value);
 const isText = (value) => typeof value === 'string' && value.trim().length > 0;
@@ -151,6 +160,35 @@ function firstProblem(r) {
         return `ownerCommands[${index}].cwd must be worktree, checkout, home or an absolute folder`;
       }
       if (!isText(item.why) || item.why.length > LIMITS.why) return `ownerCommands[${index}].why must say why, in at most ${LIMITS.why} characters`;
+    }
+  }
+  if (r.decisions !== undefined) {
+    if (!Array.isArray(r.decisions)) return 'decisions must be a list of {question, choice, options, reason, reversible}';
+    if (r.decisions.length > LIMITS.decisions) return `decisions must have at most ${LIMITS.decisions} items`;
+    for (const [index, d] of r.decisions.entries()) {
+      if (!isObject(d)) return `decisions[${index}] must be an object with question, choice, options, reason and reversible`;
+      const bad = unknownKey(d, ['question', 'choice', 'options', 'reason', 'reversible'], `decisions[${index}]`);
+      if (bad) return bad;
+      for (const key of ['question', 'choice', 'reason']) {
+        if (!isText(d[key]) || d[key].length > LIMITS.decisionText) return `decisions[${index}].${key} must be a non-empty text of at most ${LIMITS.decisionText} characters`;
+      }
+      if (d.options !== undefined && (!Array.isArray(d.options) || d.options.length > LIMITS.optionsMax + 2 || !d.options.every((o) => isText(o) && o.length <= LIMITS.label * 2))) {
+        return `decisions[${index}].options must be a list of up to ${LIMITS.optionsMax + 2} short texts`;
+      }
+      if (typeof d.reversible !== 'boolean') return `decisions[${index}].reversible must be true or false`;
+    }
+  }
+  if (r.followUps !== undefined) {
+    if (!Array.isArray(r.followUps)) return 'followUps must be a list of {kind, title, evidence, cause}';
+    if (r.followUps.length > LIMITS.followUps) return `followUps must have at most ${LIMITS.followUps} items`;
+    for (const [index, f] of r.followUps.entries()) {
+      if (!isObject(f)) return `followUps[${index}] must be an object with kind, title, evidence and cause`;
+      const bad = unknownKey(f, ['kind', 'title', 'evidence', 'cause'], `followUps[${index}]`);
+      if (bad) return bad;
+      if (!FOLLOW_UP_KINDS.includes(f.kind)) return `followUps[${index}].kind must be one of ${FOLLOW_UP_KINDS.join(', ')}`;
+      for (const key of ['title', 'evidence', 'cause']) {
+        if (!isText(f[key]) || f[key].length > LIMITS.followUpText) return `followUps[${index}].${key} must be a non-empty text of at most ${LIMITS.followUpText} characters`;
+      }
     }
   }
   return null;

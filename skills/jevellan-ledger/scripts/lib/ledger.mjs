@@ -286,8 +286,11 @@ export function projectTask(info, { alive = pidAlive } = {}) {
   const lastReport = lastOf(events, (e) => e.kind === 'step.report')?.event ?? null;
   const landed = lastOf(events, (e) => e.kind === 'task.landed');
   const decided = lastOf(events, (e) => e.kind === 'landing.decided');
-  const lastLanding = lastOf(events, (e) => LANDING_KINDS.has(e.kind));
+  // A question the coordinator asked (task.asked with source "coordinator", ledger.mjs ask) is not a landing line.
+  const lastLanding = lastOf(events, (e) => LANDING_KINDS.has(e.kind) && !(e.kind === 'task.asked' && e.data?.source === 'coordinator'));
   const lastStep = lastOf(events, (e) => STEP_KINDS.has(e.kind));
+  const lastQuestion = lastOf(events, (e) => e.kind === 'task.asked' && e.data?.source === 'coordinator');
+  const questionOpen = lastQuestion && !events.some((e) => e.seq > lastQuestion.event.seq && ((e.kind === 'note' && e.data?.answerTo === lastQuestion.event.seq) || STEP_KINDS.has(e.kind) || LANDING_KINDS.has(e.kind)));
   const lastLife = lastOf(events, (e) => LIFECYCLE.has(e.kind));
 
   const result = {
@@ -346,7 +349,14 @@ export function projectTask(info, { alive = pidAlive } = {}) {
       return result;
     }
   }
-  // 3. waiting-owner: the current step asks (needs-decision or blocked), or a landing question is open.
+  // 3. waiting-owner: the coordinator's question is open (no answer, step or landing line after it), the current step
+  // asks (needs-decision or blocked), or a landing question is open.
+  if (questionOpen) {
+    const q = lastQuestion.event.data;
+    result.state = 'waiting-owner';
+    result.waiting = { source: 'coordinator', question: q.question, options: q.options ?? [], meanings: q.meanings ?? {}, recommended: q.recommended ?? null, seq: lastQuestion.event.seq };
+    return result;
+  }
   if (lastLanding?.event.kind === 'task.asked' && (!lastStep || lastStep.index < lastLanding.index)) {
     result.state = 'waiting-owner';
     result.waiting = { source: 'landing', question: lastLanding.event.data?.question, options: lastLanding.event.data?.options ?? [] };

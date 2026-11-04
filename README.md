@@ -154,8 +154,9 @@ A task runs like this:
 | The owner asks | coordinator session | |
 | Create the task with a complete brief | ledger skill (`ledger.mjs task create`) | `task.created` |
 | Make the worktree, run the setup command | git skill (`worktree.mjs create`) | `task.worktree` |
+| Check for overlap: is this already done, or being done, elsewhere? | git skill (`overlap.mjs`), judged by the coordinator | `note` (`data.overlap`); `task.asked` when the owner must choose |
 | Ask Jev which optional steps apply, record the steps | placement (`route.mjs --questions`), ledger (`append task.workflow --from-workflow`) | `task.workflow` |
-| For each step: place it | placement (`route.mjs`) | `task.placed` with Jev's probabilities |
+| For each step: check for overlap again (from the second step), then place it | git skill (`overlap.mjs --checkpoint step`), placement (`route.mjs`) | `note`; `task.placed` with Jev's probabilities |
 | Start it as its own session | runtime skill for the provider's kind (`start.mjs`) | `step.started`, `session.started` |
 | The worker follows its duty skill and writes its report | worker session, Stop hook | `session.event` lines, `step.report` |
 | Wait in the background, read the report | ledger (`ledger.mjs wait`) | |
@@ -167,6 +168,31 @@ with `.jevellan/workflows/<kind>.json`. A verify step whose tests fail sends the
 names, at most `maxLoops` times. Jev answers placement from the policy in the placement skill's `SKILL.md` and landing
 from the policy in the git skill's `SKILL.md`; both are plain sections a person edits, and `evals/` in each skill
 replays them against the decisions recorded in the ledgers.
+
+### Overlap, scope, decisions and questions (0.4.0)
+
+- Overlap. Before a task's first step and before every later one, the coordinator runs the git skill's
+  `overlap.mjs`: after `git fetch origin` it lists the default branch's recent commits (later: only what is new), the
+  open and recently merged pull requests (gh, read-only) and the project's other open tasks that touch the task's
+  paths or share its title's words, and records the check as a note. The coordinator judges each item by what it
+  actually did: nothing (go on), part (ask whether to narrow the task to what is missing), all (propose closing), an
+  open pull request (wait, build on it, or go ahead). A task never builds again what already merged, and stops
+  starting steps when overlap appears mid-run. Landing by pull request runs the check once more before merging origin
+  in.
+- Scope. plan.md has "What already exists", "Smallest change" (the brief's outcome binds; the mechanism it prescribes is
+  a suggestion unless marked required) and a ```scope block of the files the task will change. Implement stays inside
+  it; landing compares the branch with it and asks the owner when more than two tests or fixtures, or any other file,
+  fall outside, listing them in the pull request.
+- Follow-ups. A failure that is not the change's and a problem of the machine (EMFILE, a refused sandbox, no
+  display...) are reported in the report's `followUps[]`, never fixed in the task branch or worked around in product
+  code; the coordinator tells the owner (with the machine's fix, once) and offers a separate task. A landing check that
+  fails because of one becomes the owner's question with a draft pull request instead of a refusal.
+- Decisions. A small choice (within the task, reversible, outside riskyPaths, not about product, money, data or
+  production) is taken by the worker (`decisions[]`) or the coordinator (a note), and named to the owner in one
+  sentence; the pull request lists them under "Decisions taken".
+- Questions. Every question to the owner goes through the ledger skill's `ask`: what the task is and why the question
+  exists in plain words, each option with what it means for the owner, the recommended option (what the coordinator
+  does when the reply does not choose), under 120 words, one open question per task until `answer` records the reply.
 
 Workers run with their own Claude config folder (`~/.jevellan-harness/claude-config`), so the owner's personal
 settings, hooks, plugins and instructions do not reach them; what a worker is told is the worker rules for its duty,
@@ -204,7 +230,8 @@ own tests alone, the repository suites, the role lint and the decoupling lint.
   `scripts/test-skills.mjs` (each skill's own tests, alone), `scripts/run-trigger-evals.mjs` (trigger evals, results in
   `evals/RESULTS.md`).
 - `skills/<name>/test/`: each skill's own suites. `test/`: the suites of several skills together, the installer and the
-  lints. `acceptance/`: the H1 to H12 journeys, `timings.mjs` and `RESULTS.md`.
+  lints. `acceptance/`: the H1 to H12 journeys, `timings.mjs` and `RESULTS.md`. `behaviour/`: the behaviour evals, real
+  coordinator sessions on fixture repositories scored on what the harness did (`behaviour/README.md`, `RESULTS.md`).
 - `docs/decoupling.md` (each kind of coupling the repository forbids and how the lint catches it).
 - `tools/viewer.mjs --project <path> --host <tailnet address>`: a read-only page over a project's ledger (tasks, step
   reports, landings, questions waiting on you, screenshots), refreshed every 10 s; bind it to the machine's Tailscale

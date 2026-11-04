@@ -121,6 +121,11 @@ import {
   uncommittedFiles,
   warn,
 } from './worktree.mjs';
+import { ghClient, ghEnvironment, githubRepo, runGh } from './lib/gh.mjs';
+import { globPattern, pathMatches, scopeBlock, scopeCheck } from './lib/scope.mjs';
+import { checkOverlap, recordOverlap } from './overlap.mjs';
+
+export { ghEnvironment, githubRepo, pathMatches, globPattern };
 
 export const POLICY_FILE = path.join(SKILL_DIR, 'SKILL.md');
 export const LANDING_QUESTION = 'landing_route';
@@ -237,38 +242,6 @@ export function cut(text, max) {
 
 function oneLine(text, max) {
   return cut(String(text ?? '').replace(/\s+/g, ' ').trim(), max);
-}
-
-// Ported pathMatches: a file is under a risky path when it is that path or below it. A risky path with a wildcard is
-// a pattern: "*" is any part of one name, "?" one character of it, "**" any number of folders ("deploy/**",
-// "**/migrations", "api/scripts/migrate*"); it matches a file when it matches the file or a folder above it.
-export function pathMatches(file, riskyPath) {
-  const p = riskyPath.replace(/^\.\//, '').replace(/\/+$/u, '');
-  if (p === '') return false;
-  if (!/[*?]/.test(p)) return file === p || file.startsWith(`${p}/`);
-  const re = globPattern(p);
-  const parts = file.split('/');
-  for (let i = parts.length; i >= 1; i -= 1) if (re.test(parts.slice(0, i).join('/'))) return true;
-  return false;
-}
-
-function globPattern(p) {
-  let out = '';
-  for (let i = 0; i < p.length; i += 1) {
-    const c = p[i];
-    if (c === '*' && p[i + 1] === '*') {
-      if (p[i + 2] === '/') {
-        out += '(?:.*/)?';
-        i += 2;
-      } else {
-        out += '.*';
-        i += 1;
-      }
-    } else if (c === '*') out += '[^/]*';
-    else if (c === '?') out += '[^/]';
-    else out += c.replace(/[.+^${}()|[\]\\]/g, '\\$&');
-  }
-  return new RegExp(`^${out}$`);
 }
 
 // Parses `git diff --numstat --no-renames -z`: "<add>\t<del>\t<path>\0" per file, "-" for a binary file's counts.
@@ -802,10 +775,98 @@ async function runLandingChecks(ctx, head, round, stopped) {
     results.push({ name: check.name, command: check.command, passed: result.passed, exitCode: result.exitCode, timedOut: result.timedOut, durationMs: result.durationMs, round });
     if (!result.passed) {
       const why = result.timedOut ? `timed out after ${check.timeoutMs} ms` : `exit ${result.exitCode ?? 'none'}`;
-      throw new GitSkillError(`check ${check.name} failed (${why}); ${stopped}. Output tail:\n${event.data.tail}`);
+      const error = new GitSkillError(`check ${check.name} failed (${why}); ${stopped}. Output tail:\n${event.data.tail}`);
+      // A caller may route this failure to the owner instead (a failure the task's reports put outside its scope).
+      error.failed = { name: check.name, tail: String(result.tail ?? '') };
+      error.results = results;
+      throw error;
     }
   }
   return results;
+}
+
+// ---- what the task's reports say beyond their summaries (0.4.0) ---------------------------------------------------
+
+// The decisions and follow-ups of the task's reports, newest report of each step first, without repeats.
+export function reportExtras(info) {
+  const decisions = [];
+  const followUps = [];
+  const seen = new Set();
+  for (const e of [...info.events].reverse()) {
+    if (e.kind !== 'step.report') continue;
+    for (const d of Array.isArray(e.data?.decisions) ? e.data.decisions : []) {
+      const key = `d:${d.choice}`;
+      if (d?.choice && !seen.has(key)) {
+        seen.add(key);
+        decisions.push(d);
+      }
+    }
+    for (const f of Array.isArray(e.data?.followUps) ? e.data.followUps : []) {
+      const key = `f:${f.kind}:${f.title}`;
+      if (f?.title && !seen.has(key)) {
+        seen.add(key);
+        followUps.push(f);
+      }
+    }
+  }
+  return { decisions: decisions.reverse(), followUps: followUps.reverse() };
+}
+
+// The follow-ups (a failure outside the task's scope, or a host problem) that a failed check's output shows: a test file
+// or an error code they name appears in it. Null when none does: the failure is then the task's own.
+export function failureOutsideScope(followUps, tail) {
+  const out = String(tail ?? '');
+  const hits = [];
+  for (const f of followUps.filter((x) => x.kind === 'unrelated-failure' || x.kind === 'host')) {
+    const text = `${f.title ?? ''} ${f.evidence ?? ''}`;
+    const tokens = new Set();
+    for (const m of text.matchAll(/[A-Za-z0-9_@.\/-]+\.(?:test|spec)\.[A-Za-z0-9]+/g)) {
+      tokens.add(m[0]);
+      tokens.add(m[0].split('/').pop());
+    }
+    for (const m of text.matchAll(/\bE[A-Z]{3,}\b/g)) tokens.add(m[0]);
+    if ([...tokens].some((t) => t.length >= 5 && out.includes(t))) hits.push(f.title);
+  }
+  return hits.length ? hits.join('; ') : null;
+}
+
+// The changed files against plan.md's scope block (0.4.0): {scope, outside, tolerated, files}. No plan.md, or no scope
+// block in it, is nothing to compare.
+export function landingScope(wtPath, baseRef, branch) {
+  const plan = path.join(wtPath, 'plan.md');
+  const scope = fs.existsSync(plan) ? scopeBlock(fs.readFileSync(plan, 'utf8')) : null;
+  const r = git(wtPath, ['diff', '--name-only', `${baseRef}...refs/heads/${branch}`], { permitted: [0, 128] });
+  const files = r.code === 0 ? r.stdout.split('\n').filter(Boolean) : [];
+  return { ...scopeCheck(files, scope), files };
+}
+
+// The guards that make a landing the owner's question before anything is asked of Jev (0.4.0): files outside the
+// plan's scope beyond the tolerance, and, when landing by pull request, work that reached origin/<defaultBranch> or a
+// pull request since the task's last overlap check and that both changes files this branch changes and shares the
+// task's intent (most of its title's words): the same file changed for another reason is what a merge handles. Found
+// overlap is recorded as a note. A local default branch that moved under the task is the ordinary case a merge handles. Returns {reason, source,
+// scope}. When the overlap check cannot run (the ledger or git refusing), landing goes on with a warning.
+function landingGuard(ctx) {
+  const { root, wt, target } = ctx;
+  const baseRef = target.remoteRef ?? `refs/heads/${target.into}`;
+  const scope = landingScope(wt.path, baseRef, wt.branch);
+  ctx.scope = scope;
+  if (!scope.tolerated) {
+    return { source: 'scope', reason: `${scope.outside.length} changed file(s) outside the plan's scope: ${listText(scope.outside)}`, scope };
+  }
+  if (!target.pr) return { reason: null, source: null, scope };
+  try {
+    const overlap = checkOverlap(root, ctx.task, { checkpoint: 'landing', record: false });
+    const same = overlap.items.filter((i) => i.kind !== 'task' && i.textRelated && i.filesOverlap.some((f) => scope.files.includes(f)));
+    if (same.length) {
+      recordOverlap(root, ctx.task, { ...overlap, items: same, verdict: 'possible' });
+      const names = same.map((i) => `${i.number ? `#${i.number} ` : ''}${i.commit ? `${i.commit.slice(0, 9)} ` : ''}${i.kind === 'open-pr' ? '(open) ' : ''}"${i.title}" (${listText(i.filesOverlap, 3)})`);
+      return { source: 'overlap', reason: `overlap: work on the same files reached ${overlap.base} or a pull request since the task's last check: ${names.join('; ')}`, scope };
+    }
+  } catch (error) {
+    warn(`warning: the overlap check did not run (${firstLine(error.message)}); landing goes on without it`);
+  }
+  return { reason: null, source: null, scope };
 }
 
 async function landRoute(ctx, { forced, reason }) {
@@ -829,7 +890,18 @@ async function landRoute(ctx, { forced, reason }) {
       }
       return askOwner(ctx, `merge conflict in ${files}`);
     }
-    results.push(...(await runLandingChecks(ctx, merged.head, round, `${into} did not move`)));
+    try {
+      results.push(...(await runLandingChecks(ctx, merged.head, round, `${into} did not move`)));
+    } catch (error) {
+      const outside = error.failed ? failureOutsideScope(reportExtras(ctx.info).followUps, error.failed.tail) : null;
+      if (!outside) throw error;
+      if (!forced) {
+        const why = `a check fails outside this task's scope: ${outside}`;
+        append(ctx, 'landing.decided', { route: 'ask-owner', source: 'checks', reason: why });
+        return askOwner(ctx, why, { checks: [...results, ...(error.results ?? [])] });
+      }
+      results.push(...(error.results ?? []), { name: error.failed.name, passed: false, round });
+    }
     const ff = fastForward(root, into, branch, env);
     if (ff.kind === 'moved') continue;
     if (ff.kind === 'refused') throw new GitSkillError(`${ff.reason}; ${into} did not move`);
@@ -856,45 +928,6 @@ export const PR_METHOD = 'pr';
 export const PR_BODY_LIMIT = 60000;
 /** At most this many evidence files are listed in a pull request body. */
 const EVIDENCE_LIMIT = 50;
-
-// [host/]owner/repo from a remote URL: https://host/owner/repo(.git), ssh://user@host[:port]/owner/repo(.git) or
-// user@host:owner/repo(.git). github.com is left out of the name, as gh writes it. Anything else (a local path) is null.
-export function githubRepo(url) {
-  const text = String(url ?? '').trim();
-  const m =
-    /^(?:https?|ssh|git):\/\/(?:[^@/]+@)?([^/:]+)(?::\d+)?\/([^/\s]+)\/([^/\s]+?)(?:\.git)?\/?$/.exec(text) ??
-    /^(?:[^@/\s]+@)?([^/:\s]+):([^/\s]+)\/([^/\s]+?)(?:\.git)?\/?$/.exec(text);
-  if (!m) return null;
-  const [, host, owner, name] = m;
-  return host === 'github.com' ? `${owner}/${name}` : `${host}/${owner}/${name}`;
-}
-
-// gh's environment: the owner's HOME (its login), PATH, the session bus a keyring login needs, prompts and colour off.
-// Nothing from providers or Jev.
-export function ghEnvironment(owner, base = process.env) {
-  const env = {};
-  for (const key of ['PATH', 'USER', 'LANG', 'TMPDIR', 'XDG_RUNTIME_DIR', 'DBUS_SESSION_BUS_ADDRESS']) if (base[key]) env[key] = base[key];
-  if (!env.PATH) env.PATH = '/usr/local/bin:/usr/bin:/bin';
-  return { ...env, HOME: owner, GH_PROMPT_DISABLED: '1', GH_NO_UPDATE_NOTIFIER: '1', GH_SPINNER_DISABLED: '1', NO_COLOR: '1', GIT_TERMINAL_PROMPT: '0' };
-}
-
-function ghClient(root) {
-  // The URL as configured: `git remote get-url` would expand url.<base>.insteadOf, which can name a local mirror.
-  const url = git(root, ['config', '--get', 'remote.origin.url'], { permitted: [0, 1] }).stdout.trim();
-  const repo = githubRepo(url);
-  if (!repo) throw new GitSkillError(`origin's URL ${url ? JSON.stringify(url) : '(none)'} names no host, owner and repository; "landing": "pr" opens the pull request there with gh`);
-  return { bin: process.env.JH_GH_BIN || 'gh', repo, env: ghEnvironment(ownerHome()) };
-}
-
-// Runs gh with --repo, the body (if any) on stdin. Refuses (exit 2) with gh's first error line.
-function runGh(gh, cwd, args, input) {
-  const what = `gh ${args.slice(0, 2).join(' ')}`;
-  const r = spawnSync(gh.bin, [...args, '--repo', gh.repo], { cwd, env: gh.env, input: input ?? '', encoding: 'utf8', timeout: 120000, maxBuffer: 16 * 1024 * 1024 });
-  if (r.error?.code === 'ENOENT') throw new GitSkillError(`gh is not installed or not on PATH; "landing": "pr" opens the pull request with it`);
-  if (r.error) throw new GitSkillError(`${what} failed: ${r.error.message}`);
-  if (r.status !== 0) throw new GitSkillError(`${what} failed: ${firstLine(r.stderr) || firstLine(r.stdout) || `exit ${r.status ?? r.signal}`}`);
-  return r.stdout ?? '';
-}
 
 // The task branch's pull request from `gh pr list`'s JSON: an open one first, else a merged one, else a closed one.
 // Pull requests from forks with a branch of the same name are not the task's.
@@ -977,7 +1010,7 @@ const capital = (s) => (s ? s[0].toUpperCase() + s.slice(1) : s);
 // The pull request body: the done steps' final summaries, the landing checks and their results, the tests the steps
 // ran, the evidence, and for a draft why it is one. Masked by the redactor and kept under PR_BODY_LIMIT; nothing in it
 // says who or what wrote it.
-export function prBody({ into, steps = [], checks = [], evidence = [], draftReason = null, conflict = null, limit = PR_BODY_LIMIT }) {
+export function prBody({ into, steps = [], checks = [], evidence = [], draftReason = null, conflict = null, decisions = [], followUps = [], outsideScope = [], limit = PR_BODY_LIMIT }) {
   const done = steps.filter((s) => s.state === 'done');
   const build = (summaryMax) => {
     const parts = [];
@@ -995,6 +1028,19 @@ export function prBody({ into, steps = [], checks = [], evidence = [], draftReas
     if (tested.length) {
       parts.push("Tests the task's steps ran:");
       parts.push(tested.map((s) => `- ${s.duty}: ${inlineCode(s.tested.command)} ${s.tested.passed ? 'passed' : 'failed'}${s.tested.summary ? `: ${oneLine(s.tested.summary, 300)}` : ''}`).join('\n'));
+    }
+    if (decisions.length) {
+      parts.push('## Decisions taken');
+      parts.push(decisions.map((d) => `- ${oneLine(d.choice, 300)}${d.question ? ` (${oneLine(d.question, 300)})` : ''}: ${oneLine(d.reason, 400)}${d.reversible === false ? ' Not easily undone.' : ''}`).join('\n'));
+    }
+    if (followUps.length) {
+      parts.push('## Follow-ups');
+      const kind = { 'unrelated-failure': 'Outside this change', host: 'The machine', scope: 'Outside the plan' };
+      parts.push(followUps.map((f) => `- ${kind[f.kind] ?? f.kind}: ${oneLine(f.title, 300)}. ${oneLine(f.cause, 400)}${f.evidence ? ` (${inlineCode(oneLine(f.evidence, 200))})` : ''}`).join('\n'));
+    }
+    if (outsideScope.length) {
+      parts.push("## Outside the plan's scope");
+      parts.push(outsideScope.slice(0, 50).map((f) => `- ${inlineCode(f)}`).join('\n'));
     }
     parts.push('## Evidence');
     const lines = [];
@@ -1039,7 +1085,9 @@ async function prRoute(ctx, { forced, reason, draft }) {
   const pushEnv = gitEnv({ HOME: owner, ...identityEnv(identity) });
   const title = cut(redactText(String(info.created.data?.title ?? ctx.task).replace(/\s+/g, ' ').trim()), 250);
   const facts = landingFacts(info);
-  const body = (extra) => prBody({ into, steps: facts.steps, evidence: evidenceFiles(wt.path), ...extra });
+  const extras = reportExtras(info);
+  const outsideScope = ctx.scope?.outside ?? [];
+  const body = (extra) => prBody({ into, steps: facts.steps, evidence: evidenceFiles(wt.path), decisions: extras.decisions, followUps: extras.followUps, outsideScope, ...extra });
 
   const merged = mergeInto(wt.path, into, branch, env, { ref: target.remoteRef, name: remoteName });
   if (merged.kind === 'conflict') {
@@ -1051,14 +1099,31 @@ async function prRoute(ctx, { forced, reason, draft }) {
           `Instructions: ${resolveConflictInstructions(remoteName, branch, merged.files, { pr: true })}`,
       );
     }
-    // A conflict is ask-owner, which in this mode is a draft pull request and the question.
-    const conflictReason = `merge conflict in ${files}`;
+    // A conflict is ask-owner, which in this mode is a draft pull request and the question. When the owner was going
+    // to be asked anyway (a guard's reason), both reasons are kept.
+    const conflictReason = draft && reason ? `${reason}; merging ${remoteName} also conflicts in ${files}` : `merge conflict in ${files}`;
     pushBranch(wt.path, branch, into, pushEnv);
-    const pr = ensurePr(ctx.gh, wt.path, { existing: ctx.existingPr, draft: true, title, body: body({ conflict: files }), into, branch });
+    const pr = ensurePr(ctx.gh, wt.path, { existing: ctx.existingPr, draft: true, title, body: body({ conflict: files, draftReason: draft ? reason : null }), into, branch });
     return askOwner(ctx, conflictReason, { pr, checks: [] });
   }
 
-  const results = await runLandingChecks(ctx, merged.head, 1, 'nothing was pushed');
+  let results;
+  try {
+    results = await runLandingChecks(ctx, merged.head, 1, 'nothing was pushed');
+  } catch (error) {
+    // A check that fails for a reason the task's reports put outside its scope (a failure that is not this change's,
+    // a host problem) is the owner's question, with the draft; with Land now the owner already knows, and it goes on.
+    const outside = error.failed ? failureOutsideScope(extras.followUps, error.failed.tail) : null;
+    if (!outside) throw error;
+    results = [...(error.results ?? []), { name: error.failed.name, command: ctx.settings.checks.find((c) => c.name === error.failed.name)?.command ?? error.failed.name, passed: false, round: 1 }];
+    if (!forced) {
+      const why = `a check fails outside this task's scope: ${outside}`;
+      append(ctx, 'landing.decided', { route: 'ask-owner', source: 'checks', reason: why });
+      pushBranch(wt.path, branch, into, pushEnv);
+      const pr = ensurePr(ctx.gh, wt.path, { existing: ctx.existingPr, draft: true, title, body: body({ checks: results, draftReason: why }), into, branch });
+      return askOwner(ctx, why, { pr, checks: results });
+    }
+  }
   const head = resolveRef(wt.path, 'HEAD');
   const push = pushBranch(wt.path, branch, into, pushEnv);
   const pr = ensurePr(ctx.gh, wt.path, { existing: ctx.existingPr, draft, title, body: body({ checks: results, draftReason: draft ? reason : null }), into, branch });
@@ -1097,8 +1162,14 @@ async function landTaskPr(ctx) {
   const decided = lastOfKind(ctx.info.events, 'landing.decided');
   const open = Boolean(decided) && !ctx.info.events.some((e) => e.seq > decided.seq && CLOSING_KINDS.includes(e.kind));
   if (ctx.force) {
+    ctx.scope = landingScope(wt.path, target.remoteRef, wt.branch);
     append(ctx, 'landing.decided', { route: 'land', source: 'owner', reason: OWNER_REASON });
     return prRoute(ctx, { forced: true, reason: OWNER_REASON, draft: false });
+  }
+  const guard = landingGuard(ctx);
+  if (guard.reason) {
+    append(ctx, 'landing.decided', { route: 'ask-owner', source: guard.source, reason: guard.reason });
+    return prRoute(ctx, { forced: false, reason: guard.reason, draft: true });
   }
   if (open && decided.data?.route === 'verify-then-land') {
     const verify = ctx.info.events.find((e) => e.kind === 'step.started' && e.seq > decided.seq && e.data?.duty === 'verify');
@@ -1119,6 +1190,11 @@ async function landTask(ctx) {
   if (ctx.force) {
     append(ctx, 'landing.decided', { route: 'land', source: 'owner', reason: OWNER_REASON });
     return landRoute(ctx, { forced: true, reason: OWNER_REASON });
+  }
+  const guard = landingGuard(ctx);
+  if (guard.reason) {
+    append(ctx, 'landing.decided', { route: 'ask-owner', source: guard.source, reason: guard.reason });
+    return askOwner(ctx, guard.reason);
   }
   if (open && decided.data?.route === 'verify-then-land') {
     const verify = ctx.info.events.find((e) => e.kind === 'step.started' && e.seq > decided.seq && e.data?.duty === 'verify');

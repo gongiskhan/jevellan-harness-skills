@@ -303,3 +303,24 @@ describe('fitting a report to one ledger line', () => {
     assert.doesNotThrow(() => encodeURIComponent(cut));
   });
 });
+
+describe('decisions and followUps (additive, 0.4.0)', () => {
+  const d = { question: 'Both fields break the 2,400-byte page budget', choice: 'fields only on automatic rows', options: ['raise the budget', 'only automatic rows'], reason: 'keeps the page small', reversible: true };
+  const f = { kind: 'unrelated-failure', title: 'tests/unrelated.test.mjs fails on main too', evidence: 'daysBetween: 3 !== 2', cause: 'an off-by-one in utils/dates.mjs' };
+
+  test('a report without them stays valid, and one with them is kept as written', () => {
+    ok(base);
+    assert.deepEqual(ok({ ...base, decisions: [d], followUps: [f, { ...f, kind: 'host' }, { ...f, kind: 'scope' }] }), { ...base, decisions: [d], followUps: [f, { ...f, kind: 'host' }, { ...f, kind: 'scope' }] });
+    ok({ ...base, decisions: [{ ...d, options: undefined }] });
+  });
+
+  test('their shape is checked', () => {
+    problem({ ...base, decisions: {} }, 'decisions must be a list of {question, choice, options, reason, reversible}');
+    problem({ ...base, decisions: [{ ...d, reason: '' }] }, 'decisions[0].reason must be a non-empty text of at most 600 characters');
+    problem({ ...base, decisions: [{ ...d, reversible: 'yes' }] }, 'decisions[0].reversible must be true or false');
+    problem({ ...base, decisions: [{ ...d, why: 'x' }] }, 'decisions[0] has an unknown field "why"');
+    problem({ ...base, followUps: [{ ...f, kind: 'bug' }] }, 'followUps[0].kind must be one of unrelated-failure, host, scope');
+    problem({ ...base, followUps: [{ ...f, cause: '' }] }, 'followUps[0].cause must be a non-empty text of at most 600 characters');
+    problem({ ...base, followUps: Array(11).fill(f) }, 'followUps must have at most 10 items');
+  });
+});

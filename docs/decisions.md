@@ -570,3 +570,71 @@ surprise. With `"pr"`, for a task without a parent:
   to give the owner the link; its CHANGELOG records the change. The trigger evals were not run again for it: the
   change is in the running order, not in anything that decides when a skill triggers.
 
+
+## H-042 Behaviour evals (msg-harness-004, 0.4.0)
+
+The first real week on ekoa-code showed failures that no trigger eval or acceptance journey could see: a task rebuilt
+for four and a half hours what another session had merged at 11:34; its plan built the endpoints the brief prescribed
+without listing the ones that already did the job; six unrelated fixes rode in its branch; product code was bent
+around a host out of inotify instances; and a question reached the owner in a form he could not follow days later. A
+third kind of eval, `behaviour/`, runs a real coordinator session through the harness on small fixture repositories
+and scores what the harness did (the ledger, the reports, plan.md, branches and diffs, the GitHub calls, and what the
+coordinator told the owner). Choices:
+
+- The installer refuses projects under `~/.jevellan*`, so a run keeps its project clone under
+  `~/jevellan-projects/jevellan-harness-evals/` and everything else (the bare origin, its own harness home, the fake gh,
+  the artifacts) under `~/.jevellan-harness/evals/behaviour/`; three runs per case and label stay, older ones are
+  archived.
+- Worker placement is cut per case without touching placement: each run has its own `JH_HARNESS_HOME` (the runtime
+  passes it on to workers) whose `providers.json` lists only the models the case allows, so Jev has one option.
+- The fixtures' origin is a bare repository behind `https://github.com/<owner>/<repo>.git` (`url.<bare>.insteadOf`), the
+  same trick as the pull request tests, so the git skill's gh calls and landing work and nothing reaches GitHub. gh is
+  a fake that keeps its state next to itself (the git skill runs gh with a fixed environment). The real replay (R01)
+  uses the real gh through a wrapper that lets only list and view through and hides pull requests created after #408
+  merged, so the session sees GitHub as it was at that moment.
+- The owner hears from the harness in three places, and the checks read all three: task.asked lines, a needs-decision
+  report the coordinator passed on, and the coordinator's chat replies (its transcript).
+- Every case's checks run on a hand-written passing and failing evidence in `npm test`, so a check is trusted before a
+  model runs; a judge (one isolated `claude -p` with a fixed rubric, its model, effort and rubric hash recorded) scores
+  what a regular expression cannot.
+- A case that could not be carried out (a fixture or session failure) is "error", neither a pass nor a fail.
+
+## H-043 Overlap, scope, decisions and follow-ups (msg-harness-004, 0.4.0)
+
+Driven by the behaviour evals' red baseline on 0.3.0. Each change sits in the skill that owns the behaviour; skills
+still meet only at public scripts; the ledger keeps twenty event kinds; placement, the runtimes and the landing policy
+text (hash b0e1671b...) are unchanged.
+
+- Overlap (git skill, `overlap.mjs`): after `git fetch origin`, the commits on the default branch (the first check: the
+  last seven days; later ones: only what arrived since the previous check, or since the branch started), the open and
+  recently merged pull requests (gh, read-only) and the project's other open tasks. An item is related when it
+  changes a path the task names (the brief's paths, plan.md's scope block, the branch's files) or its title shares most
+  of its words with the task's. The script decides only "none" or "possible"; judging partial or full overlap is the
+  coordinator's, over what each item actually did. Every check is a note on the task (where it stopped, the related
+  items), so the next check is cheap and the ledger names what overlapped. The coordinator runs it at intake (before
+  any step) and before every later step; landing by pull request runs it once more before merging origin in, and
+  there an item must share both files and intent with the branch to make landing the owner's question, because on a
+  busy repository the same files (docs, a changelog) change for other reasons all the time and a merge handles that.
+- Questions for the owner (ledger skill, `ask` and `answer`): a coordinator's question is a task.asked line with source
+  "coordinator", checked for its shape (two to four options that say what they mean for the owner, the recommended
+  option, which is also what happens when the reply does not choose, at most 120 words in all) and limited to one open
+  question per task until `answer` records the reply. The projection shows such a task as waiting on the owner
+  (`waiting.source: "coordinator"`). The harness has no timer that acts on silence, so "the default" is the option the
+  coordinator takes when the owner's reply does not choose one.
+- Decisions: a choice within the task, reversible, outside riskyPaths and not about product direction, money, data or
+  production is taken by the worker (`decisions[]` in its report) or the coordinator (a note with choice and reason),
+  and named to the owner in one sentence; everything else is asked.
+- Scope (plan duty, implement duty, git skill): plan.md gains "What already exists", "Smallest change" (the brief's
+  outcome binds, its mechanism is a suggestion unless marked required) and a ```scope block. Implement stays inside
+  it (two tests or fixtures outside are tolerated, more stops the step with a question). Landing compares the branch
+  with the block: beyond the tolerance it becomes ask-owner (`landing.decided` source "scope"), and the pull request
+  lists the files under "Outside the plan's scope".
+- Follow-ups (report schema, implement and verify duties, coordinator, git skill): `followUps[]` of kind
+  unrelated-failure, host or scope. A failure that is not the change's (the test and the code it exercises are not
+  changed on the branch, or it fails on the base too) and a problem of the machine (EMFILE, a sandbox the system
+  refuses, no display...) are reported, never fixed in the task branch or worked around in product code. Verify's
+  testsRun.passed sets those aside (and names them), so they do not send the task back to implement; a landing check
+  that fails on one of them (its test file or error code is in the output) becomes ask-owner (source "checks") with a
+  draft, instead of a refusal. The pull request body gains "Decisions taken" and "Follow-ups".
+- Both report fields are additive: reports without them stay valid, and the runtimes, which list the report's fields
+  in their prompts and may not change, need nothing: the duty skills ask for the new fields.

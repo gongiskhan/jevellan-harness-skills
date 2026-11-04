@@ -83,6 +83,18 @@ not improvise it".
 - `worktree.mjs archive --task T [--reason "..."] [--json]` ->
   `{archived: true, already, from, to, branch, stopped}`. Exit 0 archived, or archived before; 2 refused (a step is
   running, the worktree is locked or not registered); 3 no such task, or the task has no worktree.
+- `overlap.mjs --task T [--checkpoint intake|step|landing] [--days N] [--json]` -> `{task, checkpoint, verdict, base,
+  originHead, since, checkedAt, paths, items, newCommits, looked, gh, recorded}`: has this task's work already been
+  done, or is it being done, elsewhere? After `git fetch origin` it lists the default branch's commits (the first
+  check of a task: the last N days, 7 by default; a later one: only what arrived since the previous check, or since
+  the task's branch started), the pull requests (open, and merged in the last N days; a later check only those opened,
+  updated or merged since; never the task's own) and the project's other open tasks. An item is related when it
+  changes a path the task names (the brief's file paths, plan.md's scope block, the files the branch changed) or its
+  title shares most of its words with the task's (`filesOverlap`, `words`, `textScore`, `textRelated`). `verdict` is
+  `none` or `possible`; `items` are the related ones (kind `merged-pr`, `open-pr`, `commit` or `task`, with number,
+  commit, title, url, files). Judging them (nothing, part of the task, all of it) is the caller's. Each run is recorded
+  as a note on the task (`data.overlap`, with the items and where it stopped). gh missing or failing is not a refusal:
+  `gh.available` is false with the reason, and the rest runs. Exit 0; 2 refused; 3 no such task.
 - `land.mjs --task T [--force] [--json]` -> by exit code:
   0 landed, `{task, route: "land", landed: true, commit, target, method, forced, reason, checks, push}` with
   `checks` as `[{name, command, passed, exitCode, timedOut, durationMs, round}]`, or
@@ -112,5 +124,24 @@ sentence above about pushing describes local landing only:
   archives the worktree and leaves the draft open on GitHub for the owner. A merge conflict with
   `origin/<defaultBranch>` is ask-owner too: the branch is pushed as it is and the draft says the checks did not run.
 - `pushAfterLanding` must be false. A child task still lands into its parent's branch locally and is never pushed.
+
+Guards before the decision (both landing modes unless said; without `--force`, which is the owner's "Land now"): the
+route becomes ask-owner without asking Jev, recorded as `landing.decided {route: "ask-owner", source, reason}`, and by
+pull request the draft says why.
+
+- `source: "scope"`: plan.md's ```scope block (paths and patterns, one per line, with riskyPaths' rules) against the
+  files the branch changed: more than two files outside it, or any outside file that is not a test or fixture.
+  Tolerated outside files are listed in the pull request under "Outside the plan's scope". No plan.md or no block is
+  nothing to compare.
+- `source: "overlap"` (by pull request only): `overlap.mjs`'s check at checkpoint landing, before origin is merged in:
+  an item new since the task's last check that changes files this branch changes and shares the task's intent
+  (`textRelated`). It is recorded as a note.
+- `source: "checks"`: a landing check fails, and the task's reports have a follow-up (`followUps[]`, kind
+  `unrelated-failure` or `host`) whose test file or error code the check's output shows: "a check fails outside this
+  task's scope: <titles>". By pull request the branch is pushed and the draft lists the failed check. With `--force`
+  landing goes on despite such a failure. Any other failing check refuses as before.
+
+The pull request body also has "Decisions taken" (the reports' `decisions[]`), "Follow-ups" (`followUps[]`) and
+"Outside the plan's scope" when there are any.
 - gh runs with `--repo` taken from origin's URL and the owner's HOME; without gh, or with an origin URL that names no
   host, owner and repository, landing refuses (exit 2).

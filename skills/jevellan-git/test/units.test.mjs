@@ -407,3 +407,45 @@ describe('landing by pull request', () => {
     assert.deepEqual(env, { PATH: '/bin', DBUS_SESSION_BUS_ADDRESS: 'unix:path=/run/user/1/bus', HOME: '/home/owner', GH_PROMPT_DISABLED: '1', GH_NO_UPDATE_NOTIFIER: '1', GH_SPINNER_DISABLED: '1', NO_COLOR: '1', GIT_TERMINAL_PROMPT: '0' });
   });
 });
+
+describe('overlap and scope helpers (0.4.0)', async () => {
+  const { terms, textOverlap, namedPaths, filesOverlap } = await import('../scripts/overlap.mjs');
+  const { scopeBlock, scopeCheck, isTestOrFixture } = await import('../scripts/lib/scope.mjs');
+
+  test('terms: stems of four letters or more, no stop words, accents off', () => {
+    assert.deepEqual([...terms('Credentials can be replaced and removed from the panel')].sort(), ['credential', 'panel', 'remov', 'replac']);
+    assert.deepEqual([...terms('Substituir credencial no painel')].sort(), ['credencial', 'painel', 'substituir']);
+    assert.equal(terms('a an to of').size, 0);
+  });
+
+  test('textOverlap: the share of the item\'s words found in the task', () => {
+    const task = terms('Replace and remove a stored credential from the panel; the accounts page links to the config');
+    const hit = textOverlap(task, 'Credentials can be replaced and removed from the panel');
+    assert.equal(hit.score, 1);
+    assert.deepEqual(hit.shared.sort(), ['credential', 'panel', 'remov', 'replac']);
+    assert.equal(textOverlap(task, 'Fix the date off-by-one in the report').score, 0);
+  });
+
+  test('namedPaths: the repository paths a brief names', () => {
+    const brief = 'Change web/panel.mjs and `server.mjs`; the accounts page (web/accounts.html) and tests/ too. See https://example.com/a/b.html and 3.5 or e.g. something.';
+    assert.deepEqual(namedPaths(brief).sort(), ['server.mjs', 'tests', 'web/accounts.html', 'web/panel.mjs']);
+  });
+
+  test('filesOverlap: the same file, a file under a named folder or pattern', () => {
+    assert.deepEqual(filesOverlap(['web/panel.mjs', 'README.md'], ['web/panel.mjs']), ['web/panel.mjs']);
+    assert.deepEqual(filesOverlap(['tests/panel.test.mjs'], ['tests']), ['tests/panel.test.mjs']);
+    assert.deepEqual(filesOverlap(['web/a/b.mjs'], ['web/**']), ['web/a/b.mjs']);
+    assert.deepEqual(filesOverlap(['api/x.mjs'], ['web/panel.mjs']), []);
+  });
+
+  test('scope: the block, and the tolerance of two tests or fixtures', () => {
+    assert.deepEqual(scopeBlock('x\n```scope\nweb/panel.mjs\n- tests/** # tests\n```\n'), ['web/panel.mjs', 'tests/**']);
+    assert.equal(scopeBlock('no block'), null);
+    assert.equal(scopeBlock('```scope\n\n```'), null);
+    assert.deepEqual(scopeCheck(['a.mjs'], null), { scope: null, outside: [], tolerated: true });
+    assert.equal(scopeCheck(['web/panel.mjs', 'tests/x.test.mjs', 'fixtures/y.json'], ['web/**']).tolerated, true);
+    assert.equal(scopeCheck(['web/panel.mjs', 'tests/a.test.mjs', 'tests/b.test.mjs', 'tests/c.test.mjs'], ['web/**']).tolerated, false);
+    assert.equal(scopeCheck(['web/panel.mjs', 'utils/dates.mjs'], ['web/**']).tolerated, false);
+    assert.ok(isTestOrFixture('web/__tests__/a.tsx') && isTestOrFixture('src/a.spec.ts') && !isTestOrFixture('src/a.ts'));
+  });
+});

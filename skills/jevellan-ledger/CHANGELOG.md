@@ -2,6 +2,13 @@
 
 Changes made by the trigger-eval improvement loop (brief section 10); `evals/RESULTS.md` at the repository root holds each round's numbers.
 
+## 0.4.0
+
+- `ask` and `answer`: a coordinator's question for the owner as `task.asked` with source "coordinator", shape-checked
+  (2 to 4 options with what they mean, the recommended one, at most 120 words), one open per task; the projection
+  shows it as waiting with `waiting.source: "coordinator"` until `answer` (or a later step or landing line).
+- The report schema accepts `decisions[]` and `followUps[]` (additive); the timeline line counts them.
+
 ## 0.3.0
 
 - A task that landed by pull request (`task.landed` with `pr`) shows it: `show --json` adds `landedPr`, the status

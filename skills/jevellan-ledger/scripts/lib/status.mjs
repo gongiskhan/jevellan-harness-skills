@@ -23,9 +23,10 @@ export function describe(task) {
   const lines = [`  ${task.task}  ${task.title} (${task.kind}${task.duty ? ` ${task.duty}` : ''})${stepLabel(task)}`];
   if (task.state === 'waiting-owner') {
     const w = task.waiting ?? {};
-    if (w.question) lines.push(`          ${w.source === 'landing' ? 'Landing' : w.status}: ${w.question}`);
+    const label = w.source === 'landing' ? 'Landing' : w.source === 'coordinator' ? 'Question' : w.status;
+    if (w.question) lines.push(`          ${label}: ${w.question}`);
     else if (w.summary) lines.push(`          ${w.status}: ${w.summary.replace(/\s+/g, ' ').slice(0, 200)}`);
-    if (w.options?.length) lines.push(`          ${optionsText(w.options)}`);
+    if (w.options?.length) lines.push(`          ${optionsText(w.options)}${w.recommended ? ` (recommended: ${w.recommended})` : ''}`);
   }
   if (task.state === 'running' && task.alive === false) lines.push('          (process gone)');
   if (task.state === 'landing') lines.push(`          route ${task.landing?.route}${task.landing?.reason ? `: ${task.landing.reason}` : ''}`);

@@ -1,5 +1,16 @@
 # Changelog: jevellan-git
 
+## 0.4.0
+
+- `overlap.mjs --task T [--checkpoint intake|step|landing]`: the commits, pull requests and open tasks related to the
+  task, recorded as a note (docs/decisions.md H-043).
+- Landing guards before the decision: files outside plan.md's scope block beyond two tests or fixtures (source
+  "scope"), and by pull request new work sharing files and intent with the branch (source "overlap"), make the route
+  ask-owner. A check that fails on a follow-up the reports named becomes ask-owner (source "checks") instead of a
+  refusal. The pull request body gains "Decisions taken", "Follow-ups" and "Outside the plan's scope". The policy
+  text and its hash are unchanged.
+- gh and path helpers moved to `scripts/lib/gh.mjs` and `scripts/lib/scope.mjs` (land.mjs re-exports them).
+
 ## 0.3.0
 
 - Landing by pull request (`.jevellan/project.json` `"landing": "pr"`, docs/decisions.md H-041). `worktree.mjs create`

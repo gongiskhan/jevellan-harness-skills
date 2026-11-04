@@ -42,6 +42,8 @@ ledger.mjs report T [--step N]
 ledger.mjs wait --task T [--step N] [--timeout S]
 ledger.mjs tail [--follow] [--task T]
 ledger.mjs verify
+ledger.mjs ask --task T (--data '<json>' | --data-file F|-)   {question, options: [{label, means}], recommended, reason?}
+ledger.mjs answer --task T --text "..." [--option LABEL]
 For the scripts of other skills:
 ledger.mjs record <kind> --task T [--step N] [--session S] (--data '<json>' | --data-file F) [--if-last-seq N]
 ledger.mjs events [--task T]... [--kind K]... [--since SEQ]
@@ -451,6 +453,90 @@ function record(argv) {
   return 0;
 }
 
+// ---- the coordinator's own questions to the owner ------------------------------------------------------------------
+
+// A question from the coordinator (not landing's "Land now" / "Leave it", which land.mjs records) is a task.asked line
+// with source "coordinator". It must stand on its own for an owner who has forgotten the task: its text and the
+// options' meanings together are at most QUESTION_WORDS words, it has two to four options each saying what it means
+// for the owner, and it names the option it recommends, which is also what the coordinator does when the owner's reply
+// does not choose. A task has at most one open question: the next one waits for `answer`.
+export const QUESTION_WORDS = 120;
+const words = (text) => String(text ?? '').trim().split(/\s+/).filter(Boolean).length;
+
+export function openQuestion(events) {
+  const asked = [...events].reverse().find((e) => e.kind === 'task.asked' && e.data?.source === 'coordinator');
+  if (!asked) return null;
+  const answered = events.some((e) => e.seq > asked.seq && e.kind === 'note' && e.data?.answerTo === asked.seq);
+  return answered ? null : asked;
+}
+
+export function checkQuestion(data) {
+  const bad = (message) => {
+    throw new LedgerError(`ask: ${message}`);
+  };
+  if (!data || typeof data !== 'object' || Array.isArray(data)) bad('give one JSON object {question, options, recommended, reason}');
+  const extra = Object.keys(data).find((k) => !['question', 'options', 'recommended', 'reason'].includes(k));
+  if (extra) bad(`unknown field "${extra}"`);
+  if (typeof data.question !== 'string' || !data.question.trim()) bad('question is required: one or two plain sentences on what the task is and why, then the question');
+  if (!Array.isArray(data.options) || data.options.length < 2 || data.options.length > 4) bad('options must have 2 to 4 items');
+  const labels = new Set();
+  for (const [i, o] of data.options.entries()) {
+    if (!o || typeof o !== 'object' || typeof o.label !== 'string' || !o.label.trim() || o.label.length > 120) bad(`options[${i}].label must be a short text`);
+    if (typeof o.means !== 'string' || !o.means.trim() || o.means.length > 300) bad(`options[${i}].means must say what the option means for the owner`);
+    if (Object.keys(o).some((k) => !['label', 'means'].includes(k))) bad(`options[${i}] takes label and means only`);
+    if (labels.has(o.label)) bad(`options[${i}].label repeats another option's label`);
+    labels.add(o.label);
+  }
+  if (!labels.has(data.recommended)) bad('recommended must be one of the options\' labels: the option you recommend, which you take when the reply does not choose');
+  if (data.reason !== undefined && (typeof data.reason !== 'string' || data.reason.length > 300)) bad('reason must be a short text');
+  const total = words(data.question) + data.options.reduce((n, o) => n + words(o.label) + words(o.means), 0);
+  if (total > QUESTION_WORDS) bad(`the question and its options are ${total} words; keep them under ${QUESTION_WORDS}`);
+  return { question: data.question.trim(), options: data.options.map((o) => o.label), meanings: Object.fromEntries(data.options.map((o) => [o.label, o.means])), recommended: data.recommended, reason: data.reason ?? '', source: 'coordinator', words: total };
+}
+
+function ask(argv) {
+  const { values } = parse(argv, { task: { type: 'string' }, data: { type: 'string' }, 'data-file': { type: 'string' }, json: { type: 'boolean' } }, { allowPositionals: false });
+  if (values.task === undefined) throw new LedgerError('ask needs --task');
+  if ((values.data === undefined) === (values['data-file'] === undefined)) throw new LedgerError('give --data or --data-file');
+  const raw = values.data !== undefined ? parseJsonArg(values.data, '--data') : parseJsonArg(readArgFile(values['data-file'], '--data-file'), '--data-file');
+  const data = checkQuestion(raw);
+  const at = root();
+  requireTask(readEvents(at).events, values.task);
+  const event = appendEvent(at, { kind: 'task.asked', task: values.task, session: process.env.JH_SESSION, data }, {
+    check: (events) => {
+      const info = findTask(events, values.task);
+      if (!info) throw new LedgerError(`no task ${values.task} in this project's ledger`, 3);
+      const open = openQuestion(info.events);
+      if (open) throw new LedgerError(`${values.task} already has an open question (#${open.seq}: ${open.data.question.slice(0, 120)}); record the owner's answer with answer before asking again`);
+    },
+  });
+  print(values.json, event, oneLine(event));
+  return 0;
+}
+
+function answer(argv) {
+  const { values } = parse(argv, { task: { type: 'string' }, text: { type: 'string' }, option: { type: 'string' }, json: { type: 'boolean' } }, { allowPositionals: false });
+  if (values.task === undefined) throw new LedgerError('answer needs --task');
+  if (typeof values.text !== 'string' || !values.text.trim()) throw new LedgerError('answer needs --text: what the owner said');
+  const at = root();
+  requireTask(readEvents(at).events, values.task);
+  // The answer names the question it answers, which is only known inside the lock: check() fills the line's data.
+  const input = { kind: 'note', task: values.task, session: process.env.JH_SESSION, data: {} };
+  const event = appendEvent(at, input, {
+    check: (events) => {
+      const info = findTask(events, values.task);
+      const open = info ? openQuestion(info.events) : null;
+      if (!open) throw new LedgerError(`${values.task} has no open question from the coordinator to answer`);
+      if (values.option !== undefined && !(open.data.options ?? []).includes(values.option)) {
+        throw new LedgerError(`--option must be one of ${(open.data.options ?? []).join(', ')}`);
+      }
+      input.data = { text: `The owner answered #${open.seq}: ${values.text.trim()}`, answerTo: open.seq, option: values.option ?? null, answer: values.text.trim() };
+    },
+  });
+  print(values.json, event, oneLine(event));
+  return 0;
+}
+
 // ---- events (the scripts of other skills) -----------------------------------------------------------------------
 
 // The ledger's lines as data, optionally only some tasks' or some kinds', after a seq: {lastSeq, events}. lastSeq is
@@ -729,6 +815,10 @@ async function main(argv) {
       return verify(rest);
     case 'record':
       return record(rest);
+    case 'ask':
+      return ask(rest);
+    case 'answer':
+      return answer(rest);
     case 'events':
       return events(rest);
     case 'take-report':
