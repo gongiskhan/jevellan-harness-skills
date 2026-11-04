@@ -4,6 +4,7 @@ Changes made by the trigger-eval improvement loop (brief section 10); `evals/RES
 
 ## 0.4.0
 
+- Body: a choice that changes a file under riskyPaths is the owner's, however small, checked before any other decision rule (the coordinator also checks the decisions a step reports).
 - Body: the overlap check before the first step and before each later one, judged by what each item did; a decision
   rule for small choices (decide, record, mention) and a fixed shape for questions, recorded with the ledger's ask;
   follow-ups (never sent back to implement); the final summary names the decisions and follow-ups. The description is

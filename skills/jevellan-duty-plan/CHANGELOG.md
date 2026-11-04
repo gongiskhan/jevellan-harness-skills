@@ -4,6 +4,7 @@ Changes made by the trigger-eval improvement loop (brief section 10); `evals/RES
 
 ## 0.4.0
 
+- Body: a choice that changes a file under riskyPaths is the owner's, however small, checked before any other decision rule (the coordinator also checks the decisions a step reports).
 - Body: plan.md gains "What already exists", "Smallest change" (the brief's outcome binds, its mechanism is a suggestion unless marked required) and a ```scope block. The description is unchanged.
 
 ## Trigger evals round 2, 2026-11-02
