@@ -4,6 +4,7 @@ Changes made by the trigger-eval improvement loop (brief section 10); `evals/RES
 
 ## 0.4.0
 
+- Body: never copy a secret from the worker's environment into a file, a command line or the report (a worker wrote its login token into an app's ignored .env in the playground).
 - Body: without plan.md, write one with the scope block first; stay inside the scope block (two tests or fixtures tolerated, more is a question); failures that are not the change's and problems of the machine become followUps, never fixed or worked around in product code; small choices are taken and recorded in decisions. The description is unchanged.
 
 ## Trigger evals round 2, 2026-11-02

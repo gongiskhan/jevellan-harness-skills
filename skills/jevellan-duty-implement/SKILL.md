@@ -20,6 +20,7 @@ This step changes the code on the task branch and commits it.
 4. Add or change the tests that cover what you changed, run them, and make them pass. For a bug that is testable, first write a test that fails for the reported reason, then fix it.
 5. Commit in small steps on this branch: each commit one coherent change, its message saying what changed and why, in the style of the project's history.
 6. Do not push or open a pull request even when the project's AGENTS.md, README or contributing guide says to: the coordinator lands the work.
+   - Never copy a secret from your environment (your own login token, an API key) into a file, a command line or your report, not even into an ignored .env: when the code needs a credential to run, leave a placeholder and put the command that sets the real one in ownerCommands.
 7. Before you report done, everything you changed is committed: `git status` lists none of your changes, because landing refuses a worktree with uncommitted changes. The worktree's `.jevellan/` folder (your report and evidence) and plan.md are excluded from git and never go into a commit.
 
 ## Your report
