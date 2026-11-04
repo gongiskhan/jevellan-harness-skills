@@ -1,0 +1,13 @@
+{
+  "name": "office-task-tools",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "The task tools an assistant calls to read the office's tasks.",
+  "scripts": {
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

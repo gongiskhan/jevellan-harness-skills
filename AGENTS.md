@@ -32,6 +32,9 @@ deterministically, plain Node scripts next to it.
 - `skills/<name>/test/` holds the skill's own `node --test` suites, run with only that skill present
   (`scripts/test-skills.mjs`); `test/` holds the suites of several skills together, the installer and the lints.
 - `acceptance/` holds the H1 to H12 journeys that run on a real machine; `acceptance/RESULTS.md` is their record.
+- `behaviour/` holds the behaviour evals: real coordinator sessions on small fixture repositories, scored on what the
+  harness did (ledger, reports, git, gh calls, what the owner was told); `behaviour/RESULTS.md` is their record and
+  `behaviour/README.md` says how to run and add one.
 - `docs/decisions.md` (append-only, H-numbers), `docs/findings.md` (verified tool behaviour), `docs/roles.md`
   (generated).
 
@@ -105,3 +108,6 @@ shared module by habit; the repository refuses it, and `npm test` fails when it 
   Each writes `acceptance/results/<id>.json` and regenerates `acceptance/RESULTS.md`. The coordinator journeys drive an
   interactive session in the tmux session `jh-coord` (`acceptance/coord.mjs`) and count slips from its transcript;
   `acceptance/recheck-slips.mjs` re-runs that analysis on saved transcripts, recording why.
+- The behaviour evals run with `node behaviour/run.mjs [--plugin <ref>|working] [--case ...] [--runs N]` (real models;
+  see `behaviour/README.md`); their checks run on hand-written evidence in `test/behaviour-checks.test.mjs`, part of
+  `npm test`. Their coordinators run in tmux sessions named `jh-beh-<case>-<label>-<n>`.

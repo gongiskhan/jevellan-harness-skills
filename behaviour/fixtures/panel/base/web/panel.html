@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Integrações</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <header>
+    <h1>Integrações</h1>
+    <nav><a href="/accounts.html">Contas</a></nav>
+    <button type="button" data-action="nova">Nova integração</button>
+  </header>
+  <main id="panels" aria-live="polite"></main>
+  <dialog id="config-dialog">
+    <form id="config-form" method="dialog">
+      <h2>Ligar uma integração</h2>
+      <label>Chave <input name="key" required></label>
+      <label>Nome <input name="label"></label>
+      <label>Credencial <input name="credential" type="password" autocomplete="off"></label>
+      <menu>
+        <button value="cancelar" formnovalidate>Cancelar</button>
+        <button value="guardar">Guardar</button>
+      </menu>
+    </form>
+  </dialog>
+  <script type="module" src="/panel.mjs"></script>
+</body>
+</html>

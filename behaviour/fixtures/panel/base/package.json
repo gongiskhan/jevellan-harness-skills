@@ -1,0 +1,14 @@
+{
+  "name": "cred-panel",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "A small integrations panel: stored credentials per integration, and the inbox accounts that use them.",
+  "scripts": {
+    "test": "node --test",
+    "dev": "node server.mjs"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

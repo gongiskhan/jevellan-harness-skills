@@ -1,8 +1,8 @@
-// The coordinator journeys' harness: an interactive `claude --permission-mode bypassPermissions` in the tmux session
-// jh-coord (this run's own session; no other tmux session is ever typed into), under the owner's own login, in the
-// project folder. Messages are pasted as one bracketed paste. The coordinator's transcript is read from the owner's
-// ~/.claude/projects/<folder slug>/<session id>.jsonl to list every Skill invocation and every slip: a point where the
-// coordinator did what a skill should have done.
+// The coordinator journeys' harness: an interactive `claude --permission-mode bypassPermissions` in a tmux session
+// of this run's own (jh-coord by default; the behaviour evals use jh-beh-<case>-<n>; no other tmux session is ever
+// typed into), under the owner's own login, in the project folder. Messages are pasted as one bracketed paste. The
+// coordinator's transcript is read from the owner's ~/.claude/projects/<folder slug>/<session id>.jsonl to list every
+// Skill invocation and every slip: a point where the coordinator did what a skill should have done.
 
 import fs from 'node:fs';
 import os from 'node:os';
@@ -12,84 +12,116 @@ import { spawnSync } from 'node:child_process';
 import { NODE, sleep } from './lib.mjs';
 
 export const SESSION = 'jh-coord';
-const TARGET = `=${SESSION}:`;
 
 function tmux(args, input) {
   return spawnSync('tmux', args, { encoding: 'utf8', input });
-}
-
-export function exists() {
-  return tmux(['has-session', '-t', `=${SESSION}`]).status === 0;
-}
-
-export function capture(lines = 400) {
-  return tmux(['capture-pane', '-p', '-J', '-t', TARGET, '-S', `-${lines}`]).stdout ?? '';
 }
 
 export function transcriptFile(dir, session) {
   return path.join(os.userInfo().homedir, '.claude', 'projects', fs.realpathSync(dir).replace(/[^A-Za-z0-9]/g, '-'), `${session}.jsonl`);
 }
 
-// Starts the coordinator in `dir`. Returns {session, transcript}. Refuses when jh-coord already exists.
-export async function start(dir, { resume } = {}) {
-  if (exists()) throw new Error('the tmux session jh-coord already exists; stop it first');
-  const session = resume ?? crypto.randomUUID();
-  const node22 = path.dirname(NODE);
-  const pathValue = `${node22}:${process.env.PATH}`;
-  const command = `claude --permission-mode bypassPermissions ${resume ? `--resume ${session}` : `--session-id ${session}`}`;
-  const r = tmux(['new-session', '-d', '-s', SESSION, '-x', '220', '-y', '60', '-c', dir, '-e', `PATH=${pathValue}`, command]);
-  if (r.status !== 0) throw new Error(`tmux new-session: ${r.stderr}`);
-  const deadline = Date.now() + 90_000;
-  while (Date.now() < deadline) {
-    await sleep(1000);
-    const screen = capture(80);
-    // The workspace trust dialog defaults to "No, exit"; move to "Yes, I trust this folder" first.
-    if (/Yes, I trust this folder/i.test(screen)) {
-      tmux(['send-keys', '-t', TARGET, 'Down']);
-      await sleep(400);
-      if (/\u276f\s*Yes, I trust this folder/.test(capture(30))) tmux(['send-keys', '-t', TARGET, 'Enter']);
-      continue;
+// One coordinator in the tmux session `name`: start, send, capture, stop, kill, waitIdle.
+export function coordinatorSession(name = SESSION) {
+  const target = `=${name}:`;
+  const exists = () => tmux(['has-session', '-t', `=${name}`]).status === 0;
+  const capture = (lines = 400) => tmux(['capture-pane', '-p', '-J', '-t', target, '-S', `-${lines}`]).stdout ?? '';
+
+  // Starts the coordinator in `dir`. Returns {session, transcript}. Refuses when the tmux session already exists.
+  // `args` are more claude arguments (for example --plugin-dir, --model, --effort); `env` more environment variables
+  // for the session (PATH is always Node 22's folder first, then env.PATH or this process's PATH).
+  async function start(dir, { resume, args = [], env = {} } = {}) {
+    if (exists()) throw new Error(`the tmux session ${name} already exists; stop it first`);
+    const session = resume ?? crypto.randomUUID();
+    const node22 = path.dirname(NODE);
+    const { PATH: extraPath, ...rest } = env;
+    const pathValue = `${node22}:${extraPath ?? process.env.PATH}`;
+    const quoted = args.map((a) => (/^[A-Za-z0-9_@%+=:,./-]+$/.test(a) ? a : `'${a.replace(/'/g, "'\\''")}'`));
+    const command = ['claude', '--permission-mode', 'bypassPermissions', ...quoted, resume ? `--resume ${session}` : `--session-id ${session}`].join(' ');
+    const envArgs = Object.entries({ PATH: pathValue, ...rest }).flatMap(([k, v]) => ['-e', `${k}=${v}`]);
+    const r = tmux(['new-session', '-d', '-s', name, '-x', '220', '-y', '60', '-c', dir, ...envArgs, command]);
+    if (r.status !== 0) throw new Error(`tmux new-session: ${r.stderr}`);
+    const deadline = Date.now() + 90_000;
+    while (Date.now() < deadline) {
+      await sleep(1000);
+      const screen = capture(80);
+      // The workspace trust dialog defaults to "No, exit"; move to "Yes, I trust this folder" first.
+      if (/Yes, I trust this folder/i.test(screen)) {
+        tmux(['send-keys', '-t', target, 'Down']);
+        await sleep(400);
+        if (/\u276f\s*Yes, I trust this folder/.test(capture(30))) tmux(['send-keys', '-t', target, 'Enter']);
+        continue;
+      }
+      if (/for shortcuts|bypass permissions on|❯/i.test(screen) && !/Loading|Starting/.test(screen.split('\n').slice(-5).join('\n'))) {
+        await sleep(1500);
+        return { session, transcript: transcriptFile(dir, session) };
+      }
     }
-    if (/for shortcuts|bypass permissions on|❯/i.test(screen) && !/Loading|Starting/.test(screen.split('\n').slice(-5).join('\n'))) {
-      await sleep(1500);
-      return { session, transcript: transcriptFile(dir, session) };
+    throw new Error(`the coordinator did not reach its prompt:\n${capture(40)}`);
+  }
+
+  async function send(text) {
+    const buffer = `${name}-msg`;
+    tmux(['load-buffer', '-b', buffer, '-'], text);
+    tmux(['paste-buffer', '-p', '-d', '-b', buffer, '-t', target]);
+    await sleep(700);
+    tmux(['send-keys', '-t', target, 'Enter']);
+  }
+
+  async function stop() {
+    if (!exists()) return 'not running';
+    await send('/exit');
+    for (let i = 0; i < 20; i += 1) {
+      await sleep(500);
+      if (!exists()) return 'exited';
     }
+    tmux(['kill-session', '-t', `=${name}`]);
+    return 'killed';
   }
-  throw new Error(`the coordinator did not reach its prompt:\n${capture(40)}`);
-}
 
-export async function send(text) {
-  tmux(['load-buffer', '-b', 'jh-coord-msg', '-'], text);
-  tmux(['paste-buffer', '-p', '-d', '-b', 'jh-coord-msg', '-t', TARGET]);
-  await sleep(700);
-  tmux(['send-keys', '-t', TARGET, 'Enter']);
-}
-
-export async function stop() {
-  if (!exists()) return 'not running';
-  await send('/exit');
-  for (let i = 0; i < 20; i += 1) {
-    await sleep(500);
-    if (!exists()) return 'exited';
-  }
-  tmux(['kill-session', '-t', `=${SESSION}`]);
-  return 'killed';
-}
-
-// Kills the coordinator's process without /exit (a crash), for the restart journey.
-export function kill() {
-  if (!exists()) return false;
-  const pid = Number(tmux(['display-message', '-p', '-t', TARGET, '#{pane_pid}']).stdout.trim());
-  try {
-    process.kill(-pid, 'SIGKILL');
-  } catch {
+  // Kills the coordinator's process without /exit (a crash), for the restart journey.
+  function kill() {
+    if (!exists()) return false;
+    const pid = Number(tmux(['display-message', '-p', '-t', target, '#{pane_pid}']).stdout.trim());
     try {
-      process.kill(pid, 'SIGKILL');
-    } catch {}
+      process.kill(-pid, 'SIGKILL');
+    } catch {
+      try {
+        process.kill(pid, 'SIGKILL');
+      } catch {}
+    }
+    tmux(['kill-session', '-t', `=${name}`]);
+    return true;
   }
-  tmux(['kill-session', '-t', `=${SESSION}`]);
-  return true;
+
+  async function waitIdle(file, project, { timeoutMs = 600_000, quietMs = 20_000 } = {}) {
+    const deadline = Date.now() + timeoutMs;
+    let lastSize = -1;
+    let quietSince = Date.now();
+    while (Date.now() < deadline) {
+      await sleep(2000);
+      const size = fs.existsSync(file) ? fs.statSync(file).size : 0;
+      if (size !== lastSize) {
+        lastSize = size;
+        quietSince = Date.now();
+        continue;
+      }
+      if (Date.now() - quietSince >= quietMs && analyse(file, project).idle && /for shortcuts|❯/.test(capture(20))) return true;
+    }
+    return false;
+  }
+
+  return { name, exists, capture, start, send, stop, kill, waitIdle };
 }
+
+const jhCoord = coordinatorSession(SESSION);
+export const exists = jhCoord.exists;
+export const capture = jhCoord.capture;
+export const start = jhCoord.start;
+export const send = jhCoord.send;
+export const stop = jhCoord.stop;
+export const kill = jhCoord.kill;
+export const waitIdle = jhCoord.waitIdle;
 
 // A heredoc's body is data (a brief, a JSON file), not commands: keep the line that opens it, drop the body.
 export function stripHeredocs(command) {
@@ -192,21 +224,4 @@ export function analyse(file, project) {
   const pending = last?.type === 'assistant' && Array.isArray(last.message?.content) && last.message.content.some((c) => c.type === 'tool_use');
   const answered = last?.type === 'assistant' && !pending;
   return { tools, skills, slips, lastText, entries: entries.length, idle: Boolean(answered) };
-}
-
-export async function waitIdle(file, project, { timeoutMs = 600_000, quietMs = 20_000 } = {}) {
-  const deadline = Date.now() + timeoutMs;
-  let lastSize = -1;
-  let quietSince = Date.now();
-  while (Date.now() < deadline) {
-    await sleep(2000);
-    const size = fs.existsSync(file) ? fs.statSync(file).size : 0;
-    if (size !== lastSize) {
-      lastSize = size;
-      quietSince = Date.now();
-      continue;
-    }
-    if (Date.now() - quietSince >= quietMs && analyse(file, project).idle && /for shortcuts|❯/.test(capture(20))) return true;
-  }
-  return false;
 }
