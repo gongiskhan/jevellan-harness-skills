@@ -751,7 +751,10 @@ function verifyThenLand(ctx, reason, again) {
 // the checks run against the project's dependencies rather than fail for want of them; then every check in order, each
 // recorded as landing.checked. The first failure, or a check that moved HEAD away from `head`, throws (exit 2) saying
 // `stopped`, what did not happen. Returns the results.
-async function runLandingChecks(ctx, head, round, stopped) {
+// `tolerate(check, result)`, when given, may return a reason to go on past a failed check (the owner said Land now to
+// a question about exactly that failure); the failure is still recorded, kept in the results with `tolerated`, and every
+// later check still runs and must pass.
+async function runLandingChecks(ctx, head, round, stopped, { tolerate = null } = {}) {
   const { root, wt, settings } = ctx;
   const owner = ownerHome();
   const checkEnv = checkEnvironment(owner, gitIdentity(root, owner));
@@ -773,6 +776,11 @@ async function runLandingChecks(ctx, head, round, stopped) {
     // The ledger masks secrets in the tail; what is printed below is the line as written.
     const event = append(ctx, 'landing.checked', { command: check.command, passed: result.passed, tail: result.tail });
     results.push({ name: check.name, command: check.command, passed: result.passed, exitCode: result.exitCode, timedOut: result.timedOut, durationMs: result.durationMs, round });
+    const tolerated = !result.passed && tolerate ? tolerate(check, result) : null;
+    if (tolerated) {
+      results[results.length - 1].tolerated = tolerated;
+      continue;
+    }
     if (!result.passed) {
       const why = result.timedOut ? `timed out after ${check.timeoutMs} ms` : `exit ${result.exitCode ?? 'none'}`;
       const error = new GitSkillError(`check ${check.name} failed (${why}); ${stopped}. Output tail:\n${event.data.tail}`);
@@ -813,21 +821,38 @@ export function reportExtras(info) {
 }
 
 // The follow-ups (a failure outside the task's scope, or a host problem) that a failed check's output shows: a test file
-// or an error code they name appears in it. Null when none does: the failure is then the task's own.
+// they name, by its path with at least one folder (a bare file name is too common to tell two tests apart), or, for a
+// host problem, one of the system error codes a host problem raises. Generic words (ERROR, ELIFECYCLE, ENOENT) never
+// count. Null when nothing matches: the failure is then the task's own.
+export const HOST_ERROR_CODES = /\b(EMFILE|ENFILE|ENOSPC|ENOMEM|EACCES|EPERM|EROFS|EADDRINUSE|ECONNREFUSED|ETIMEDOUT|EAI_AGAIN)\b/g;
+
 export function failureOutsideScope(followUps, tail) {
   const out = String(tail ?? '');
   const hits = [];
   for (const f of followUps.filter((x) => x.kind === 'unrelated-failure' || x.kind === 'host')) {
     const text = `${f.title ?? ''} ${f.evidence ?? ''}`;
     const tokens = new Set();
-    for (const m of text.matchAll(/[A-Za-z0-9_@.\/-]+\.(?:test|spec)\.[A-Za-z0-9]+/g)) {
-      tokens.add(m[0]);
-      tokens.add(m[0].split('/').pop());
-    }
-    for (const m of text.matchAll(/\bE[A-Z]{3,}\b/g)) tokens.add(m[0]);
-    if ([...tokens].some((t) => t.length >= 5 && out.includes(t))) hits.push(f.title);
+    for (const m of text.matchAll(/[A-Za-z0-9_@.-]+(?:\/[A-Za-z0-9_@.-]+)+\.(?:test|spec)\.[A-Za-z0-9]+/g)) tokens.add(m[0]);
+    if (f.kind === 'host') for (const m of text.matchAll(HOST_ERROR_CODES)) tokens.add(m[0]);
+    if ([...tokens].some((t) => out.includes(t))) hits.push(f.title);
   }
   return hits.length ? hits.join('; ') : null;
+}
+
+// Whether the owner's Land now (--force) answers a question about failing checks: the landing.decided before the one
+// this call just recorded has source "checks", and no step ran after it. Only then may such a failure be tolerated.
+function forcedOnChecks(ctx) {
+  const decided = ctx.info.events.filter((e) => e.kind === 'landing.decided');
+  const last = decided[decided.length - 1];
+  if (!last || last.data?.source !== 'checks') return false;
+  return !ctx.info.events.some((e) => e.seq > last.seq && e.kind === 'step.started');
+}
+
+function checksSummary(settings, results) {
+  if (!settings.checks.length) return 'no checks configured';
+  const passed = results.filter((r) => r.passed).map((r) => r.name);
+  const tolerated = results.filter((r) => !r.passed && r.tolerated).map((r) => r.name);
+  return `checks passed: ${passed.join(', ') || 'none'}${tolerated.length ? `; failed outside the task's scope, landed because the owner said Land now: ${tolerated.join(', ')}` : ''}`;
 }
 
 // The changed files against plan.md's scope block (0.4.0): {scope, outside, tolerated, files}. No plan.md, or no scope
@@ -890,17 +915,16 @@ async function landRoute(ctx, { forced, reason }) {
       }
       return askOwner(ctx, `merge conflict in ${files}`);
     }
+    const followUps = reportExtras(ctx.info).followUps;
+    const tolerate = forced && ctx.forcedOnChecks ? (check, result) => failureOutsideScope(followUps, result.tail) : null;
     try {
-      results.push(...(await runLandingChecks(ctx, merged.head, round, `${into} did not move`)));
+      results.push(...(await runLandingChecks(ctx, merged.head, round, `${into} did not move`, { tolerate })));
     } catch (error) {
-      const outside = error.failed ? failureOutsideScope(reportExtras(ctx.info).followUps, error.failed.tail) : null;
-      if (!outside) throw error;
-      if (!forced) {
-        const why = `a check fails outside this task's scope: ${outside}`;
-        append(ctx, 'landing.decided', { route: 'ask-owner', source: 'checks', reason: why });
-        return askOwner(ctx, why, { checks: [...results, ...(error.results ?? [])] });
-      }
-      results.push(...(error.results ?? []), { name: error.failed.name, passed: false, round });
+      const outside = error.failed ? failureOutsideScope(followUps, error.failed.tail) : null;
+      if (!outside || forced) throw error;
+      const why = `a check fails outside this task's scope: ${outside}`;
+      append(ctx, 'landing.decided', { route: 'ask-owner', source: 'checks', reason: why });
+      return askOwner(ctx, why, { checks: [...results, ...(error.results ?? [])] });
     }
     const ff = fastForward(root, into, branch, env);
     if (ff.kind === 'moved') continue;
@@ -912,7 +936,7 @@ async function landRoute(ctx, { forced, reason }) {
       if (!push.pushed) warn(`warning: ${push.detail}`);
     }
     const onto = target.parent ? `${into} (the branch of the parent ${target.parent.task})` : into;
-    const checksText = settings.checks.length ? `checks passed: ${settings.checks.map((c) => c.name).join(', ')}` : 'no checks configured';
+    const checksText = checksSummary(settings, results);
     const out = { task: ctx.task, route: 'land', landed: true, commit: ff.commit, target: into, method: ff.method, forced, reason, checks: results, push };
     print(ctx.json, out, `Landed ${ctx.task} on ${onto} at ${ff.commit.slice(0, 12)} (${ff.method}); ${checksText}${push ? `; ${push.detail}` : ''}.`);
     return 0;
@@ -1023,7 +1047,7 @@ export function prBody({ into, steps = [], checks = [], evidence = [], draftReas
     parts.push('## Checks');
     if (conflict) parts.push('Not run: the merge conflicts.');
     else if (!checks.length) parts.push('No landing checks are configured for this project.');
-    else parts.push(checks.map((c) => `- ${inlineCode(c.command)}: ${c.passed ? 'passed' : 'failed'}${c.durationMs !== undefined ? ` in ${duration(c.durationMs)}` : ''}`).join('\n'));
+    else parts.push(checks.map((c) => `- ${inlineCode(c.command)}: ${c.passed ? 'passed' : c.tolerated ? `failed outside this change (${oneLine(c.tolerated, 200)}); landed because the owner said Land now` : 'failed'}${c.durationMs !== undefined ? ` in ${duration(c.durationMs)}` : ''}`).join('\n'));
     const tested = done.filter((s) => s.tested);
     if (tested.length) {
       parts.push("Tests the task's steps ran:");
@@ -1108,23 +1132,24 @@ async function prRoute(ctx, { forced, reason, draft }) {
   }
 
   let results;
+  // With Land now in answer to a question about failing checks, those failures are tolerated; every other check runs.
+  const tolerate = forced && ctx.forcedOnChecks ? (check, result) => failureOutsideScope(extras.followUps, result.tail) : null;
   try {
-    results = await runLandingChecks(ctx, merged.head, 1, 'nothing was pushed');
+    results = await runLandingChecks(ctx, merged.head, 1, 'nothing was pushed', { tolerate });
   } catch (error) {
     // A check that fails for a reason the task's reports put outside its scope (a failure that is not this change's,
-    // a host problem) is the owner's question, with the draft; with Land now the owner already knows, and it goes on.
+    // a host problem) is the owner's question, with the draft. Under --force it refuses like any failure: only a
+    // failure the owner was asked about is tolerated, above.
     const outside = error.failed ? failureOutsideScope(extras.followUps, error.failed.tail) : null;
-    if (!outside) throw error;
-    results = [...(error.results ?? []), { name: error.failed.name, command: ctx.settings.checks.find((c) => c.name === error.failed.name)?.command ?? error.failed.name, passed: false, round: 1 }];
-    if (!forced) {
-      // When the owner was going to be asked anyway (a guard's reason), both reasons are kept.
-      const failing = `a check fails outside this task's scope: ${outside}`;
-      const why = draft && reason ? `${reason}; and ${failing}` : failing;
-      append(ctx, 'landing.decided', { route: 'ask-owner', source: 'checks', reason: why });
-      pushBranch(wt.path, branch, into, pushEnv);
-      const pr = ensurePr(ctx.gh, wt.path, { existing: ctx.existingPr, draft: true, title, body: body({ checks: results, draftReason: why }), into, branch });
-      return askOwner(ctx, why, { pr, checks: results });
-    }
+    if (!outside || forced) throw error;
+    results = [...(error.results ?? [])];
+    // When the owner was going to be asked anyway (a guard's reason), both reasons are kept.
+    const failing = `a check fails outside this task's scope: ${outside}`;
+    const why = draft && reason ? `${reason}; and ${failing}` : failing;
+    append(ctx, 'landing.decided', { route: 'ask-owner', source: 'checks', reason: why });
+    pushBranch(wt.path, branch, into, pushEnv);
+    const pr = ensurePr(ctx.gh, wt.path, { existing: ctx.existingPr, draft: true, title, body: body({ checks: results, draftReason: why }), into, branch });
+    return askOwner(ctx, why, { pr, checks: results });
   }
   const head = resolveRef(wt.path, 'HEAD');
   const push = pushBranch(wt.path, branch, into, pushEnv);
@@ -1132,7 +1157,7 @@ async function prRoute(ctx, { forced, reason, draft }) {
   if (draft) return askOwner(ctx, reason, { pr, checks: results });
 
   append(ctx, 'task.landed', { pr: pr.url, commit: head, target: into, method: PR_METHOD });
-  const checksText = ctx.settings.checks.length ? `checks passed: ${ctx.settings.checks.map((c) => c.name).join(', ')}` : 'no checks configured';
+  const checksText = checksSummary(ctx.settings, results);
   const did = pr.opened ? 'Opened' : ctx.existingPr?.isDraft ? 'Marked ready for review' : 'Updated';
   const out = { task: ctx.task, route: 'land', landed: true, pr: pr.url, draft: false, commit: head, target: into, method: PR_METHOD, forced, reason, checks: results, push };
   print(ctx.json, out, `${did} the pull request ${pr.url} for ${ctx.task} (${branch} into ${into}, at ${head.slice(0, 12)}); ${checksText}. Nothing was merged: the owner reviews and merges it on GitHub.`);
@@ -1165,6 +1190,7 @@ async function landTaskPr(ctx) {
   const open = Boolean(decided) && !ctx.info.events.some((e) => e.seq > decided.seq && CLOSING_KINDS.includes(e.kind));
   if (ctx.force) {
     ctx.scope = landingScope(wt.path, target.remoteRef, wt.branch);
+    ctx.forcedOnChecks = forcedOnChecks(ctx);
     append(ctx, 'landing.decided', { route: 'land', source: 'owner', reason: OWNER_REASON });
     return prRoute(ctx, { forced: true, reason: OWNER_REASON, draft: false });
   }
@@ -1190,6 +1216,7 @@ async function landTask(ctx) {
   const decided = lastOfKind(ctx.info.events, 'landing.decided');
   const open = Boolean(decided) && !ctx.info.events.some((e) => e.seq > decided.seq && CLOSING_KINDS.includes(e.kind));
   if (ctx.force) {
+    ctx.forcedOnChecks = forcedOnChecks(ctx);
     append(ctx, 'landing.decided', { route: 'land', source: 'owner', reason: OWNER_REASON });
     return landRoute(ctx, { forced: true, reason: OWNER_REASON });
   }

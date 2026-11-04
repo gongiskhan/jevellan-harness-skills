@@ -102,10 +102,15 @@ export function filesOverlap(itemFiles, taskPaths) {
 
 // ---- the parts ----------------------------------------------------------------------------------------------------
 
+// Where the last check stopped. A landing check that found overlap is not a place to stop: the owner may never have
+// been asked (the landing failed after it), so the next check looks at the same items again.
 function previousCheck(info) {
   for (let i = info.events.length - 1; i >= 0; i -= 1) {
     const e = info.events[i];
-    if (e.kind === 'note' && e.data?.overlap?.originHead) return e.data.overlap;
+    const o = e.kind === 'note' ? e.data?.overlap : null;
+    if (!o?.originHead) continue;
+    if (o.checkpoint === 'landing' && o.verdict === 'possible') continue;
+    return o;
   }
   return null;
 }

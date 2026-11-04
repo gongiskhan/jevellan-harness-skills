@@ -324,3 +324,22 @@ describe('decisions and followUps (additive, 0.4.0)', () => {
     problem({ ...base, followUps: Array(11).fill(f) }, 'followUps must have at most 10 items');
   });
 });
+
+describe('fitReportLine with decisions and followUps (the review of 0.4.0)', () => {
+  test('a schema-valid report at their limits fits one line, follow-ups first', () => {
+    const long = (n) => 'é'.repeat(n);
+    const report = {
+      status: 'done',
+      summary: long(3999),
+      decisions: Array.from({ length: 10 }, () => ({ question: long(600), choice: long(600), options: Array(6).fill(long(240)), reason: long(600), reversible: true })),
+      followUps: Array.from({ length: 10 }, () => ({ kind: 'host', title: long(600), evidence: long(600), cause: long(600) })),
+      limitations: long(3999),
+    };
+    ok(report);
+    const line = fitReportLine(report);
+    assert.ok(Buffer.byteLength(JSON.stringify(line)) <= REPORT_LINE_BYTES);
+    assert.equal(line.trimmed, true);
+    assert.equal(line.originalCounts.decisions, 10);
+    assert.ok(line.followUps.length >= line.decisions.length);
+  });
+});

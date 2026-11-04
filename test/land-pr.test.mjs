@@ -657,3 +657,54 @@ describe('overlap.mjs and the landing guards', () => {
     assert.equal(gh2.state().prs.length, 0);
   });
 });
+
+describe('the review of 0.4.0: Land now, matching and the overlap baseline', () => {
+  test('Land now after the checks question tolerates that failure only, runs every other check, and says so', async () => {
+    const project = makeProject({ config: { checks: ['echo "not ok 3 - tests/unrelated.test.mjs"; exit 1', 'echo built'] } });
+    const gh = makeGh();
+    jev.route = 'land';
+    const followUps = [{ kind: 'unrelated-failure', title: 'tests/unrelated.test.mjs fails on main too', evidence: 'not ok 3 - tests/unrelated.test.mjs', cause: 'an off-by-one in utils/dates.mjs' }];
+    const { t } = await readyTask(project.root, { verify: { followUps } });
+    assert.equal((await land(project.root, t.task, gh, ['--json'])).status, 7);
+    const forced = await land(project.root, t.task, gh, ['--force', '--json']);
+    assert.equal(forced.status, 0, forced.stderr);
+    const out = forced.json();
+    assert.deepEqual(out.checks.map((c) => [c.name, c.passed, Boolean(c.tolerated)]), [[out.checks[0].name, false, true], [out.checks[1].name, true, false]]);
+    assert.match(gh.state().prs.at(-1).body, /failed outside this change \(.+\); landed because the owner said Land now/);
+    const text = await land(project.root, t.task, gh);
+    assert.match(text.stdout, /already landed/);
+  });
+
+  test('Land now after another question does not tolerate a failing check', async () => {
+    const project = makeProject({ config: { checks: ['echo checks-ok'] } });
+    const gh = makeGh();
+    jev.route = 'ask-owner';
+    const followUps = [{ kind: 'unrelated-failure', title: 'tests/unrelated.test.mjs fails on main too', evidence: 'not ok 3 - tests/unrelated.test.mjs', cause: 'unrelated' }];
+    const { t } = await readyTask(project.root, { verify: { followUps } });
+    assert.equal((await land(project.root, t.task, gh, ['--json'])).status, 7);
+    assert.equal(lastOf(project.root, t.task, 'landing.decided').data.source, 'jev');
+    // The owner said Land now to Jev's question; a check that fails only now was never put to them.
+    const file = path.join(project.root, '.jevellan', 'project.json');
+    writeJson(file, { ...JSON.parse(fs.readFileSync(file, 'utf8')), checks: ['echo "not ok 3 - tests/unrelated.test.mjs"; exit 1'] });
+    const forced = await land(project.root, t.task, gh, ['--force']);
+    assert.equal(forced.status, 2);
+    assert.match(forced.stderr, /check .+ failed/);
+    assert.ok(!kinds(project.root, t.task).includes('task.landed'));
+    jev.route = 'land';
+  });
+
+  test('a landing check that found overlap is not where the next check starts', async () => {
+    const project = makeProject();
+    const { root, other } = project;
+    const gh = makeGh();
+    const { t } = await readyTask(root, { text: 'Write docs/run.md.' });
+    await overlap(root, t.task, gh);
+    const upstream = commit(other, { 'docs/run.md': '# How to run, by someone else\n' }, 'A How to run section in the docs (#9)');
+    git(other, 'push', '-q', 'origin', 'main');
+    gh.set({ prs: [{ number: 9, title: 'A How to run section in the docs', state: 'MERGED', mergedAt: new Date(Date.now() + 1000).toISOString(), createdAt: minutesAgo(5), headRefName: 'other/run', files: [{ path: 'docs/run.md' }], mergeCommit: { oid: upstream } }] });
+    assert.equal((await land(root, t.task, gh, ['--json'])).status, 7);
+    const again = (await overlap(root, t.task, gh, ['--checkpoint', 'step'])).json();
+    assert.equal(again.verdict, 'possible');
+    assert.ok(again.items.some((i) => i.number === 9));
+  });
+});

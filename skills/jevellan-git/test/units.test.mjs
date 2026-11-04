@@ -449,3 +449,18 @@ describe('overlap and scope helpers (0.4.0)', async () => {
     assert.ok(isTestOrFixture('web/__tests__/a.tsx') && isTestOrFixture('src/a.spec.ts') && !isTestOrFixture('src/a.ts'));
   });
 });
+
+describe('failureOutsideScope (the review of 0.4.0)', async () => {
+  const { failureOutsideScope } = await import('../scripts/land.mjs');
+  const f = (kind, title, evidence) => [{ kind, title, evidence, cause: 'c' }];
+  test('a test path with a folder, or a host error code, matches', () => {
+    assert.ok(failureOutsideScope(f('unrelated-failure', 'tests/unrelated.test.mjs fails', 'x'), 'not ok 1 - /w/tests/unrelated.test.mjs'));
+    assert.ok(failureOutsideScope(f('host', 'watch fails', 'EMFILE: too many open files, watch'), 'Error: EMFILE: too many open files'));
+  });
+  test('generic words and bare file names do not', () => {
+    assert.equal(failureOutsideScope(f('host', 'Postgres is not running', 'ERROR: ELIFECYCLE ENOENT'), 'npm ERR! code ELIFECYCLE\nERROR in src/cart'), null);
+    assert.equal(failureOutsideScope(f('unrelated-failure', 'src/legacy/index.test.ts fails', 'x'), 'FAIL src/cart/index.test.ts'), null);
+    assert.equal(failureOutsideScope(f('scope', 'tests/a.test.mjs', 'EMFILE'), 'tests/a.test.mjs EMFILE'), null);
+    assert.equal(failureOutsideScope(f('unrelated-failure', 'x', 'EMFILE'), 'EMFILE'), null, 'an error code counts only for a host problem');
+  });
+});

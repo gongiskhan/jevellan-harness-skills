@@ -199,10 +199,10 @@ function firstProblem(r) {
 // A step.report line must stay under the ledger's 64 KB line rule. The envelope around the data (seq, time, kind,
 // task, step, session) takes a few hundred bytes; the rest of the margin is slack.
 export const REPORT_LINE_BYTES = MAX_LINE - 4096;
-// Cut in this order when a report does not fit, and put back in this order as far as room allows. The owner's
-// commands come before the rest of the changed files; the first changed file is always kept, because the ledger's
+// Cut when a report does not fit, and put back as far as room allows: the follow-ups, the decisions, the owner's
+// commands, then the rest of the changed files and the screenshots; the first changed file is always kept, because the ledger's
 // projection reads a write duty's changed files as work still to land.
-const CUT_LISTS = ['changedFiles', 'ownerCommands', 'screenshots'];
+const CUT_LISTS = ['changedFiles', 'ownerCommands', 'screenshots', 'followUps', 'decisions'];
 
 const bytes = (value) => Buffer.byteLength(JSON.stringify(value));
 
@@ -233,6 +233,9 @@ export function fitReportLine(input, { maxBytes = REPORT_LINE_BYTES } = {}) {
       room -= cost;
     }
   };
+  // Follow-ups first: landing reads them to tell a failure outside the task's scope from the task's own.
+  if (Array.isArray(data.followUps)) fill('followUps', data.followUps);
+  if (Array.isArray(data.decisions)) fill('decisions', data.decisions);
   if (Array.isArray(data.ownerCommands)) fill('ownerCommands', data.ownerCommands);
   if (Array.isArray(data.changedFiles)) fill('changedFiles', data.changedFiles.slice(1));
   if (Array.isArray(data.screenshots)) fill('screenshots', data.screenshots);

@@ -137,9 +137,13 @@ pull request the draft says why.
   an item new since the task's last check that changes files this branch changes and shares the task's intent
   (`textRelated`). It is recorded as a note.
 - `source: "checks"`: a landing check fails, and the task's reports have a follow-up (`followUps[]`, kind
-  `unrelated-failure` or `host`) whose test file or error code the check's output shows: "a check fails outside this
-  task's scope: <titles>". By pull request the branch is pushed and the draft lists the failed check. With `--force`
-  landing goes on despite such a failure. Any other failing check refuses as before.
+  `unrelated-failure` or `host`) whose failing test the check's output shows (by its path with at least one folder)
+  or, for a host problem, a system error code it names (EMFILE, ENFILE, ENOSPC, ENOMEM, EACCES, EPERM, EROFS,
+  EADDRINUSE, ECONNREFUSED, ETIMEDOUT, EAI_AGAIN): "a check fails outside this task's scope: <titles>". By pull request
+  the branch is pushed and the draft lists the failed check. `--force` tolerates such a failure only when it answers
+  that question (the landing.decided before it has source "checks" and no step ran since): every other check still
+  runs and must pass, and the output and the pull request name the tolerated failure. Otherwise, and for any other
+  failing check, landing refuses as before.
 
 The pull request body also has "Decisions taken" (the reports' `decisions[]`), "Follow-ups" (`followUps[]`) and
 "Outside the plan's scope" when there are any.

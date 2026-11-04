@@ -634,7 +634,11 @@ text (hash b0e1671b...) are unchanged.
   changed on the branch, or it fails on the base too) and a problem of the machine (EMFILE, a sandbox the system
   refuses, no display...) are reported, never fixed in the task branch or worked around in product code. Verify's
   testsRun.passed sets those aside (and names them), so they do not send the task back to implement; a landing check
-  that fails on one of them (its test file or error code is in the output) becomes ask-owner (source "checks") with a
-  draft, instead of a refusal. The pull request body gains "Decisions taken" and "Follow-ups".
+  that fails on one of them (its test file, named by a path with a folder, or for a host problem a system error code such
+  as EMFILE, is in the output) becomes ask-owner (source "checks") with a draft, instead of a refusal. "Land now" then
+  tolerates that failure and only that one (every other check still runs and must pass, and the result names it), and
+  only when it answers that question; a "Land now" given to another question never lets a failing check through. A
+  landing overlap check that found overlap is not where the next check starts, so the question cannot be lost when the
+  landing fails after it. The pull request body gains "Decisions taken" and "Follow-ups".
 - Both report fields are additive: reports without them stay valid, and the runtimes, which list the report's fields
   in their prompts and may not change, need nothing: the duty skills ask for the new fields.
