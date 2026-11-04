@@ -145,6 +145,11 @@ export async function runOnce(caseDef, { label, n, plugin }) {
   const ended = await teardown(run, coord);
   if (ended.length) log(run, `ended ${ended.length} process(es)`);
   const ev = run.project ? collect(run, { startSeq, promptAt, transcript, stop }) : { events: [], tasks: {}, gh: { calls: [], prs: [] }, coordinator: { texts: [] }, facts: run.facts, hookLog: run.hookLog, stop };
+  // The run's GitHub must have been the fake (or the replay's wrapper): landing or an overlap check without a single
+  // logged gh call means the session reached some other gh, and the run proves nothing.
+  const ghUsed = (ev.gh?.calls ?? []).length > 0;
+  const ghNeeded = ev.events.some((e) => e.kind === 'landing.decided' || (e.kind === 'note' && e.data?.overlap));
+  if (!stop.error && ghNeeded && !ghUsed) stop = { ...stop, reason: `error: landing or an overlap check ran but the run's gh logged no call (${stop.reason})`, error: true };
   const result = stop.error ? { verdict: 'error', checks: [], judge: null } : evaluate(caseDef, ev);
   const out = {
     case: caseDef.id,

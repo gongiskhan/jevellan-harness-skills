@@ -187,7 +187,8 @@ export function makeFixtureRepos(run, { fixture, overlays = [], mutate, repo }) 
   if (mutate) mutate(run.seed);
   git(run.seed, ['init', '-q', '-b', 'main']);
   git(run.seed, ['add', '-A']);
-  git(run.seed, ['commit', '-q', '-m', 'Initial version']);
+  // The project's history is a month old: only what the case adds is recent.
+  git(run.seed, ['commit', '-q', '-m', 'Initial version'], { env: dated(30 * 24 * 60) });
   git(path.dirname(run.origin), ['init', '-q', '--bare', '-b', 'main', run.origin]);
   git(run.seed, ['remote', 'add', 'origin', run.origin]);
   git(run.seed, ['push', '-q', 'origin', 'main']);
@@ -203,7 +204,12 @@ export function makeFixtureRepos(run, { fixture, overlays = [], mutate, repo }) 
 
 // One commit in seed/ on `branch` (created from main when new) with the files of `overlay` (and `mutate`). Returns
 // the commit. `squashInto` makes it a squash merge on main instead, as GitHub does for a pull request.
-export function seedCommit(run, { fixture, overlay, mutate, message, branch = 'main' }) {
+export function dated(minutesAgo) {
+  const when = new Date(Date.now() - minutesAgo * 60_000).toISOString();
+  return { GIT_AUTHOR_DATE: when, GIT_COMMITTER_DATE: when };
+}
+
+export function seedCommit(run, { fixture, overlay, mutate, message, branch = 'main', minutesAgo = 0 }) {
   const current = git(run.seed, ['rev-parse', '--abbrev-ref', 'HEAD']);
   if (branch !== current) {
     const exists = git(run.seed, ['rev-parse', '--verify', '--quiet', `refs/heads/${branch}`], { allowFail: true });
@@ -212,7 +218,7 @@ export function seedCommit(run, { fixture, overlay, mutate, message, branch = 'm
   if (overlay) copyDir(path.join(FIXTURES, fixture, overlay), run.seed);
   if (mutate) mutate(run.seed);
   git(run.seed, ['add', '-A']);
-  git(run.seed, ['commit', '-q', '-m', message]);
+  git(run.seed, ['commit', '-q', '-m', message], { env: dated(minutesAgo) });
   const sha = git(run.seed, ['rev-parse', 'HEAD']);
   if (branch !== 'main') git(run.seed, ['checkout', '-q', 'main']);
   return sha;
@@ -241,9 +247,14 @@ export function sessionName(run) {
   return `jh-beh-${run.caseId}-${run.label}-${run.n}`.replace(/[^A-Za-z0-9_-]/g, '-');
 }
 
+// The coordinator's environment. Claude Code's Bash tool rebuilds PATH from the owner's login shell (its shell snapshot),
+// which drops the run's bin/; it then sources CLAUDE_ENV_FILE, so that file puts bin/ (the fake gh) back in front for
+// the coordinator's commands and everything they start (workers, landing checks). JH_GH_BIN points the git skill's gh
+// at it as well.
 export function coordinatorEnv(run) {
-  const env = { JH_HARNESS_HOME: run.home, PATH: `${run.bin}:${process.env.PATH}` };
-  return env;
+  const envFile = path.join(run.runDir, 'env.sh');
+  fs.writeFileSync(envFile, `export PATH=${JSON.stringify(run.bin)}:"$PATH"\n`);
+  return { JH_HARNESS_HOME: run.home, PATH: `${run.bin}:${process.env.PATH}`, CLAUDE_ENV_FILE: envFile, JH_GH_BIN: path.join(run.bin, 'gh') };
 }
 
 // ---- following a run -------------------------------------------------------------------------------------------------

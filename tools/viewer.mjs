@@ -80,7 +80,12 @@ function indexPage() {
   const created = (all.events ?? []).slice().reverse();
   const open = new Set((status.tasks ?? []).map((t) => t.task));
   const rows = (status.tasks ?? []).map((t) => {
-    const waiting = t.state === 'waiting-owner' && t.waiting?.question ? `<div class="warn">${esc(t.waiting.question)} ${esc((t.waiting.options ?? []).map((o, i) => `${i + 1}) ${typeof o === 'string' ? o : o.label}`).join('  '))}</div>` : '';
+    const optionText = (o, i) => {
+      const label = typeof o === 'string' ? o : o.label;
+      const means = t.waiting?.meanings?.[label];
+      return `${i + 1}) ${label}${means ? `: ${means}` : ''}${t.waiting?.recommended === label ? ' (recommended)' : ''}`;
+    };
+    const waiting = t.state === 'waiting-owner' && t.waiting?.question ? `<div class="warn">${esc(t.waiting.question)} ${esc((t.waiting.options ?? []).map(optionText).join('  '))}</div>` : '';
     return `<div class="card">${stateBadge(t.state)}<a href="/task/${esc(t.task)}"><strong>${esc(t.task)}</strong></a> ${esc(t.title)} <span class="muted">(${esc(t.kind)}${t.duty ? ` ${esc(t.duty)}` : ''})</span>${waiting}${t.next ? `<div class="muted">next: ${esc(t.next)}</div>` : ''}</div>`;
   }).join('') || '<p class="muted">No open tasks.</p>';
   const past = created.filter((e) => !open.has(e.task)).slice(0, 40).map((e) => `<tr><td><a href="/task/${esc(e.task)}">${esc(e.task)}</a></td><td>${esc(e.data?.title)}</td><td class="muted">${time(e.t)}</td></tr>`).join('');
@@ -135,7 +140,7 @@ const LINE = {
     d.pr
       ? `<span class="good">${d.merged ? 'pull request merged on GitHub' : 'pull request open for review'}: ${prLink(d.pr)} at <code>${esc(String(d.commit ?? '').slice(0, 12))}</code></span>`
       : `<span class="good">landed on ${esc(d.target)} at <code>${esc(String(d.commit ?? '').slice(0, 12))}</code> (${esc(d.method)})</span>`,
-  'task.asked': (d) => `<span class="warn">asked the owner: ${esc(d.question)}</span>${d.pr ? ` <span class="muted">draft:</span> ${prLink(d.pr)}` : ''}`,
+  'task.asked': (d) => `<span class="warn">asked the owner: ${esc(d.question)}</span>${d.recommended ? ` <span class="muted">recommended: ${esc(d.recommended)}</span>` : ''}${d.pr ? ` <span class="muted">draft:</span> ${prLink(d.pr)}` : ''}`,
   note: (d) => `note: ${esc(d.text)}`,
 };
 

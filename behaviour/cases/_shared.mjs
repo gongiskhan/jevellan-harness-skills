@@ -116,7 +116,7 @@ export const PR7_MESSAGE = 'Credentials can be replaced and removed from the pan
 
 // #7 squash-merged on origin's main, and listed by the fake gh as merged `minutesAgo` ago.
 export function landPr7(run, h, { minutesAgo = 30 } = {}) {
-  const sha = h.seedCommit(run, { fixture: 'panel', overlay: 'pr7', message: PR7_MESSAGE });
+  const sha = h.seedCommit(run, { fixture: 'panel', overlay: 'pr7', message: PR7_MESSAGE, minutesAgo });
   h.seedPush(run, 'main');
   const mergedAt = new Date(Date.now() - minutesAgo * 60_000).toISOString();
   const createdAt = new Date(Date.now() - (minutesAgo + 40) * 60_000).toISOString();

@@ -28,7 +28,7 @@ export default {
   workers: [{ id: 'claude-sonnet-5-5', efforts: ['low'] }],
   timeoutMin: 15,
   setup(run, h) {
-    const head = h.seedCommit(run, { fixture: 'panel', overlay: 'pr8', message: 'Substituir credencial no painel (work in progress)', branch: 'claude/project-thread-xyz' });
+    const head = h.seedCommit(run, { fixture: 'panel', overlay: 'pr8', message: 'Substituir credencial no painel (work in progress)', branch: 'claude/project-thread-xyz', minutesAgo: 20 });
     h.seedPush(run, 'claude/project-thread-xyz');
     const pr = {
       number: 8,
