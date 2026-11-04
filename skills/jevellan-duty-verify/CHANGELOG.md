@@ -4,7 +4,7 @@ Changes made by the trigger-eval improvement loop (brief section 10); `evals/RES
 
 ## 0.4.0
 
-- Body: failures are sorted into the change's own, outside the task's scope and the machine's; the last two go to followUps and are set aside in testsRun.passed (and named). The description is unchanged.
+- Body: the browser run's output is saved as .jevellan/evidence/browser.txt; failures are sorted into the change's own, outside the task's scope and the machine's; the last two go to followUps and are set aside in testsRun.passed (and named). The description is unchanged.
 
 ## Trigger evals round 2, 2026-11-02
 

@@ -19,6 +19,7 @@ The project's settings are in `.jevellan/project.json` at the project root (the 
    - Drive the screens the way a person would: navigate, click, fill and submit, and check what appears. Cover the states the change affects, such as empty, error, long content and a signed-out user, not only the first render.
    - Check every journey at a desktop width (1440 by 900) and a phone width (390 by 844).
    - Save screenshots under .jevellan/evidence/ with names that say the screen, the state and the width (`.jevellan/evidence/customers-empty-phone.png`), and videos or traces there too when the step asks for them.
+   - Save the browser run's own output there too, as .jevellan/evidence/browser.txt: what the journeys printed (each journey, what it checked, passed or failed), or the browser test runner's report. With the screenshots and tests.txt it is the evidence the owner reviews instead of re-running the journeys.
    - Start the dev server on a free port, and stop at the end only the processes you started.
    - When the change touches no screen, or the project has no interface, say so and skip this part.
 4. Leave the worktree as you found it apart from .jevellan/evidence/: change no code or tests and commit nothing. A throwaway journey script, if you need one, goes under .jevellan/evidence/ too.
