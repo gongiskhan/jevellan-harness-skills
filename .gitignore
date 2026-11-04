@@ -5,3 +5,4 @@ node_modules/
 *.log
 plan.md
 acceptance/out/
+behaviour/results/dev/
