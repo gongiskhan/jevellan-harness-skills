@@ -261,8 +261,13 @@ export function reevaluate(cases, ids) {
     if (!caseDef || !before) throw new Error(`no result for ${id}`);
     const ev = before.source ? evidenceFor(readJson(path.join(RESULTS, m[2], `${before.source.replace(/^(.+?)-.+-(r\d+)$/, '$1-$2')}.json`))) : evidenceFor(before);
     if (!ev) throw new Error(`no evidence for ${id}`);
-    const result = evaluate(caseDef, ev);
-    const after = { ...before, ...result, reevaluatedAt: isoNow(), previous: { verdict: before.verdict, checks: before.checks, judge: before.judge } };
+    // The deterministic checks run again (a corrected check); the judge's score is kept, so a re-evaluation never
+    // rolls the judge again.
+    const result = evaluate(caseDef, ev, { withJudge: false });
+    const judged = before.judge ?? null;
+    result.judge = judged;
+    result.verdict = result.checks.every((c) => c.pass) && (!judged || judged.pass) ? 'pass' : 'fail';
+    const after = { ...before, ...result, reevaluatedAt: isoNow(), previous: { verdict: before.verdict, checks: before.checks } };
     writeJson(file, after);
     log(null, `${id}: ${before.verdict} -> ${after.verdict}`);
   }

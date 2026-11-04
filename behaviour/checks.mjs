@@ -117,9 +117,10 @@ export function mentions(haystack, patterns) {
   return patterns.some((p) => (p instanceof RegExp ? p.test(haystack) : haystack.includes(p)));
 }
 
-// A pull request named by number: "#7", "PR 7", "pull request 7", "PR #7".
+// A pull request named by number: "#7", "PR 7", "pull request 7", "PR #7", "pull request ... (number 7)", or its URL
+// ".../pull/7" (the owner-question shape asks for a plain description next to an id, so "number 7" is common).
 export function prPattern(n) {
-  return new RegExp(`(#${n}\\b|\\bPR\\s*#?${n}\\b|pull request\\s*#?${n}\\b)`, 'i');
+  return new RegExp(`(#${n}\\b|\\bPR\\s*#?${n}\\b|pull request\\s*#?${n}\\b|pull request[^.\\n]{0,80}\\bnumber\\s+${n}\\b|\\bnumber\\s+${n}\\b[^.\\n]{0,40}pull request|/pull/${n}\\b|pedido[^.\\n]{0,40}\\b(n\\.?º|número)\\s*${n}\\b)`, 'i');
 }
 
 export function commitPattern(sha, length = 7) {

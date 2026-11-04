@@ -50,7 +50,7 @@ step.message.
   file `{"question": "...", "options": [{"label": "...", "means": "..."}], "recommended": "<a label>", "reason": "..."}`:
   the question opens with one or two plain sentences on what the task is and why the question exists; each option
   says what it means for the owner; `recommended` is the option you recommend, which is also what you do when the
-  owner's reply does not choose. Question and options together stay under 120 words; ids only with a plain
+  owner's reply does not choose, and the question says so in a sentence that names that option's label. Question and options together stay under 120 words; ids only with a plain
   description next to them. `ask` refuses a second question while the task's last one has no answer: record the
   owner's reply with `answer` first. The task shows as waiting on the owner until the answer.
 - `--data-file F` (`-` for stdin) may replace `--data` whenever the JSON holds apostrophes or is long.
@@ -78,8 +78,8 @@ folder inside it (the project root is found through git, or `JH_PROJECT`). Input
   against the task's lines (exit 2 with the reason).
 - `ledger.mjs ask --task T (--data JSON | --data-file F|-) --json` -> the task.asked line as written, data
   `{question, options: [labels], meanings: {label: means}, recommended, reason, source: "coordinator", words}`. Exit
-  2 when the shape is wrong (2 to 4 options with label and means, recommended one of the labels, at most 120 words in
-  all) or the task's last coordinator question has no answer yet.
+  2 when the shape is wrong (2 to 4 options with label and means, recommended one of the labels and named in the
+  question, at most 120 words in all) or the task's last coordinator question has no answer yet.
 - `ledger.mjs answer --task T --text "..." [--option LABEL] --json` -> a note `{text, answerTo: <seq of the
   question>, option, answer}`. Exit 2 when the task has no open coordinator question or the option is not one of its
   labels.

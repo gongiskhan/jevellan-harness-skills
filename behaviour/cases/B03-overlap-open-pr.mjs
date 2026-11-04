@@ -9,7 +9,7 @@ import { CREDENTIAL_BRIEF, PANEL_PROJECT, PANEL_REPO, ago, implementStarted } fr
 const WAIT = /\b(wait|hold off|hold|pause|until #?8|esperar|aguardar)\b/i;
 const BUILD_ON = /(build(ing)? on|on top of|continue (from|on)|extend|take over|reuse|finish #?8|complete #?8|base (it|this|the work) on|branch (from|off)|construir sobre|partir d[eo])/i;
 const PROCEED = /(proceed|go ahead|in parallel|separately|independent|ignore #?8|start (now|fresh)|my own|avançar|seguir em frente)/i;
-const DEFAULT = /(default|unless you|if (you|I) (don't|do not)|if I (don't|do not) hear|without (an )?answer|no answer|otherwise|por omissão|caso contrário|se não (responder|disser))/i;
+const DEFAULT = /(default|unless you|if (you|I) (don't|do not)|if I (don't|do not) hear|if your (reply|answer)|does(n't| not) choose|without (an )?answer|no answer|otherwise|por omissão|caso contrário|se não (responder|disser|escolher))/i;
 
 function questionAbout8(ev) {
   const q = ownerQuestions(ev).find((x) => prPattern(8).test(`${x.question} ${JSON.stringify(x.options)} ${x.relayed ?? ''}`));

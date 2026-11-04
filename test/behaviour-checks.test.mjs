@@ -71,6 +71,12 @@ test('a needs-decision report counts as an owner question only when the coordina
   assert.equal(ownerQuestions(landing, { includeLanding: true }).length, 1);
 });
 
+test('a pull request is named by #, PR, pull request, "number N" next to it, or its URL', async () => {
+  const { prPattern } = await import('../behaviour/checks.mjs');
+  for (const text of ['#8 is open', 'PR 8', 'pull request #8', 'an unfinished pull request from another thread (number 8)', 'see https://github.com/acme/x/pull/8', 'number 8, an open pull request']) assert.ok(prPattern(8).test(text), text);
+  for (const text of ['#80', 'number 8 of the tests', 'pull/80', 'step 8']) assert.ok(!prPattern(8).test(text), text);
+});
+
 test('added product lines skip tests', () => {
   const patch = 'diff --git a/lib/x.mjs b/lib/x.mjs\n--- a/lib/x.mjs\n+++ b/lib/x.mjs\n@@\n+if (e.code === "EMFILE") poll();\n diff\n+++ b/tests/x.test.mjs\n+EMFILE in a test\n';
   assert.deepEqual(addedProductLines(patch).map((l) => l.file), ['lib/x.mjs']);

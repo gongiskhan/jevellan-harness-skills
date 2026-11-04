@@ -488,6 +488,7 @@ export function checkQuestion(data) {
     labels.add(o.label);
   }
   if (!labels.has(data.recommended)) bad('recommended must be one of the options\' labels: the option you recommend, which you take when the reply does not choose');
+  if (!data.question.includes(data.recommended)) bad(`the question must say, in its own words, that "${data.recommended}" is what happens when the owner's reply does not choose: name that option's label in it`);
   if (data.reason !== undefined && (typeof data.reason !== 'string' || data.reason.length > 300)) bad('reason must be a short text');
   const total = words(data.question) + data.options.reduce((n, o) => n + words(o.label) + words(o.means), 0);
   if (total > QUESTION_WORDS) bad(`the question and its options are ${total} words; keep them under ${QUESTION_WORDS}`);

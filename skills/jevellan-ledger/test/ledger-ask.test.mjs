@@ -7,7 +7,7 @@ import assert from 'node:assert/strict';
 import { TaskScript, cli, makeRepo, readLedger } from './helpers.mjs';
 
 const question = {
-  question: 'You asked for a Substituir button on the integrations page. The owner\'s own open pull request "Substituir e remover credenciais" already adds it. What should I do?',
+  question: 'You asked for a Substituir button on the integrations page. The owner\'s own open pull request "Substituir e remover credenciais" already adds it. What should I do? If you do not choose, I will Build on it.',
   options: [
     { label: 'Wait', means: 'nothing is built until that pull request is merged or closed' },
     { label: 'Build on it', means: 'I continue from that pull request and add only what is missing' },
@@ -38,6 +38,7 @@ describe('ask', () => {
     assert.equal(task.waiting.recommended, 'Build on it');
     const status = cli(root, ['status']);
     assert.match(status.stdout, /Question: You asked for a Substituir button/);
+    assert.match(line.data.question, /If you do not choose, I will Build on it\./);
     assert.match(status.stdout, /\(recommended: Build on it\)/);
   });
 
@@ -48,9 +49,10 @@ describe('ask', () => {
       [{ ...question, options: question.options.slice(0, 1) }, /options must have 2 to 4 items/],
       [{ ...question, options: [{ label: 'a' }, { label: 'b', means: 'x' }] }, /options\[0\]\.means must say what the option means/],
       [{ ...question, recommended: 'Something else' }, /recommended must be one of the options' labels/],
-      [{ ...question, question: 'word '.repeat(110) }, /words; keep them under 120/],
+      [{ ...question, question: `${'word '.repeat(110)}Build on it` }, /words; keep them under 120/],
       [{ ...question, extra: 1 }, /unknown field "extra"/],
       [{ ...question, question: '' }, /question is required/],
+      [{ ...question, question: 'What should I do?' }, /must say, in its own words, that "Build on it" is what happens/],
     ];
     for (const [data, message] of cases) {
       const r = ask(root, s.task, data);

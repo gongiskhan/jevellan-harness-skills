@@ -25,7 +25,7 @@ export default {
   repo: PANEL_REPO,
   project: PANEL_PROJECT,
   coordinator: { model: 'claude-sonnet-5-5', effort: 'high' },
-  workers: [{ id: 'claude-sonnet-5-5', efforts: ['medium'] }],
+  workers: [{ id: 'claude-sonnet-5-5', efforts: ['high'] }],
   timeoutMin: 15,
   prompt: () => `${CREDENTIAL_BRIEF}\n\nStart it.`,
   stopAfter(state) {
