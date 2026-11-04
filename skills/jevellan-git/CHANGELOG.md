@@ -2,6 +2,7 @@
 
 ## 0.4.0
 
+- From the final review: --force tolerates a check failing outside the task's scope only when the landing question was about it, and every other check still runs; matching uses test paths with a folder and system error codes only; a landing overlap note that found overlap is not the next check's baseline.
 - `overlap.mjs --task T [--checkpoint intake|step|landing]`: the commits, pull requests and open tasks related to the
   task, recorded as a note (docs/decisions.md H-043).
 - Landing guards before the decision: files outside plan.md's scope block beyond two tests or fixtures (source

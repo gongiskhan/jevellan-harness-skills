@@ -2,102 +2,102 @@
   "id": "H6",
   "title": "The chain",
   "status": "passed",
-  "startedAt": "2026-11-02T13:33:53.024Z",
-  "finishedAt": "2026-11-02T13:35:57.835Z",
-  "elapsedMs": 124810,
+  "startedAt": "2026-11-04T23:33:49.722Z",
+  "finishedAt": "2026-11-04T23:35:30.879Z",
+  "elapsedMs": 101157,
   "passed": 13,
   "total": 13,
   "timings": {
-    "request to landing": 104753
+    "request to landing": 74970
   },
   "notes": [
-    "run 9 on a fresh clone of the sandbox baseline",
-    "coordinator session ea6ac12a-f021-4b57-9fca-e2bfab804eec",
+    "run 13 on a fresh clone of the sandbox baseline",
+    "coordinator session a4bbb66b-8b8a-4c45-b33f-0b113c0ab523",
     "the coordinator chose a single task, which has no workflow line",
     "Skill invocations: jevellan-coordinator, jevellan-ledger, jevellan-git, jevellan-placement, jevellan-runtime-claude",
-    "placements: s1 document claude-sonnet-5-5 medium via claude-main; s2 verify claude-sonnet-5-5 high via claude-main",
-    "landing: verify-then-land {\"land\":0.33,\"verify-then-land\":0.66,\"ask-owner\":0.01}",
-    "coordinator's last reply: The \"How to run\" section is now on `main`. Task TT2C3WR, \"Add How to run section to README\", landed as commit b16be52, fast-forwarded onto your local `main`. The new section sits right after \"Setup\". It's a table of the five `package.json` scripts: `npm start`, `npm test`, `npm run test:browser`, `npm run lint` and `npm run check:changelog`. Each row shows the command it runs and one line on what ",
-    "runs so far: 1:pass 2:pass 3:pass 4:pass 5:pass 6:pass 7:pass 8:pass 9:pass"
+    "placements: s1 document claude-sonnet-5-5 medium via claude-second",
+    "landing: land {\"land\":0.52,\"verify-then-land\":0.48,\"ask-owner\":0}",
+    "coordinator's last reply: README \"How to run\" section now on local `main` (`cda2bb4`), but no pull request exist. `AGENTS.md` say publish one, yet repo have no remote and `.jevellan/project.json` set `\"landing\": \"local\"`, so task fast-forward into `main` and nothing pushed. Want PR flow later: add `origin` and set `\"landing\": \"pr\"`. Section list all five `package.json` scripts (`start`, `test`, `test:browser`, `lint`, `che",
+    "runs so far: 1:pass 2:pass 3:pass 4:pass 5:pass 6:pass 7:pass 8:pass 9:pass 10:fail 11:pass 12:pass 13:pass"
   ],
   "checks": [
     {
       "name": "the skills are installed in the project",
       "ok": true,
       "detail": "",
-      "at": "2026-11-02T13:33:53.275Z"
+      "at": "2026-11-04T23:33:50.005Z"
     },
     {
       "name": "the coordinator created one task for the request",
       "ok": true,
-      "detail": "TT2C3WR (single document): Add How to run section to README",
-      "at": "2026-11-02T13:35:57.819Z"
+      "detail": "TW85BGV (single document): Add a How to run section to the README",
+      "at": "2026-11-04T23:35:30.865Z"
     },
     {
       "name": "task.worktree",
       "ok": true,
       "detail": "",
-      "at": "2026-11-02T13:35:57.820Z"
+      "at": "2026-11-04T23:35:30.865Z"
     },
     {
       "name": "every started step was placed first",
       "ok": true,
-      "detail": "steps 1, 2",
-      "at": "2026-11-02T13:35:57.820Z"
+      "detail": "steps 1",
+      "at": "2026-11-04T23:35:30.865Z"
     },
     {
       "name": "step.started carries model and effort",
       "ok": true,
       "detail": "",
-      "at": "2026-11-02T13:35:57.820Z"
+      "at": "2026-11-04T23:35:30.866Z"
     },
     {
       "name": "every started step has a report and a step.done",
       "ok": true,
       "detail": "",
-      "at": "2026-11-02T13:35:57.821Z"
+      "at": "2026-11-04T23:35:30.866Z"
     },
     {
       "name": "landing.decided",
       "ok": true,
       "detail": "",
-      "at": "2026-11-02T13:35:57.821Z"
+      "at": "2026-11-04T23:35:30.866Z"
     },
     {
       "name": "task.landed, or task.asked with a stated reason",
       "ok": true,
       "detail": "task.landed",
-      "at": "2026-11-02T13:35:57.821Z"
+      "at": "2026-11-04T23:35:30.866Z"
     },
     {
       "name": "no human input beyond the request",
       "ok": true,
       "detail": "one message was sent",
-      "at": "2026-11-02T13:35:57.821Z"
+      "at": "2026-11-04T23:35:30.866Z"
     },
     {
       "name": "zero slips",
       "ok": true,
       "detail": "",
-      "at": "2026-11-02T13:35:57.821Z"
+      "at": "2026-11-04T23:35:30.866Z"
     },
     {
       "name": "main has the How to run section",
       "ok": true,
       "detail": "",
-      "at": "2026-11-02T13:35:57.825Z"
+      "at": "2026-11-04T23:35:30.870Z"
     },
     {
       "name": "the project checkout is clean",
       "ok": true,
       "detail": "",
-      "at": "2026-11-02T13:35:57.834Z"
+      "at": "2026-11-04T23:35:30.879Z"
     },
     {
       "name": "passed three times in a row",
       "ok": true,
       "detail": "true,true,true",
-      "at": "2026-11-02T13:35:57.835Z"
+      "at": "2026-11-04T23:35:30.879Z"
     }
   ]
 }

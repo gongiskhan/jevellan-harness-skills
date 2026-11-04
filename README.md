@@ -87,7 +87,7 @@ Claude Code then refreshes the marketplace in the background and installs a new 
 A client machine that must stay on one release pins the marketplace to its tag instead, and gets no updates:
 
 ```
-claude plugin marketplace add gongiskhan/jevellan-harness-skills#v0.3.0
+claude plugin marketplace add gongiskhan/jevellan-harness-skills#v0.4.0
 ```
 
 (Any release tag from v0.2.0 on carries the plugin; v0.1.0 predates it.) The skills appear namespaced

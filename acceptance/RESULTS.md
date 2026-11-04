@@ -8,15 +8,15 @@ Times are UTC.
 | H1 Install | passed | 23/23 | 4 s | 2026-11-04T22:27:57.766Z |
 | H2 Ledger | passed | 24/24 | 7 s | 2026-11-02T10:49:57.059Z |
 | H3 Hooks | passed | 14/14 | 44 s | 2026-11-02T12:51:57.634Z |
-| H4 Placement | passed | 17/17 | 6 s | 2026-11-02T13:22:36.483Z |
+| H4 Placement | passed | 17/17 | 5 s | 2026-11-04T23:35:41.876Z |
 | H5 Worker | passed | 26/26 | 43 s | 2026-11-04T23:21:38.269Z |
-| H6 The chain | failed | 12/13 | 97 s | 2026-11-04T23:31:10.168Z |
+| H6 The chain | passed | 13/13 | 101 s | 2026-11-04T23:35:30.879Z |
 | H7 Three in parallel | passed | 10/10 | 522 s | 2026-11-02T11:44:01.266Z |
 | H8 Needs-decision | passed | 8/8 | 311 s | 2026-11-04T23:28:14.975Z |
 | H9 Restart | passed | 8/8 | 135 s | 2026-11-02T11:32:28.599Z |
 | H10 Codex | passed | 9/9 | 37 s | 2026-11-02T11:33:05.685Z |
-| H11 Trigger evals | blocked: jevellan-placement (role-phrase runs 24/27 below 98%) after the improvement rounds section 10 allows; every failing run of the placement skill is a role-missing run with the placement skill removed (its cases 9 and 10), where neither its description nor its body is loaded, so no round on it could change them; one of the three answers named the missing skill in words the scorer does not match; the coordinator now meets every threshold; see docs/decisions.md H-030 and H-040 | 20/21 | 0 s | 2026-11-02T13:45:38.058Z |
-| H12 No leaks, no runtime | failed | 11/13 | 78 s | 2026-11-04T22:29:15.658Z |
+| H11 Trigger evals | failed | 20/21 | 0 s | 2026-11-04T23:35:42.164Z |
+| H12 No leaks, no runtime | failed | 11/13 | 41 s | 2026-11-04T23:36:23.290Z |
 
 ## H1 Install
 
@@ -105,32 +105,32 @@ Notes:
 
 ## H4 Placement
 
-Status: passed. Started 2026-11-02T13:22:30.669Z, 6 s.
+Status: passed. Started 2026-11-04T23:35:36.936Z, 5 s.
 
-Timings: placement 1817 ms.
+Timings: placement 530 ms.
 
 - PASS the current skills are installed in the sandbox: changed 0 paths
 - PASS task created
-- PASS worktree created through the git skill: {   "branch": "jh/h4-which-port-does-the-web-server-listen-TS0T3BF",   "path": "/home/ggomes/.jevellan-harness/worktrees/jevellan-harness-sandbox/h4-which-port-does-the-web-server-listen-TS0T3BF",   "base": "main",   "baseCommit": "11b29d57f3199c35cb5d2b87e1972c1b569e3186",   "setup": {     "command": "npm ci",     "ms": 1510   } }
+- PASS worktree created through the git skill: {   "branch": "jh/h4-which-port-does-the-web-server-listen-TPX4TME",   "path": "/home/ggomes/.jevellan-harness/worktrees/jevellan-harness-sandbox/h4-which-port-does-the-web-server-listen-TPX4TME",   "base": "main",   "baseCommit": "11b29d57f3199c35cb5d2b87e1972c1b569e3186",   "setup": {     "command": "npm ci",     "ms": 1513   } }
 - PASS the worktree has the .claude link and an evidence folder
 - PASS the worktree is clean in git
-- PASS route.mjs exits 0 with provider, model, effort, kind, probabilities, latencyMs, policyHash: {"provider":"codex","model":"gpt-6-astra","effort":"xhigh","kind":"codex-subscription","probabilities":{"model":{"gpt-6-astra":0.38,"claude-opus-5-5":0.34,"claude-fable-5-1":0.02,"claude-sonnet-5-5":0.04,"claude-haiku-5-5":0.22},"effort":{"low":0.16,"medium":0.35,"high":0.09,"xhigh":0.02,"max":0.38}},"latencyMs":199,"policyHash":"ec73b4a67a6b0225e95f97a49c359b4c3678aa6c05f57f89c95e56479a33fafe","s
-- PASS the decision carries probabilities for the model question: {"model":{"gpt-6-astra":0.38,"claude-opus-5-5":0.34,"claude-fable-5-1":0.02,"claude-sonnet-5-5":0.04,"claude-haiku-5-5":0.22},"effort":{"low":0.16,"medium":0.35,"high":0.09,"xhigh":0.02,"max":0.38}}
-- PASS task.placed is in the ledger with source jev and a decision file: {"step":1,"duty":"investigate","provider":"codex","model":"gpt-6-astra","effort":"xhigh","kind":"codex-subscription","probabilities":{"model":{"gpt-6-astra":0.38,"claude-opus-5-5":0.34,"claude-fable-5-1":0.02,"claude-sonnet-5-5":0.04,"claude-haiku-5-5":0.22},"effort":{"low":0.16,"medium":0.35,"high"
+- PASS route.mjs exits 0 with provider, model, effort, kind, probabilities, latencyMs, policyHash: {"provider":"codex","model":"gpt-6-astra","effort":"medium","kind":"codex-subscription","probabilities":{"model":{"gpt-6-astra":0.44,"claude-opus-5-5":0.21,"claude-fable-5-1":0.04,"claude-sonnet-5-5":0.09,"claude-haiku-5-5":0.22},"effort":{"low":0.18,"medium":0.42,"high":0.11,"xhigh":0.03,"max":0.26}},"latencyMs":199,"policyHash":"ec73b4a67a6b0225e95f97a49c359b4c3678aa6c05f57f89c95e56479a33fafe","
+- PASS the decision carries probabilities for the model question: {"model":{"gpt-6-astra":0.44,"claude-opus-5-5":0.21,"claude-fable-5-1":0.04,"claude-sonnet-5-5":0.09,"claude-haiku-5-5":0.22},"effort":{"low":0.18,"medium":0.42,"high":0.11,"xhigh":0.03,"max":0.26}}
+- PASS task.placed is in the ledger with source jev and a decision file: {"step":1,"duty":"investigate","provider":"codex","model":"gpt-6-astra","effort":"medium","kind":"codex-subscription","probabilities":{"model":{"gpt-6-astra":0.44,"claude-opus-5-5":0.21,"claude-fable-5-1":0.04,"claude-sonnet-5-5":0.09,"claude-haiku-5-5":0.22},"effort":{"low":0.18,"medium":0.42,"high
 - PASS with the key file renamed, route.mjs exits 2 "Jev: no key configured": Jev: no key configured
 - PASS nothing was appended for the refused placement
 - PASS the key file is back with mode 600
 - PASS providers.json is restored byte for byte
-- PASS with claude-main over its ceiling the decision avoids it (a Claude model goes to claude-second): {"provider":"codex","model":"gpt-6-astra","effort":"medium","kind":"codex-subscription","probabilities":{"model":{"gpt-6-astra":0.53,"claude-opus-5-5":0.15,"claude-fable-5-1":0.03,"claude-sonnet-5-5":0.06,"claude-haiku-5-5":0.23},"effort":{"low":0.18,"medium":0.37,"high":0.08,"xhigh":0.08,"max":0.29
+- PASS with claude-main over its ceiling the decision avoids it (a Claude model goes to claude-second): {"provider":"codex","model":"gpt-6-astra","effort":"xhigh","kind":"codex-subscription","probabilities":{"model":{"gpt-6-astra":0.51,"claude-opus-5-5":0.19,"claude-fable-5-1":0.04,"claude-sonnet-5-5":0.1,"claude-haiku-5-5":0.16},"effort":{"low":0.14,"medium":0.3,"high":0.08,"xhigh":0.03,"max":0.45}},
 - PASS the menu Jev saw excludes claude-main: codex, claude-second
-- PASS worktree archived through the git skill: {   "archived": true,   "already": false,   "from": "/home/ggomes/.jevellan-harness/worktrees/jevellan-harness-sandbox/h4-which-port-does-the-web-server-listen-TS0T3BF",   "to": "/home/ggomes/.jevellan-harness/archive/worktrees/jevellan-harness-sandbox/h4-which-port-does-the-web-server-listen-TS0T3B
+- PASS worktree archived through the git skill: {   "archived": true,   "already": false,   "from": "/home/ggomes/.jevellan-harness/worktrees/jevellan-harness-sandbox/h4-which-port-does-the-web-server-listen-TPX4TME",   "to": "/home/ggomes/.jevellan-harness/archive/worktrees/jevellan-harness-sandbox/h4-which-port-does-the-web-server-listen-TPX4TM
 - PASS the H4 task is no longer open
 - PASS the sandbox checkout stays clean
 
 Notes:
-- Jev placed the investigate step on gpt-6-astra xhigh via codex (model p 0.38), 199 ms
+- Jev placed the investigate step on gpt-6-astra medium via codex (model p 0.44), 199 ms
 - providers check before the ceiling: exit 0
-- claude-main current usage 5% (weekly 5, five-hour null), ceiling set to 4% for the check
+- claude-main current usage 42% (weekly 42, five-hour null), ceiling set to 41% for the check
 
 ## H5 Worker
 
@@ -171,12 +171,12 @@ Notes:
 
 ## H6 The chain
 
-Status: failed. Started 2026-11-04T23:29:33.034Z, 97 s.
+Status: passed. Started 2026-11-04T23:33:49.722Z, 101 s.
 
-Timings: request to landing 75001 ms.
+Timings: request to landing 74970 ms.
 
 - PASS the skills are installed in the project
-- PASS the coordinator created one task for the request: TPJQ6H5 (single document): Add How to run section to README
+- PASS the coordinator created one task for the request: TW85BGV (single document): Add a How to run section to the README
 - PASS task.worktree
 - PASS every started step was placed first: steps 1
 - PASS step.started carries model and effort
@@ -187,17 +187,17 @@ Timings: request to landing 75001 ms.
 - PASS zero slips
 - PASS main has the How to run section
 - PASS the project checkout is clean
-- FAIL passed three times in a row: true,false,true
+- PASS passed three times in a row: true,true,true
 
 Notes:
-- run 11 on a fresh clone of the sandbox baseline
-- coordinator session 72aaacb9-fccc-4a4a-8833-6f7590e82b84
+- run 13 on a fresh clone of the sandbox baseline
+- coordinator session a4bbb66b-8b8a-4c45-b33f-0b113c0ab523
 - the coordinator chose a single task, which has no workflow line
 - Skill invocations: jevellan-coordinator, jevellan-ledger, jevellan-git, jevellan-placement, jevellan-runtime-claude
 - placements: s1 document claude-sonnet-5-5 medium via claude-second
-- landing: land {"land":0.5,"verify-then-land":0.49,"ask-owner":0.01}
-- coordinator's last reply: "How to run" section landed on local `main` as commit `247ee84` (task TPJQ6H5), but **no pull request exists**. `AGENTS.md` says publish one, yet `.jevellan/project.json` sets landing to local and repo has no `origin` remote, so change went in by fast-forward and nothing pushed. To get PRs, project need remote and `"landing": "pr"`. README now has `npm ci` setup, then table with all five scripts: 
-- runs so far: 1:pass 2:pass 3:pass 4:pass 5:pass 6:pass 7:pass 8:pass 9:pass 10:fail 11:pass
+- landing: land {"land":0.52,"verify-then-land":0.48,"ask-owner":0}
+- coordinator's last reply: README "How to run" section now on local `main` (`cda2bb4`), but no pull request exist. `AGENTS.md` say publish one, yet repo have no remote and `.jevellan/project.json` set `"landing": "local"`, so task fast-forward into `main` and nothing pushed. Want PR flow later: add `origin` and set `"landing": "pr"`. Section list all five `package.json` scripts (`start`, `test`, `test:browser`, `lint`, `che
+- runs so far: 1:pass 2:pass 3:pass 4:pass 5:pass 6:pass 7:pass 8:pass 9:pass 10:fail 11:pass 12:pass 13:pass
 
 ## H7 Three in parallel
 
@@ -286,7 +286,7 @@ Notes:
 
 ## H11 Trigger evals
 
-Status: blocked: jevellan-placement (role-phrase runs 24/27 below 98%) after the improvement rounds section 10 allows; every failing run of the placement skill is a role-missing run with the placement skill removed (its cases 9 and 10), where neither its description nor its body is loaded, so no round on it could change them; one of the three answers named the missing skill in words the scorer does not match; the coordinator now meets every threshold; see docs/decisions.md H-030 and H-040. Started 2026-11-02T13:45:37.846Z, 0 s.
+Status: failed. Started 2026-11-04T23:35:41.920Z, 0 s.
 
 - PASS the run covered every skill: 17 skills in the run, 17 in the package
 - PASS every skill has at least five positive and five negative cases
@@ -294,7 +294,7 @@ Status: blocked: jevellan-placement (role-phrase runs 24/27 below 98%) after the
 - PASS jevellan-duty-answer meets the thresholds: positives 21/21, negatives fired 0/21, role phrase 27/27
 - PASS jevellan-duty-automate meets the thresholds: positives 21/21, negatives fired 0/21, role phrase 27/27
 - PASS jevellan-duty-converse meets the thresholds: positives 21/21, negatives fired 0/21, role phrase 27/27
-- PASS jevellan-duty-document meets the thresholds: positives 20/21, negatives fired 0/21, role phrase 27/27
+- PASS jevellan-duty-document meets the thresholds: positives 19/21, negatives fired 0/21, role phrase 27/27
 - PASS jevellan-duty-implement meets the thresholds: positives 21/21, negatives fired 0/21, role phrase 27/27
 - PASS jevellan-duty-investigate meets the thresholds: positives 19/21, negatives fired 0/21, role phrase 27/27
 - PASS jevellan-duty-plan meets the thresholds: positives 21/21, negatives fired 0/21, role phrase 27/27
@@ -311,19 +311,19 @@ Status: blocked: jevellan-placement (role-phrase runs 24/27 below 98%) after the
 - PASS evals/RESULTS.md is committed and matches the run: tracked: evals/RESULTS.md, evals/results.json; uncommitted: none
 
 Notes:
-- run of 2026-11-02T13:25:26Z: model claude-sonnet-5-5, effort low, 3 runs per case, provider claude-second, Claude Code 2.1.316; thresholds {"positive":0.9,"falsePositive":0.05,"rolePhrase":0.98}
-- merged results: jevellan-placement, jevellan-coordinator measured on 2026-11-02T13:25:26Z; 15 skills from the run of 2026-11-02T02:37:23Z; left out (no longer in the package): jevellan-router
+- run of 2026-11-04T22:36:06Z: model claude-sonnet-5-5, effort low, 3 runs per case, provider claude-second, Claude Code 2.1.318; thresholds {"positive":0.9,"falsePositive":0.05,"rolePhrase":0.98}
+- merged results: jevellan-duty-implement measured on 2026-11-04T22:36:06Z; 16 skills from the run of 2026-11-04T22:34:32Z
 - jevellan-placement case 4 (positive): 2/3; "Verify step 3 of T8QW2N reported testsRun.passed false, and the retry back to step 2 is re"
 - jevellan-placement case 9 (placement removed, context jevellan-coordinator): 2/3, named the missing role 3/3, invoked jevellan-placement; "Task T3K9QZ "README: how to run" (single, duty document) is created and its worktree is re"
 - jevellan-placement case 10 (placement removed, context jevellan-workflow-bug): 1/3, named the missing role 2/3, invoked jevellan-placement; "Bug task T5HB7C has its worktree and its resolved steps are recorded: 1 implement, 2 verif"
 - coordinator positives with the SessionStart line: 12/12; without it: 10/12
 - role-missing runs that named the missing role: 26/27; that invoked no skill, by role: git 3/3, ledger 3/3, placement 4/6, runtime 6/6, workflow 9/9
-- totals: {"cases":248,"runs":744,"passed":735,"errors":0,"costUsd":34.7651}
+- totals: {"cases":248,"runs":744,"passed":734,"errors":0,"costUsd":36.0341}
 - jevellan-placement: 2 improvement rounds recorded in its CHANGELOG
 
 ## H12 No leaks, no runtime
 
-Status: failed. Started 2026-11-04T22:27:57.824Z, 78 s.
+Status: failed. Started 2026-11-04T23:35:42.211Z, 41 s.
 
 - PASS secret values loaded for the search: 3 values from 3 files
 - FAIL no secret value in the ledgers, logs, evidence, reports, decisions, worktrees, acceptance outputs or the repository: /home/ggomes/.jevellan-harness/worktrees/jevellan-playground/ekoa-tasks-complete-does-nothing-actions-TPNTNAG/apps/ekoa-tasks/.env, /home/ggomes/.jevellan-harness/worktrees/jevellan-playground/ekoa-tasks-app-1-2-server-ekoa-mcp-clien-TM4AHFF/apps/ekoa-tasks/.env, /home/ggomes/.jevellan-harness/worktrees/jevellan-playground/ekoa-tasks-complete-offered-on-tasks-eko-TH6CQM5/apps/ekoa-tasks/.env, /home/ggomes/.jevellan-harness/worktrees/jevellan-playground/ekoa-tasks-app-2-2-react-board-ui-ask-pa-TQRVQ61/apps/ekoa-tasks/.env, /home/ggomes/.jevellan-harness/worktrees/jevellan-playground/ekoa-tasks-ask-says-board-reloaded-befor-T5AR25M/apps/ekoa-tasks/.env

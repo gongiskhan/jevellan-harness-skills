@@ -1,0 +1,41 @@
+  ⎿  Updated README.md (+11 -1)
+       2                                                                                                        
+       3  A disposable Node 20 and TypeScript app for invoices and customers, with one browser spec per page.
+       4                                                                                                                                                 
+       5 -Run `npm ci` for setup, `npm test` for unit tests, `npm run lint` for type checks, and `npm start` for the web pages. Work in the assigned work
+         -tree and publish a pull request.                                                                                                               
+       5 +Work in the assigned worktree and publish a pull request.                                                                                      
+       6 +                                                                                                                                               
+       7 +## How to run                                                                                                                                  
+       8 +                                                                                                                                               
+       9 +Run `npm ci` first for setup. Then use any of these commands:                                                                                  
+      10 +                                                                                                                                               
+      11 +- `npm start` (`tsx src/web/server.ts`): serves the web pages.                                                                                 
+      12 +- `npm test` (`vitest run`): runs the unit tests.                                                                                                    
+      13 +- `npm run test:browser` (`playwright test`): runs the browser specs; starts `npm start` itself and needs the Playwright browsers installed.         
+      14 +- `npm run lint` (`tsc --noEmit`): type checks without emitting files.                                                                         
+      15 +- `npm run check:changelog` (`node scripts/check-changelog.mjs`): fails when the branch does not change `CHANGELOG.md`; needs an `origin/main` 
+         +ref to compare against.                                                                                                                        
+  ⎿  (files that changed while this command ran, by the command or by another process; a convenience view, not a review or audit of the command)         
+                                                                                                                                                         
+  Thought for 4s, ran 1 shell command                                                                                                                    
+
+● README "How to run" section now on local main (cda2bb4), but no pull request exist. AGENTS.md say publish one, yet repo have no remote and               
+  .jevellan/project.json set "landing": "local", so task fast-forward into main and nothing pushed. Want PR flow later: add origin and set "landing": "pr".
+                                                                                                                                                              
+  Section list all five package.json scripts (start, test, test:browser, lint, check:changelog) with one-line description each, npm ci as setup first. Old
+  one-sentence command list folded in, worktree and pull request line kept. CHANGELOG.md got one line, because PR check fail without it.                 
+                                                                                                                                                              
+  npm test passed at landing, but docs-only change so that prove little. Nobody ran lint, test:browser or check:changelog. check:changelog can't run here
+  anyway, needs origin/main.
+                                                                                                                                                              
+  README say test:browser need Playwright browsers but not give install command. Nightly workflow use npx playwright install --with-deps chromium, so one-line
+  follow-up if you want it.                                                                                                   
+
+✻ Cooked for 26s · done 11:35 PM                                                       
+                                                                                                                                                              
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯                                                                             
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  jevellan-harness-sandbox | main | 8% | Opus 5.5@xhigh | 0 files
+  ⏵⏵ bypass permissions on (shift+tab to cycle) · ← 1 agent   

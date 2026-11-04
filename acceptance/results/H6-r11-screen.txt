@@ -1,0 +1,41 @@
+       8 +                                                                                                                                               
+       9 +```                                                                                                                                            
+      10 +npm ci                                                                                                                                         
+      11 +```                                                                                                                                            
+      12 +                                                                                                                                               
+      13 +This installs the exact dependencies from `package-lock.json` (it needs Node 20 or newer). Then use the commands defined in `package.json`:    
+      14 +                                                                                                                                               
+      15 +| Command | What it does |                                                                                                                     
+      16 +| --- | --- |                                                                                                                                  
+      17 +| `npm start` | Starts the web server (`tsx src/web/server.ts`) that serves the invoice and customer pages; the browser tests expect it at `htt
+         +p://127.0.0.1:4173`. |                                                                                                                         
+      18 +| `npm test` | Runs the unit tests once with Vitest (`src/**/*.test.ts`). |                                                                    
+      19 +| `npm run test:browser` | Runs the browser specs in `tests/browser` with Playwright; it starts `npm start` itself (with `TZ=UTC` and `SANDBOX_
+         +DATA_DIR=.sandbox-data`) and checks the pages at `http://127.0.0.1:4173`. |                                                                    
+      20 +| `npm run lint` | Type-checks the whole project with `tsc --noEmit`; it writes no files. |                                                        
+      21 +| `npm run check:changelog` | Runs `scripts/check-changelog.mjs`, which fails unless `CHANGELOG.md` is among the files changed in `origin/main.
+         +..HEAD`, so every change needs a `CHANGELOG.md` entry. |                                                                                       
+  ⎿  (files that changed while this command ran, by the command or by another process; a convenience view, not a review or audit of the command)         
+                                                                                                                                                         
+  Thought for 10s                                                                                                                                        
+
+● "How to run" section landed on local main as commit 247ee84 (task TPJQ6H5), but no pull request exists. AGENTS.md says publish one, yet .jevellan/project.json
+  sets landing to local and repo has no origin remote, so change went in by fast-forward and nothing pushed. To get PRs, project need remote and "landing": 
+  "pr".                                                                                                                                                  
+                                                                                                                                                           
+  README now has npm ci setup, then table with all five scripts: start, test, test:browser, lint, check:changelog. Old one-sentence command list folded in.
+  Worktree and pull request sentence moved up to intro paragraph. Worker also added CHANGELOG.md line, because project's changelog check requires one.   
+                                                                                                                                                              
+  Landing ran only npm test, which passed. Other commands not run. I checked descriptions against package.json, Playwright config, changelog script and server
+  port, and they match.                                                                                                                                  
+                                                                                                                                                            
+  npm run check:changelog probably fail in this checkout: it diffs against origin/main, which can't exist without remote. Not run, so inference from script. 
+  README describe check correctly but don't mention this.                                                                     
+
+✻ Crunched for 21s · done 11:30 PM                                                                
+                                                                                                                                                              
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯                                                                             
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  jevellan-harness-sandbox | main | 8% | Opus 5.5@xhigh | 0 files
+  ⏵⏵ bypass permissions on (shift+tab to cycle) · ← 1 agent   

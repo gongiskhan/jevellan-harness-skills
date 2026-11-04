@@ -1,6 +1,6 @@
 {
   "name": "jevellan-harness",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Seventeen skills that turn a Claude Code session into a coordinator: tasks in an append-only ledger, steps placed by Jev and run as their own sessions, results landed through a guarded script.",
   "author": {
     "name": "gongiskhan",

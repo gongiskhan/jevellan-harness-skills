@@ -167,5 +167,75 @@
       "jevellan-runtime-claude"
     ],
     "elapsedMs": 124551
+  },
+  {
+    "run": 10,
+    "passed": false,
+    "otherChecksPassed": false,
+    "at": "2026-11-04T23:23:03.516Z",
+    "dir": "/home/ggomes/jevellan-projects/jevellan-harness-runs/h6-r10-1793834498328/jevellan-harness-sandbox",
+    "task": "T2314E9",
+    "session": "2e76952e-76bb-44fd-a488-01a016ae1cd7",
+    "slips": [],
+    "skills": [
+      "jevellan-coordinator",
+      "jevellan-ledger",
+      "jevellan-git"
+    ],
+    "elapsedMs": 84744
+  },
+  {
+    "run": 11,
+    "passed": true,
+    "otherChecksPassed": true,
+    "at": "2026-11-04T23:31:10.167Z",
+    "dir": "/home/ggomes/jevellan-projects/jevellan-harness-runs/h6-r11-1793834973035/jevellan-harness-sandbox",
+    "task": "TPJQ6H5",
+    "session": "72aaacb9-fccc-4a4a-8833-6f7590e82b84",
+    "slips": [],
+    "skills": [
+      "jevellan-coordinator",
+      "jevellan-ledger",
+      "jevellan-git",
+      "jevellan-placement",
+      "jevellan-runtime-claude"
+    ],
+    "elapsedMs": 96862
+  },
+  {
+    "run": 12,
+    "passed": true,
+    "otherChecksPassed": true,
+    "at": "2026-11-04T23:33:49.666Z",
+    "dir": "/home/ggomes/jevellan-projects/jevellan-harness-runs/h6-r12-1793835070226/jevellan-harness-sandbox",
+    "task": "T4QPFQ1",
+    "session": "c53ba049-e8fe-4a72-b84b-b12bd19cb307",
+    "slips": [],
+    "skills": [
+      "jevellan-coordinator",
+      "jevellan-ledger",
+      "jevellan-git",
+      "jevellan-placement",
+      "jevellan-runtime-claude"
+    ],
+    "elapsedMs": 159162
+  },
+  {
+    "run": 13,
+    "passed": true,
+    "otherChecksPassed": true,
+    "at": "2026-11-04T23:35:30.879Z",
+    "dir": "/home/ggomes/jevellan-projects/jevellan-harness-runs/h6-r13-1793835229723/jevellan-harness-sandbox",
+    "task": "TW85BGV",
+    "session": "a4bbb66b-8b8a-4c45-b33f-0b113c0ab523",
+    "slips": [],
+    "skills": [
+      "jevellan-coordinator",
+      "jevellan-ledger",
+      "jevellan-git",
+      "jevellan-placement",
+      "jevellan-runtime-claude"
+    ],
+    "elapsedMs": 100864
   }
 ]

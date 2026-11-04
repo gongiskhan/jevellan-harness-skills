@@ -19,7 +19,21 @@ From the first real week on ekoa-code (msg-harness-004; docs/decisions.md H-042,
   coordinator tells the owner, a landing check failing for such a reason becomes the owner's question with a draft
   pull request, and the pull request lists both.
 - Questions: the ledger's `ask` records a coordinator's question for the owner in a fixed shape (what the task is,
-  options that say what they mean, the recommendation, under 120 words, one open at a time) and `answer` its reply.
+  options that say what they mean, the recommendation named in the question as what happens when the reply does not
+  choose, no code or internal names, under 120 words, one open at a time) and `answer` its reply; status and the viewer
+  show each option's meaning.
+- Decisions on a risky path: a choice that changes a file under riskyPaths is the owner's, checked before any other
+  decision rule, and the coordinator checks the decisions a step reports.
+- A brief's mechanism is a suggestion: the plan weighs each prescribed endpoint or component against what exists, and
+  the coordinator accepts a plan that builds the outcome on what exists.
+- Evidence: verify keeps the browser run's output (`browser.txt`) beside the screenshots and the test output.
+- Implement never copies a secret from its environment into a file, a command line or the report.
+- Acceptance: the slip analyser reads quoted scripts and same-command variables; H6's clone starts from the sandbox
+  baseline.
+- Landing (from the final review): "Land now" tolerates a failing check only when the landing question was about that
+  failure, and every other check still runs; a failure matches a follow-up only by a test path with a folder or, for a
+  host problem, a system error code; an overlap found at landing stays visible to the next check; a report at the
+  limits of its decisions and follow-ups still fits one ledger line.
 
 ## 0.3.0 - 2026-11-03
 

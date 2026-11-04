@@ -1,0 +1,41 @@
+      3  - Initial invoices and customers app.                                                                                                           
+      4 +- Document how to run the project in a README "How to run" section.                                                                             
+  ⎿  Updated README.md (+9 -1)
+       2                                                                                                                                                       
+       3  A disposable Node 20 and TypeScript app for invoices and customers, with one browser spec per page.
+       4                                                                                                                                                 
+       5 -Run `npm ci` for setup, `npm test` for unit tests, `npm run lint` for type checks, and `npm start` for the web pages. Work in the assigned work
+         -tree and publish a pull request.                                                                                                               
+       5 +## How to run                                                                                                                                   
+       6 +                                                                                                                                               
+       7 +Work in the assigned worktree and publish a pull request. Run `npm ci` first for setup, then use any of these commands:                        
+       8 +                                                                                                                                               
+       9 +- `npm start` - starts the web pages.                                                                                                          
+      10 +- `npm test` - runs the unit tests.                                                                                                              
+      11 +- `npm run test:browser` - runs the browser specs with Playwright.                                                                             
+      12 +- `npm run lint` - type-checks the project with TypeScript.                                                                                    
+      13 +- `npm run check:changelog` - checks that the change has an entry in CHANGELOG.md.                                                             
+  ⎿  (files that changed while this command ran, by the command or by another process; a convenience view, not a review or audit of the command)         
+                                                                                                                                                              
+  Thought for 8s, ran 1 shell command                                                                                                                    
+
+● README "How to run" section landed on local main as commit af4eede (task T4QPFQ1). Section give npm ci as setup, then all five package.json scripts with one 
+  line each: npm start, npm test, npm run test:browser, npm run lint, npm run check:changelog. Old command sentence folded in. CHANGELOG.md got one entry. npm 
+  test passed at landing.                                                                                                                                
+                                                                                                                                                             
+  No pull request. AGENTS.md say publish one, but .jevellan/project.json set landing to local and repo have no origin remote, so PR not possible. Chose local
+  landing, nothing pushed. If PR flow matter, repo need remote and landing set to pr.
+                                                                                                                                                         
+  npm run check:changelog broken here, never ran. scripts/check-changelog.mjs hard-code origin/main, so it die with fatal: ambiguous argument            
+  'origin/main...HEAD'. Ledger refused step on that failure. Did not force it: resumed worker to run git diff --name-only main...HEAD instead, which list       
+  CHANGELOG.md. So entry confirmed by equivalent check, not by script. README now document a command that fail in this repo until remote exist or script change.
+                                                                                                                                                              
+  Can open separate task to make script fall back to local main if you want.                                                  
+
+✻ Crunched for 24s · done 11:33 PM                                                         
+                                                                                                                                                              
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯                                                                             
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  jevellan-harness-sandbox | main | 9% | Opus 5.5@xhigh | 0 files
+  ⏵⏵ bypass permissions on (shift+tab to cycle) · ← 1 agent   

@@ -4,6 +4,7 @@ Changes made by the trigger-eval improvement loop (brief section 10); `evals/RES
 
 ## 0.4.0
 
+- fitReportLine trims decisions and followUps (follow-ups first) when a report does not fit one line.
 - `ask` and `answer`: a coordinator's question for the owner as `task.asked` with source "coordinator", shape-checked
   (2 to 4 options with what they mean, the recommended one, at most 120 words), one open per task; the projection
   shows it as waiting with `waiting.source: "coordinator"` until `answer` (or a later step or landing line).
