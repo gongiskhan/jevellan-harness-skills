@@ -5,6 +5,7 @@ Changes made by the trigger-eval improvement loop (brief section 10); `evals/RES
 ## Trigger evals round 3, 2026-11-05
 
 - Strengthened the coordinator and bug workflow calling bodies: resolve the requested role from the listed descriptions before any Skill tool call, use only a matching listed name, never probe a guessed name, and explicitly say "The <role> role is missing" when absent. The previous placement-removed cases passed 2/3 and 1/3 respectively: two runs guessed names, while one invoked nothing but its missing-role wording was not recognized. Placement's description and policy body are unchanged; the correction belongs in the callers that remain installed when placement is removed. This is placement's final improvement round under section 10.
+- Measurement: missing-role runs improved from 3/6 to 6/6 (cases 9 and 10 each 3/3), role-phrase runs from 24/27 to 27/27, and negatives stayed 18/18. Positives fell from 23/24 to 21/24: all three case 4 retry requests invoked the ledger first and exhausted the turn limit without invoking placement. Placement remains below the 90% positive threshold after its third round; record H11 as blocked under section 10, with no further tuning. The three-skill measurement cost 7.78 USD within the owner-approved 9 USD task cap; both calling skills meet their thresholds.
 
 ## Trigger evals round 1, 2026-11-02
 

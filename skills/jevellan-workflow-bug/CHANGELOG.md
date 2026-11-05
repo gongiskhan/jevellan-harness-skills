@@ -4,7 +4,8 @@ Changes made by the trigger-eval improvement loop (brief section 10); `evals/RES
 
 ## Placement trigger evals round 3, 2026-11-05
 
-- Body: check the role against this session's listed descriptions before any Skill tool call, use only the exact listed name, and never probe a guessed name. If absent, explicitly say "The <role> role is missing" and invoke nothing. Placement case 10 previously passed 1/3: one run guessed a name for the removed placement skill; another invoked nothing but said "none is available", which did not explicitly name the missing role in a form the scorer recognizes. The description is unchanged; this calling body requires re-measurement with placement's final round.
+- Body: check the role against this session's listed descriptions before any Skill tool call, use only the exact listed name, and never probe a guessed name. If absent, explicitly say "The <role> role is missing" and invoke nothing. Placement case 10 previously passed 1/3: one run guessed a name for the removed placement skill; another invoked nothing but said "none is available", which did not explicitly name the missing role in a form the scorer recognizes. The description is unchanged; this calling body was re-measured with placement's final round.
+- Re-measurement: positives 24/24, negatives 18/18, role-missing runs 3/3 and role-phrase runs 21/21, meeting every threshold. Placement case 10 with this calling body and placement removed improved from 1/3 to 3/3, invoking nothing and naming the missing role in every run.
 
 ## Trigger evals round 1, 2026-11-02
 
