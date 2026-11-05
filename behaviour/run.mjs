@@ -100,8 +100,10 @@ export function evaluate(caseDef, ev, { withJudge = true } = {}) {
   return { verdict: pass ? 'pass' : 'fail', checks, judge: judged };
 }
 
-function costOf(ev, transcript, judged) {
-  const workers = ev.events.filter((e) => e.kind === 'step.started').map((e) => workerCost(e.data?.logFile)).filter((x) => x !== null);
+export function costOf(ev, transcript, judged) {
+  // Resumed steps append to the same log; its accumulated cost belongs to the run only once.
+  const logs = new Set(ev.events.filter((e) => e.kind === 'step.started').map((e) => e.data?.logFile));
+  const workers = [...logs].map((logFile) => workerCost(logFile)).filter((x) => x !== null);
   return {
     workersUsd: workers.length ? Number(workers.reduce((a, b) => a + b, 0).toFixed(4)) : null,
     judgeUsd: judged?.costUsd ?? null,
