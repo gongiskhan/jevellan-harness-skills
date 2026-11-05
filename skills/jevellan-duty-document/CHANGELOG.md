@@ -2,6 +2,10 @@
 
 Changes made by the trigger-eval improvement loop (brief section 10); `evals/RESULTS.md` at the repository root holds each round's numbers.
 
+## Unreleased
+
+- Body: read the plan before editing, including an implementation-written plan. No documentation in scope means done with no edits or commit and an empty changedFiles list; needed outside-scope updates remain scope follow-ups. Corrections, new documents and changelog entries obey the same boundary. The description is unchanged.
+
 ## 0.4.0
 
 - Body: when plan.md has a scope block, change only documentation inside it; a document outside it that needs updating becomes a follow-up (kind scope). The description is unchanged.

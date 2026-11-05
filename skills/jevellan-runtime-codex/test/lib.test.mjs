@@ -111,3 +111,44 @@ describe('the runner and the task helpers', () => {
     assert.throws(() => task.assertDutyInstalled('automate', skills.root), (error) => error.message === `no installed skill has the role duty (duty automate); ${ROLE_MISSING}`);
   });
 });
+
+// B05 r6: planning was skipped, implementation wrote plan.md, and the document worker never loaded its duty.
+describe('document instructions before the worker uses tools', () => {
+  test('a plan written by implementation is announced from the task worktree even when planning was skipped', () => {
+    const { project, wt } = makeProject();
+    const lines = new TaskLines({ kind: 'feature' });
+    lines.worktree(wt);
+    const workflow = lines.workflow([
+      { ordinal: 1, duty: 'plan', when: 'jev:needs_plan' },
+      { ordinal: 2, duty: 'implement' },
+      { ordinal: 3, duty: 'verify' },
+      { ordinal: 4, duty: 'document', when: 'jev:needs_docs' },
+    ]);
+    workflow.data.skipped = [1];
+    workflow.data.questions = { needs_plan: false, needs_docs: true };
+    lines.report(2, 'implementation', { status: 'done', summary: 'Button implemented.' });
+    lines.report(3, 'verification', { status: 'done', summary: 'Button verified.' });
+    const info = infoFrom(lines.show());
+    const block = () => task.buildTaskBlock(project, info, 4, 'document');
+    assert.ok(!block().includes('Plan: plan.md'), 'no plan exists yet');
+    fs.writeFileSync(path.join(project, 'plan.md'), 'A different task in the checkout.');
+    assert.ok(!block().includes('Plan: plan.md'), 'the checkout is not this task worktree');
+    fs.writeFileSync(path.join(wt, 'plan.md'), 'Add the button.\n\n```scope\nweb/panel.mjs\ntests/panel.test.mjs\n```\n');
+    assert.ok(block().includes('Plan: plan.md in the worktree root.'), 'the implementation-created plan must reach the document step');
+  });
+
+  test('the document duty body reaches the worker without a skill invocation', () => {
+    const skills = makeSkillsRoot({ ledger: false, duties: ['document'] });
+    const { project, wt } = makeProject();
+    const lines = new TaskLines({ duty: 'document' });
+    lines.worktree(wt);
+    const info = infoFrom(lines.show());
+    const text = task.buildAppend(project, info, 1, 'document', wt, 'BLOCK', { skillsRoot: skills.root });
+    assert.ok(text.includes(task.dutyBody('document', skills.root)), 'include the installed duty body, resolved by role');
+    assert.ok(!text.includes('## Interface'));
+    assert.ok(!text.includes('Use the duty skill for document now'));
+    const missing = makeSkillsRoot({ ledger: false, duties: [] });
+    assert.throws(() => task.buildAppend(project, info, 1, 'document', wt, 'BLOCK', { skillsRoot: missing.root }),
+      (error) => error.exitCode === 2 && error.message.includes('no installed skill has the role duty (duty document)'));
+  });
+});

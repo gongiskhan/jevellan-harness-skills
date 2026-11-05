@@ -2,6 +2,10 @@
 
 Changes made by the trigger-eval improvement loop (brief section 10); `evals/RESULTS.md` at the repository root holds each round's numbers.
 
+## Unreleased
+
+- Document step instructions: needs_docs selects a step without widening the plan. Read the plan first; when no documentation is in scope, finish without edits or a commit and report needed outside-scope updates as scope follow-ups. The skill body and description are unchanged.
+
 ## 0.4.0
 
 - The plan, implement and verify instructions follow the duties: the plan's sections and scope block, staying in scope, follow-ups.
