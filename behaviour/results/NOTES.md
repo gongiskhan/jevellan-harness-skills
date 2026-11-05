@@ -54,3 +54,38 @@
   match; the other fixes (Land now after a question that was not about the checks, the overlap baseline at landing,
   fitting a report with long decisions and follow-ups) touch paths no 0.4.0 run went through. Acceptance H6 passed again
   on the released commit (cd79b35).
+- 2026-11-05, real confirmation on the released v0.4.0 skills: **B05 2/3 passes; B06 3/3 passes**.
+  B05 ran on 307a2aae402a3e42786939bd19fe18131be521b1 with
+  `node behaviour/run.mjs --case B05,B06 --runs 3 --version dev`. B06 completed on
+  6786add3b3bb2094c53934b1840143af7f0bc767 with `node behaviour/run.mjs --case B06 --runs 3 --version dev`;
+  the intervening commit changed only these notes, and both commits' skills match v0.4.0. No code, cases or checks
+  were changed for this measurement. Neither case has a judge (no scores or judge cost).
+  - B05-dev-r4: pass, 4/4 checks, workers 0.3573 USD; r5: pass, 4/4, 0.3402 USD; r6: fail, 3/4, 0.3004 USD.
+    The failure is `outside the scope (web/panel.mjs, tests/panel.test.mjs): README.md`. Its document step
+    committed a README section after implementation and verification; the plan listed only the panel and its test.
+    The unrelated failure was reported, its files stayed unchanged, and landing asked about both the scope overrun
+    and the unrelated check. B05 misses the deterministic-only 3/3 threshold; these three runs were not repeated.
+  - B06-dev-r8: pass, 4/4 checks, workers 0.2132 USD; r9: pass, 4/4, 1.0339 USD; r10: pass, 4/4, 0.7801 USD.
+    All three classified EMFILE as a host problem, told the owner the host fix, stayed within their plan and avoided
+    a product workaround. Run 8 asked to fix the machine before verification; r9 and r10 reached landing questions
+    about the host check. The host prevented browser verification in these fixture sessions. All sessions and run
+    processes ended. B06 meets its 3/3 threshold.
+  The first sweep was stopped after B05-r6 because "stop there" was read as stop the sweep. Its in-flight
+  B06-dev-r5 to r7 were torn down without verdicts. The coordinator clarified that failures must be recorded while
+  the remaining measurements continue; the fresh B06 r8 to r10 above completed that measurement.
+  Runner-reported worker cost: B05 0.9979 USD, interrupted B06 0.1195 USD, completed B06 2.0272 USD; total
+  3.1446 USD against the 4 USD task budget. The completed B06 sweep is below its remaining 2.80 USD allowance.
+  Cost caveats: r9 and r10 each resumed an implementation step with the same log path; the runner sums that log
+  once per step.started event. Counting each B06 log once gives 1.4420 USD; the per-run figures above retain the
+  runner's reported values. Interrupted turns in the first sweep may have unreported usage. Coordinators used
+  the owner's subscription.
+  Evidence and result summaries are in the run folders, independent of this temporary worktree:
+  `~/.jevellan-harness/evals/behaviour/B05-dev-r{4,5,6}/artifacts/{evidence.json,confirmation-result.json}` and
+  `~/.jevellan-harness/evals/behaviour/B06-dev-r{8,9,10}/artifacts/{evidence.json,confirmation-result.json}`.
+  Runner logs are `artifacts/confirmation-run.log` under B05-dev-r4 and B06-dev-r8. The interrupted B06 run
+  folders moved to `~/.jevellan-harness/archive/evals/B06-dev-r{5,6,7}/run/` under normal eval retention.
+  This worktree's copies in `.jevellan/evidence/` (results, evidence, runner logs, preflight and cleanup records,
+  and test output) move to the harness archive when the task ends; the worktree path will not last. Future eval
+  retention likewise moves older run folders to `~/.jevellan-harness/archive/evals/<run id>/run/`.
+  `npm test` also passed: isolated skill suites, 288 repository tests and both lints. These
+  confirmation results do not replace the historical 0.4.0 sweep above.
