@@ -15,7 +15,7 @@ Times are UTC.
 | H8 Needs-decision | passed | 8/8 | 311 s | 2026-11-04T23:28:14.975Z |
 | H9 Restart | passed | 8/8 | 135 s | 2026-11-02T11:32:28.599Z |
 | H10 Codex | passed | 9/9 | 37 s | 2026-11-02T11:33:05.685Z |
-| H11 Trigger evals | failed | 20/21 | 0 s | 2026-11-04T23:35:42.164Z |
+| H11 Trigger evals | blocked: jevellan-placement (positives 21/24 below 90%) after the improvement rounds section 10 allows; see docs/decisions.md H-030 | 20/21 | 0 s | 2026-11-05T08:23:51.659Z |
 | H12 No leaks, no runtime | failed | 11/13 | 41 s | 2026-11-04T23:36:23.290Z |
 
 ## H1 Install
@@ -286,7 +286,7 @@ Notes:
 
 ## H11 Trigger evals
 
-Status: failed. Started 2026-11-04T23:35:41.920Z, 0 s.
+Status: blocked: jevellan-placement (positives 21/24 below 90%) after the improvement rounds section 10 allows; see docs/decisions.md H-030. Started 2026-11-05T08:23:51.426Z, 0 s.
 
 - PASS the run covered every skill: 17 skills in the run, 17 in the package
 - PASS every skill has at least five positive and five negative cases
@@ -301,7 +301,7 @@ Status: failed. Started 2026-11-04T23:35:41.920Z, 0 s.
 - PASS jevellan-duty-verify meets the thresholds: positives 21/21, negatives fired 0/21, role phrase 27/27
 - PASS jevellan-git meets the thresholds: positives 24/24, negatives fired 0/18, role phrase 18/18, role missing 3/3
 - PASS jevellan-ledger meets the thresholds: positives 24/24, negatives fired 0/18, role phrase 18/18, role missing 3/3
-- FAIL jevellan-placement meets the thresholds: positives 23/24, negatives fired 0/18, role phrase 24/27, role missing 3/6; role-phrase runs 24/27 below 98%
+- FAIL jevellan-placement meets the thresholds: positives 21/24, negatives fired 0/18, role phrase 27/27, role missing 6/6; positives 21/24 below 90%
 - PASS jevellan-runtime-claude meets the thresholds: positives 24/24, negatives fired 0/18, role phrase 27/27, role missing 3/3
 - PASS jevellan-runtime-codex meets the thresholds: positives 24/24, negatives fired 0/18, role phrase 24/24, role missing 3/3
 - PASS jevellan-workflow-automation meets the thresholds: positives 24/24, negatives fired 0/18, role phrase 21/21, role missing 3/3
@@ -311,15 +311,15 @@ Status: failed. Started 2026-11-04T23:35:41.920Z, 0 s.
 - PASS evals/RESULTS.md is committed and matches the run: tracked: evals/RESULTS.md, evals/results.json; uncommitted: none
 
 Notes:
-- run of 2026-11-04T22:36:06Z: model claude-sonnet-5-5, effort low, 3 runs per case, provider claude-second, Claude Code 2.1.318; thresholds {"positive":0.9,"falsePositive":0.05,"rolePhrase":0.98}
-- merged results: jevellan-duty-implement measured on 2026-11-04T22:36:06Z; 16 skills from the run of 2026-11-04T22:34:32Z
-- jevellan-placement case 4 (positive): 2/3; "Verify step 3 of T8QW2N reported testsRun.passed false, and the retry back to step 2 is re"
-- jevellan-placement case 9 (placement removed, context jevellan-coordinator): 2/3, named the missing role 3/3, invoked jevellan-placement; "Task T3K9QZ "README: how to run" (single, duty document) is created and its worktree is re"
-- jevellan-placement case 10 (placement removed, context jevellan-workflow-bug): 1/3, named the missing role 2/3, invoked jevellan-placement; "Bug task T5HB7C has its worktree and its resolved steps are recorded: 1 implement, 2 verif"
+- run of 2026-11-05T08:21:22Z: model claude-sonnet-5-5, effort low, 3 runs per case, provider claude-second, Claude Code 2.1.318; thresholds {"positive":0.9,"falsePositive":0.05,"rolePhrase":0.98}
+- merged results: jevellan-placement, jevellan-coordinator, jevellan-workflow-bug measured on 2026-11-05T08:21:22Z; 14 skills from the run of 2026-11-04T22:36:06Z
+- jevellan-placement case 4 (positive): 0/3; "Verify step 3 of T8QW2N reported testsRun.passed false, and the retry back to step 2 is re"
+- jevellan-placement case 9 (placement removed, context jevellan-coordinator): 3/3, named the missing role 3/3, invoked nothing; "Task T3K9QZ "README: how to run" (single, duty document) is created and its worktree is re"
+- jevellan-placement case 10 (placement removed, context jevellan-workflow-bug): 3/3, named the missing role 3/3, invoked nothing; "Bug task T5HB7C has its worktree and its resolved steps are recorded: 1 implement, 2 verif"
 - coordinator positives with the SessionStart line: 12/12; without it: 10/12
-- role-missing runs that named the missing role: 26/27; that invoked no skill, by role: git 3/3, ledger 3/3, placement 4/6, runtime 6/6, workflow 9/9
-- totals: {"cases":248,"runs":744,"passed":734,"errors":0,"costUsd":36.0341}
-- jevellan-placement: 2 improvement rounds recorded in its CHANGELOG
+- role-missing runs that named the missing role: 27/27; that invoked no skill, by role: git 3/3, ledger 3/3, placement 6/6, runtime 6/6, workflow 9/9
+- totals: {"cases":248,"runs":744,"passed":735,"errors":0,"costUsd":36.6023}
+- jevellan-placement: 3 improvement rounds recorded in its CHANGELOG
 
 ## H12 No leaks, no runtime
 
