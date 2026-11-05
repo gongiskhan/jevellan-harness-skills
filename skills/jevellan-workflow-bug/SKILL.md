@@ -7,9 +7,13 @@ jh-kind: bug
 
 # Workflow: bug
 
-Steps for a bug task are in workflow.json next to this file; read it. Before step 1, use the placement skill with --questions to learn which optional steps apply, and use the ledger skill to record the resolved steps (task.workflow). Then for each step in order: use the placement skill, use the runtime skill for the provider kind it chose, use the ledger skill to wait for the report. On done, record step.done with the ledger skill and go on. On a verify report with testsRun.passed false, or a failed or lost step: apply onFail (go back to the named step with a new placement; attempts carry the failure summary) at most maxLoops times, then tell the owner. A project overrides this file by placing .jevellan/workflows/bug.json; use that one when it exists and say so.
+## Before calling a skill
 
-If no skill in your list has that role (a skill's role is the first word of its description), call no skill at all: stop, tell the owner which role is missing, and do not improvise it.
+Resolve the role needed for the requested operation from the skills actually listed in this session, before making any Skill tool call. Match the first word of the description and, for a workflow, duty or runtime, its kind. A role mentioned in these instructions or in the owner's request does not mean that a skill with that role is installed. Use only the exact name of a matching listed skill; never construct a name from the role or try the Skill tool to discover whether a guessed name exists.
+
+If no skill in your list has that role (a skill's role is the first word of its description), call no skill at all: stop, tell the owner which role is missing, and do not improvise it. Say explicitly "The <role> role is missing", replacing <role> with the role needed for this operation. For example, if placement is requested and no listed description starts with Placement, reply "The placement role is missing; I cannot place this step." Make no Skill tool calls, including to another role as a workaround, and leave the step unstarted.
+
+Steps for a bug task are in workflow.json next to this file; read it. Before step 1, use the placement skill with --questions to learn which optional steps apply, and use the ledger skill to record the resolved steps (task.workflow). Then for each step in order: use the placement skill, use the runtime skill for the provider kind it chose, use the ledger skill to wait for the report. On done, record step.done with the ledger skill and go on. On a verify report with testsRun.passed false, or a failed or lost step: apply onFail (go back to the named step with a new placement; attempts carry the failure summary) at most maxLoops times, then tell the owner. A project overrides this file by placing .jevellan/workflows/bug.json; use that one when it exists and say so.
 
 ## Recording the steps
 

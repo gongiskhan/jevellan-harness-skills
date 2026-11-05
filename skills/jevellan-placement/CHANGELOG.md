@@ -2,6 +2,10 @@
 
 Changes made by the trigger-eval improvement loop (brief section 10); `evals/RESULTS.md` at the repository root holds each round's numbers.
 
+## Trigger evals round 3, 2026-11-05
+
+- Strengthened the coordinator and bug workflow calling bodies: resolve the requested role from the listed descriptions before any Skill tool call, use only a matching listed name, never probe a guessed name, and explicitly say "The <role> role is missing" when absent. The previous placement-removed cases passed 2/3 and 1/3 respectively: two runs guessed names, while one invoked nothing but its missing-role wording was not recognized. Placement's description and policy body are unchanged; the correction belongs in the callers that remain installed when placement is removed. This is placement's final improvement round under section 10.
+
 ## Trigger evals round 1, 2026-11-02
 
 - The role-missing sentence now says how to tell a role (the first word of a skill's description) and to stop without trying any skill name: with the placement skill removed, sessions tried a skill name guessed from the role word before reporting the role missing (the placement skill's cases 9 and 10), and the brief says such a session must invoke nothing.

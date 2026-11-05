@@ -2,6 +2,10 @@
 
 Changes made by the trigger-eval improvement loop (brief section 10); `evals/RESULTS.md` at the repository root holds each round's numbers.
 
+## Placement trigger evals round 3, 2026-11-05
+
+- Body: check the role against this session's listed descriptions before any Skill tool call, use only the exact listed name, and never probe a guessed name. If absent, explicitly say "The <role> role is missing" and invoke nothing. Placement case 9 previously passed 2/3: one run guessed a name for the removed placement skill before naming the missing role. The description is unchanged; this calling body requires re-measurement with placement's final round.
+
 ## 0.4.0
 
 - Body: a choice that changes a file under riskyPaths is the owner's, however small, checked before any other decision rule (the coordinator also checks the decisions a step reports).
