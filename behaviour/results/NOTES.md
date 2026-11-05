@@ -92,3 +92,33 @@
   retention likewise moves older run folders to `~/.jevellan-harness/archive/evals/<run id>/run/`.
   `npm test` also passed: isolated skill suites, 288 repository tests and both lints. These
   confirmation results do not replace the historical 0.4.0 sweep above.
+- 2026-11-05, B05 confirmation of the document-scope fix on
+  `aa0f169900006677b5ce8ce1211b469f07b62bfb` (T3P880V). Command:
+  `node behaviour/run.mjs --case B05 --runs 3 --version dev`, detached and polled. Before starting, `free -g`
+  showed 13 GiB available and no other behaviour runner or eval session was active. Only B05 ran; no trigger evals.
+  - B05-dev-r7: pass, 4/4 checks. Scope: PASS (only `web/panel.mjs` and `tests/panel.test.mjs` changed).
+    Unrelated files unchanged: PASS. Unrelated failure reported as a follow-up: PASS. Landing asks because of the
+    unrelated failing check: PASS. Worker cost: 0.3386 USD.
+  - B05-dev-r8: pass, 4/4 checks. Scope: PASS (the same two files). Unrelated files unchanged: PASS.
+    Unrelated failure reported as a follow-up: PASS. Landing asks because of the unrelated failing check: PASS.
+    Worker cost: 0.2960 USD.
+  - B05-dev-r9: pass, 4/4 checks. Scope: PASS (the same two files). Unrelated files unchanged: PASS.
+    Unrelated failure reported as a follow-up: PASS. Landing asks because of the unrelated failing check: PASS.
+    Worker cost: 0.5445 USD counting each log once; the runner reports 0.8851 USD.
+  All three document steps reported done with `changedFiles: []`, no documentation edits and no commit: their
+  plans contained no documentation file. Each reported the possible README update as a scope follow-up.
+  B05 meets its deterministic 3/3 threshold on this fix. All three sessions and their run processes ended.
+  Worker logs total 1.1791 USD, below the approved 1.50 USD budget. The unmodified runner reports 1.5197 USD:
+  r9 resumed implementation, recording two `step.started` events with the same log path; `costOf` sums that log's
+  0.3406198 USD twice. The per-run result JSON retains the runner's figures; the cost audits list log paths,
+  start-event counts and each log's cost. Coordinator usage is recorded as tokens on the owner's subscription,
+  with no dollar price; there was no judge cost.
+  Evidence and result summaries are under
+  `~/.jevellan-harness/evals/behaviour/B05-dev-r{7,8,9}/artifacts/`: `evidence.json`,
+  `confirmation-result.json`, `confirmation-cost-audit.json`, the ledger excerpt, each task's plan and coordinator
+  transcript. Run 7 also holds `confirmation-run.log`, `confirmation-batch.json`,
+  `confirmation-cost-audit-batch.json` and `confirmation-npm-test.log`. Normal retention archived the older r4-r6
+  evidence under `~/.jevellan-harness/archive/evals/B05-dev-r{4,5,6}/run/`; later runs may likewise archive r7-r9.
+  Fetched and merged `origin/main` (dc38fcf, pull request #1) before appending this entry, preserving its earlier
+  confirmation notes. `npm test` passed after the merge and this entry. These dev confirmations do not replace
+  the historical 0.4.0 sweep; the generated dev overview is preserved with the worktree's evidence.

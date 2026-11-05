@@ -188,7 +188,9 @@ export function buildTaskBlock(root, info, step, duty) {
   const position = Math.max(1, live.findIndex((s) => s.ordinal === step) + 1);
   const spec = steps.find((s) => s.ordinal === step);
   const earlier = [];
-  let plan = false;
+  // Implementation can write the plan when the workflow skips its plan step.
+  const worktree = worktreeOf(info)?.path;
+  let plan = Boolean(worktree && fs.existsSync(path.join(worktree, 'plan.md')));
   for (const s of live) {
     if (s.ordinal >= step) continue;
     const report = currentView(info, s.ordinal).lastReport;
@@ -219,9 +221,9 @@ export function buildTaskBlock(root, info, step, duty) {
   });
 }
 
-// inlineDuty: the session cannot invoke the duty skill (no tools, or a runtime without Claude skills), so the duty
-// skill's body goes into the append instead of the sentence that names it.
-export function buildAppend(root, info, step, duty, cwd, blockText, { inlineDuty = NO_TOOL_DUTIES.includes(duty), skillsRoot } = {}) {
+// Inline duties when the session cannot invoke skills, and document even when it can: its scope boundary must
+// reach the worker before any edits, without relying on a skill invocation.
+export function buildAppend(root, info, step, duty, cwd, blockText, { inlineDuty = NO_TOOL_DUTIES.includes(duty) || duty === 'document', skillsRoot } = {}) {
   const wt = worktreeOf(info);
   const projectJson = readProjectJson(root);
   const rules = workerRules({
