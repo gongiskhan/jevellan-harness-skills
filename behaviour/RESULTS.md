@@ -69,6 +69,11 @@ as a pass or a fail). Times are UTC.
   USD, 185 run-minutes; 0.4.0 workers 7.84 USD, judge 0.66 USD, 134 run-minutes (0.4.0 stops earlier when work already
   exists). Coordinators run on the owner's subscription: about 400k output tokens per full run. About 50 minutes of wall
   time at 3 to 4 runs in parallel.
+- The 0.4.0 runs predate the final review's fixes (31215bc). The stricter matching of a failing check to a follow-up was
+  replayed on the recorded follow-ups and failing-check output of B05 r1 to r3 and B06 r1 to r3, and all six still
+  match; the other fixes (Land now after a question that was not about the checks, the overlap baseline at landing,
+  fitting a report with long decisions and follow-ups) touch paths no 0.4.0 run went through. Acceptance H6 passed again
+  on the released commit (cd79b35).
 
 ## 0.3.0
 

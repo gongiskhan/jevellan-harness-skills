@@ -2,102 +2,102 @@
   "id": "H6",
   "title": "The chain",
   "status": "passed",
-  "startedAt": "2026-11-04T23:33:49.722Z",
-  "finishedAt": "2026-11-04T23:35:30.879Z",
-  "elapsedMs": 101157,
+  "startedAt": "2026-11-05T00:00:11.040Z",
+  "finishedAt": "2026-11-05T00:02:26.383Z",
+  "elapsedMs": 135343,
   "passed": 13,
   "total": 13,
   "timings": {
-    "request to landing": 74970
+    "request to landing": 114762
   },
   "notes": [
-    "run 13 on a fresh clone of the sandbox baseline",
-    "coordinator session a4bbb66b-8b8a-4c45-b33f-0b113c0ab523",
+    "run 14 on a fresh clone of the sandbox baseline",
+    "coordinator session a2625f39-5892-462d-85ab-5211c5e6bd30",
     "the coordinator chose a single task, which has no workflow line",
     "Skill invocations: jevellan-coordinator, jevellan-ledger, jevellan-git, jevellan-placement, jevellan-runtime-claude",
-    "placements: s1 document claude-sonnet-5-5 medium via claude-second",
-    "landing: land {\"land\":0.52,\"verify-then-land\":0.48,\"ask-owner\":0}",
-    "coordinator's last reply: README \"How to run\" section now on local `main` (`cda2bb4`), but no pull request exist. `AGENTS.md` say publish one, yet repo have no remote and `.jevellan/project.json` set `\"landing\": \"local\"`, so task fast-forward into `main` and nothing pushed. Want PR flow later: add `origin` and set `\"landing\": \"pr\"`. Section list all five `package.json` scripts (`start`, `test`, `test:browser`, `lint`, `che",
-    "runs so far: 1:pass 2:pass 3:pass 4:pass 5:pass 6:pass 7:pass 8:pass 9:pass 10:fail 11:pass 12:pass 13:pass"
+    "placements: s1 document claude-sonnet-5-5 medium via claude-second; s2 verify claude-sonnet-5-5 high via claude-second",
+    "landing: verify-then-land {\"land\":0.36,\"verify-then-land\":0.63,\"ask-owner\":0.01}",
+    "coordinator's last reply: README now has \"How to run\" section, landed on local `main` as `f8cf5ba` (TEGD6FG). Lists all five `package.json` scripts: `start`, `test`, `test:browser`, `lint`, `check:changelog`. `npm ci` named as setup step before list. Verify step: `npm test` 3/3 pass, `npm run lint` clean, `npm run test:browser` 2/2 pass. **Not verified:** `npm run check:changelog` could not run. Script diffs against `origi",
+    "runs so far: 1:pass 2:pass 3:pass 4:pass 5:pass 6:pass 7:pass 8:pass 9:pass 10:fail 11:pass 12:pass 13:pass 14:pass"
   ],
   "checks": [
     {
       "name": "the skills are installed in the project",
       "ok": true,
       "detail": "",
-      "at": "2026-11-04T23:33:50.005Z"
+      "at": "2026-11-05T00:00:11.303Z"
     },
     {
       "name": "the coordinator created one task for the request",
       "ok": true,
-      "detail": "TW85BGV (single document): Add a How to run section to the README",
-      "at": "2026-11-04T23:35:30.865Z"
+      "detail": "TEGD6FG (single document): Add a How to run section to the README",
+      "at": "2026-11-05T00:02:26.368Z"
     },
     {
       "name": "task.worktree",
       "ok": true,
       "detail": "",
-      "at": "2026-11-04T23:35:30.865Z"
+      "at": "2026-11-05T00:02:26.368Z"
     },
     {
       "name": "every started step was placed first",
       "ok": true,
-      "detail": "steps 1",
-      "at": "2026-11-04T23:35:30.865Z"
+      "detail": "steps 1, 2",
+      "at": "2026-11-05T00:02:26.368Z"
     },
     {
       "name": "step.started carries model and effort",
       "ok": true,
       "detail": "",
-      "at": "2026-11-04T23:35:30.866Z"
+      "at": "2026-11-05T00:02:26.369Z"
     },
     {
       "name": "every started step has a report and a step.done",
       "ok": true,
       "detail": "",
-      "at": "2026-11-04T23:35:30.866Z"
+      "at": "2026-11-05T00:02:26.369Z"
     },
     {
       "name": "landing.decided",
       "ok": true,
       "detail": "",
-      "at": "2026-11-04T23:35:30.866Z"
+      "at": "2026-11-05T00:02:26.369Z"
     },
     {
       "name": "task.landed, or task.asked with a stated reason",
       "ok": true,
       "detail": "task.landed",
-      "at": "2026-11-04T23:35:30.866Z"
+      "at": "2026-11-05T00:02:26.369Z"
     },
     {
       "name": "no human input beyond the request",
       "ok": true,
       "detail": "one message was sent",
-      "at": "2026-11-04T23:35:30.866Z"
+      "at": "2026-11-05T00:02:26.369Z"
     },
     {
       "name": "zero slips",
       "ok": true,
       "detail": "",
-      "at": "2026-11-04T23:35:30.866Z"
+      "at": "2026-11-05T00:02:26.369Z"
     },
     {
       "name": "main has the How to run section",
       "ok": true,
       "detail": "",
-      "at": "2026-11-04T23:35:30.870Z"
+      "at": "2026-11-05T00:02:26.373Z"
     },
     {
       "name": "the project checkout is clean",
       "ok": true,
       "detail": "",
-      "at": "2026-11-04T23:35:30.879Z"
+      "at": "2026-11-05T00:02:26.382Z"
     },
     {
       "name": "passed three times in a row",
       "ok": true,
       "detail": "true,true,true",
-      "at": "2026-11-04T23:35:30.879Z"
+      "at": "2026-11-05T00:02:26.383Z"
     }
   ]
 }

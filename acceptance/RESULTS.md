@@ -10,7 +10,7 @@ Times are UTC.
 | H3 Hooks | passed | 14/14 | 44 s | 2026-11-02T12:51:57.634Z |
 | H4 Placement | passed | 17/17 | 5 s | 2026-11-04T23:35:41.876Z |
 | H5 Worker | passed | 26/26 | 43 s | 2026-11-04T23:21:38.269Z |
-| H6 The chain | passed | 13/13 | 101 s | 2026-11-04T23:35:30.879Z |
+| H6 The chain | passed | 13/13 | 135 s | 2026-11-05T00:02:26.383Z |
 | H7 Three in parallel | passed | 10/10 | 522 s | 2026-11-02T11:44:01.266Z |
 | H8 Needs-decision | passed | 8/8 | 311 s | 2026-11-04T23:28:14.975Z |
 | H9 Restart | passed | 8/8 | 135 s | 2026-11-02T11:32:28.599Z |
@@ -171,14 +171,14 @@ Notes:
 
 ## H6 The chain
 
-Status: passed. Started 2026-11-04T23:33:49.722Z, 101 s.
+Status: passed. Started 2026-11-05T00:00:11.040Z, 135 s.
 
-Timings: request to landing 74970 ms.
+Timings: request to landing 114762 ms.
 
 - PASS the skills are installed in the project
-- PASS the coordinator created one task for the request: TW85BGV (single document): Add a How to run section to the README
+- PASS the coordinator created one task for the request: TEGD6FG (single document): Add a How to run section to the README
 - PASS task.worktree
-- PASS every started step was placed first: steps 1
+- PASS every started step was placed first: steps 1, 2
 - PASS step.started carries model and effort
 - PASS every started step has a report and a step.done
 - PASS landing.decided
@@ -190,14 +190,14 @@ Timings: request to landing 74970 ms.
 - PASS passed three times in a row: true,true,true
 
 Notes:
-- run 13 on a fresh clone of the sandbox baseline
-- coordinator session a4bbb66b-8b8a-4c45-b33f-0b113c0ab523
+- run 14 on a fresh clone of the sandbox baseline
+- coordinator session a2625f39-5892-462d-85ab-5211c5e6bd30
 - the coordinator chose a single task, which has no workflow line
 - Skill invocations: jevellan-coordinator, jevellan-ledger, jevellan-git, jevellan-placement, jevellan-runtime-claude
-- placements: s1 document claude-sonnet-5-5 medium via claude-second
-- landing: land {"land":0.52,"verify-then-land":0.48,"ask-owner":0}
-- coordinator's last reply: README "How to run" section now on local `main` (`cda2bb4`), but no pull request exist. `AGENTS.md` say publish one, yet repo have no remote and `.jevellan/project.json` set `"landing": "local"`, so task fast-forward into `main` and nothing pushed. Want PR flow later: add `origin` and set `"landing": "pr"`. Section list all five `package.json` scripts (`start`, `test`, `test:browser`, `lint`, `che
-- runs so far: 1:pass 2:pass 3:pass 4:pass 5:pass 6:pass 7:pass 8:pass 9:pass 10:fail 11:pass 12:pass 13:pass
+- placements: s1 document claude-sonnet-5-5 medium via claude-second; s2 verify claude-sonnet-5-5 high via claude-second
+- landing: verify-then-land {"land":0.36,"verify-then-land":0.63,"ask-owner":0.01}
+- coordinator's last reply: README now has "How to run" section, landed on local `main` as `f8cf5ba` (TEGD6FG). Lists all five `package.json` scripts: `start`, `test`, `test:browser`, `lint`, `check:changelog`. `npm ci` named as setup step before list. Verify step: `npm test` 3/3 pass, `npm run lint` clean, `npm run test:browser` 2/2 pass. **Not verified:** `npm run check:changelog` could not run. Script diffs against `origi
+- runs so far: 1:pass 2:pass 3:pass 4:pass 5:pass 6:pass 7:pass 8:pass 9:pass 10:fail 11:pass 12:pass 13:pass 14:pass
 
 ## H7 Three in parallel
 

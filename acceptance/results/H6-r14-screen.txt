@@ -1,0 +1,41 @@
+       2                                                                                                                            
+       3  A disposable Node 20 and TypeScript app for invoices and customers, with one browser spec per page.
+       4                                                                                                                                                 
+       5 -Run `npm ci` for setup, `npm test` for unit tests, `npm run lint` for type checks, and `npm start` for the web pages. Work in the assigned work
+         -tree and publish a pull request.                                                                                                               
+       5 +Work in the assigned worktree and publish a pull request.                                                                                      
+       6 +                                                                                                                                               
+       7 +## How to run                                                                                                                                  
+       8 +                                                                                                                                               
+       9 +Run `npm ci` first to install dependencies. Then:                                                                                                 
+      10 +                                                                                                                                               
+      11 +- `npm start`: serves the web pages (`tsx src/web/server.ts`).                                                                                 
+      12 +- `npm test`: runs the unit tests (`vitest run`).                                                                                              
+      13 +- `npm run test:browser`: runs the browser specs (`playwright test`).                                                                          
+      14 +- `npm run lint`: type checks (`tsc --noEmit`).                                                                                                   
+      15 +- `npm run check:changelog`: fails when the branch has no CHANGELOG.md entry against `origin/main`.                                            
+  ⎿  (files that changed while this command ran, by the command or by another process; a convenience view, not a review or audit of the command)            
+                               
+  Thought for 6s                                                                                                                                            
+
+● README now has "How to run" section, landed on local main as f8cf5ba (TEGD6FG). Lists all five package.json scripts: start, test, test:browser, lint,     
+  check:changelog. npm ci named as setup step before list.                                                                                                  
+                                                                                                                                                            
+  Verify step: npm test 3/3 pass, npm run lint clean, npm run test:browser 2/2 pass.                                                                           
+                                                                                                                                                            
+  Not verified: npm run check:changelog could not run. Script diffs against origin/main, repo has no origin remote. Worker confirmed CHANGELOG.md in diff      
+  against local main, so check should pass once remote exists. Same gap means no PR and no push, despite AGENTS.md asking for PR. To land by PR, add origin and
+  set "landing": "pr" in .jevellan/project.json.                                                                                                               
+                                                                                                                                                         
+  Three choices beyond request:                                                                                                                                
+  - Added line to CHANGELOG.md, because checks workflow requires it.                                                                                            
+  - Folded old one-sentence command list into new section, so no command described twice.                                                       
+  - Left scripts/owner-only.sh out, because not in package.json.
+
+✻ Cooked for 12s · done 12:02 AM                                                           
+                                                                                                                                                              
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯                                                                             
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  jevellan-harness-sandbox | main | 8% | Opus 5.5@xhigh | 0 files
+  ⏵⏵ bypass permissions on (shift+tab to cycle) · ← 1 agent   
