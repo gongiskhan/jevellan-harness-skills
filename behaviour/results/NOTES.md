@@ -1,5 +1,8 @@
 ## Notes
 
+- 2026-11-05, resumed worker logs were counted once per start event instead of once per log. The known affected
+  runs B06-dev-r9 and B06-dev-r10 report worker costs of 1.0339 and 0.7801 USD; counting each log once gives 0.7218
+  and 0.5070 USD respectively (found in TXVKHD7). Recorded results are unchanged; new runs count each log once.
 - 2026-11-04, the first 0.3.0 sweep was stopped and archived (`~/.jevellan-harness/archive/evals/baseline-0.3.0-gh-not-on-path/`):
   Claude Code's Bash tool rebuilds PATH from the owner's login shell, so the coordinator's own commands did not see the
   run's fake gh (no GitHub query reached GitHub: the runs that would have landed were stopped before landing, and the only
