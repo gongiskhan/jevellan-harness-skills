@@ -54,3 +54,24 @@
   match; the other fixes (Land now after a question that was not about the checks, the overlap baseline at landing,
   fitting a report with long decisions and follow-ups) touch paths no 0.4.0 run went through. Acceptance H6 passed again
   on the released commit (cd79b35).
+- 2026-11-05, real confirmation attempt on 307a2aae402a3e42786939bd19fe18131be521b1 (working-tree
+  plugin; its skills match v0.4.0), using `node behaviour/run.mjs --case B05,B06 --runs 3 --version dev`:
+  **B05 2/3 passes; B06 unconfirmed (0 completed, 3 interrupted, no verdicts)**. B05-dev-r4 and r5 passed
+  all 4 checks. B05-dev-r6 passed 3/4: `outside the scope (web/panel.mjs, tests/panel.test.mjs): README.md`.
+  Its document step committed a README section after implementation and verification; the plan listed only the
+  panel and its test. The unrelated failure was still reported, its files stayed unchanged, and landing asked
+  about both the scope overrun and the unrelated check. B05 therefore misses the deterministic-only 3/3 threshold.
+  The runner had already started B06-dev-r5 to r7 when the failure was observed. Per the task's stop-on-failure
+  instruction, the runner was stopped and those three sessions and their workers were torn down with
+  `teardown()`; none remained. B06 must still be measured separately. No code, cases or checks were changed.
+  No judge applies to either case (no scores or judge cost). Completed B05 workers cost 0.9979 USD; interrupted
+  B06 runs reported another 0.1195 USD, for 1.1174 USD recorded against the 4 USD budget. This is a lower bound:
+  interrupted worker turns may have unreported usage. Coordinators used the owner's subscription.
+  Original B05 evidence is at `~/.jevellan-harness/evals/behaviour/B05-dev-r{4,5,6}/artifacts/evidence.json`.
+  The stopped sweep's result JSONs were archived, with copies of those evidence summaries, under
+  `~/.jevellan-harness/worktrees/jevellan-harness-skills/behaviour-evals-confirm-b05-and-b06-on-t-TXVKHD7/.jevellan/evidence/stopped-sweep/`
+  (`B05-dev-r{4,5,6}-result.json` and `B05-dev-r{4,5,6}-evidence.json`). The same directory contains
+  `B06-dev-r{5,6,7}-summary.json` with interrupted-run ledger evidence, source paths and recorded costs, plus
+  coordinator screen captures and `cleanup.json`. Its parent contains `behaviour-run.log`, `sweep.json`
+  (command, commit and preflight), `stop.json` and `npm-test.log`. `npm test` passed, including the isolated
+  skill suites, 288 repository tests and both lints. These results do not replace the historical 0.4.0 sweep above.
