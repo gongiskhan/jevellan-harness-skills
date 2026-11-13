@@ -33,6 +33,28 @@
       ]
     },
     {
+      "name": "deepseek-rtx",
+      "kind": "claude-endpoint",
+      "baseUrl": "https://llm-rtx.culturabuilder.com",
+      "keyFile": "~/.config/cultura-builder-llm/rtx-litellm-key",
+      "placement": false,
+      "metered": false,
+      "projects": ["~/dev/jevellan-harness-skills"],
+      "env": {
+        "CLAUDE_CODE_SUBAGENT_MODEL": "deepseek-v4.1-flash-1017-uncensored",
+        "CLAUDE_CODE_MAX_OUTPUT_TOKENS": "65536",
+        "CLAUDE_CODE_AUTO_COMPACT_WINDOW": "786432",
+        "API_TIMEOUT_MS": "1800000",
+        "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1",
+        "CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS": "1",
+        "MAX_THINKING_TOKENS": "0",
+        "CLAUDE_CODE_DISABLE_AUTO_MEMORY": "1"
+      },
+      "models": [
+        { "id": "deepseek-v4.1-flash-1017-uncensored", "label": "DeepSeek V4.1 Flash", "efforts": ["low", "medium", "high", "max"] }
+      ]
+    },
+    {
       "name": "glm",
       "kind": "claude-endpoint",
       "baseUrl": "https://api.z.ai/api/anthropic",

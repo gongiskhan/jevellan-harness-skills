@@ -3,7 +3,10 @@
 // providers.json has the shape of the skills repo's (its D-011 fields), without `home`:
 //   { "jev": {keyFile, model, timeoutMs},
 //     "providers": [{name, kind, tokenFile?, keyFile?, baseUrl?, codexHome?, ceilingPct?, enabled?, paidUse?,
-//                    metered?, models: [{id, label, efforts, maxTokens?}] | "same as <provider>"}] }
+//                    metered?, placement?, projects?, env?, models: [{id, label, efforts, maxTokens?}] | "same as <provider>"}] }
+// placement: false keeps a provider out of Jev's menu (only the owner's placement, or a session by name, uses it);
+// projects (claude-endpoint only) lists the projects whose steps and sessions may run on it; env (claude-endpoint only)
+// holds more variables for every Claude session on it (H-044).
 // Unknown keys are refused (exit 2 naming the key), so a typo never falls back to a default silently.
 //
 // providers-state.json is written by providers.mjs check and read by route.mjs: login state and usage per provider,
@@ -18,7 +21,11 @@ export const CLAUDE_KINDS = ['claude-subscription', 'claude-endpoint'];
 export const EFFORTS = ['low', 'medium', 'high', 'xhigh', 'max'];
 const METERED_BY_DEFAULT = ['claude-endpoint', 'openai-compatible'];
 const PAID_USE = ['always', 'never', 'when-subscriptions-run-out'];
-const PROVIDER_KEYS = ['name', 'kind', 'tokenFile', 'keyFile', 'baseUrl', 'codexHome', 'ceilingPct', 'enabled', 'paidUse', 'metered', 'models'];
+const PROVIDER_KEYS = ['name', 'kind', 'tokenFile', 'keyFile', 'baseUrl', 'codexHome', 'ceilingPct', 'enabled', 'paidUse', 'metered', 'placement', 'projects', 'env', 'models'];
+// The variables a provider's env may not set (the runtime's login, model and config folder, the hooks' JH_*), and
+// the names of secrets, which live in key files only.
+const RESERVED_ENV = ['ANTHROPIC_BASE_URL', 'ANTHROPIC_AUTH_TOKEN', 'ANTHROPIC_API_KEY', 'ANTHROPIC_MODEL', 'CLAUDE_CODE_OAUTH_TOKEN', 'CLAUDE_CONFIG_DIR'];
+const SECRET_NAME = /(^|_)(TOKEN|KEY|SECRET|PASSWORD|CREDENTIALS?)(_|$)/;
 const MODEL_KEYS = ['id', 'label', 'efforts', 'maxTokens'];
 const JEV_KEYS = ['keyFile', 'model', 'timeoutMs'];
 export const STATE_FRESH_MS = 12 * 60 * 60 * 1000;
@@ -115,6 +122,23 @@ export function parseProviders(raw, file = providersPath()) {
     if (p.enabled !== undefined && typeof p.enabled !== 'boolean') refuse(where, 'enabled must be true or false');
     if (p.metered !== undefined && typeof p.metered !== 'boolean') refuse(where, 'metered must be true or false');
     if (p.paidUse !== undefined && !PAID_USE.includes(p.paidUse)) refuse(where, `paidUse must be one of ${PAID_USE.join(', ')}`);
+    if (p.placement !== undefined && typeof p.placement !== 'boolean') refuse(where, 'placement must be true or false');
+    if (p.projects !== undefined) {
+      if (p.kind !== 'claude-endpoint') refuse(where, 'projects is for claude-endpoint providers only');
+      if (!Array.isArray(p.projects) || p.projects.length === 0 || !p.projects.every((d) => isText(d) && (d.startsWith('/') || d.startsWith('~/')))) {
+        refuse(where, 'projects must be a non-empty list of absolute project folders (or ~/...)');
+      }
+    }
+    if (p.env !== undefined) {
+      if (p.kind !== 'claude-endpoint') refuse(where, 'env is for claude-endpoint providers only');
+      if (!isObject(p.env)) refuse(where, 'env must be an object of variable names and texts');
+      for (const [name, value] of Object.entries(p.env)) {
+        if (!/^[A-Z][A-Z0-9_]*$/.test(name)) refuse(where, `env name ${name} must be capitals, digits and underscores`);
+        if (RESERVED_ENV.includes(name) || name.startsWith('JH_')) refuse(where, `env may not set ${name}; the runtime sets it`);
+        if (SECRET_NAME.test(name)) refuse(where, `env may not hold a secret (${name}); a secret lives in the provider's key file`);
+        if (typeof value !== 'string') refuse(where, `env.${name} must be a text`);
+      }
+    }
     for (const key of ['tokenFile', 'keyFile', 'baseUrl', 'codexHome']) if (p[key] !== undefined && !isText(p[key])) refuse(where, `${key} must be a text`);
     if (p.kind === 'claude-endpoint' || p.kind === 'openai-compatible') {
       if (!isText(p.baseUrl) || !/^https?:\/\//.test(p.baseUrl)) refuse(where, 'needs a baseUrl (http or https)');
@@ -131,6 +155,9 @@ export function parseProviders(raw, file = providersPath()) {
       enabled: p.enabled ?? true,
       paidUse: p.paidUse ?? 'always',
       metered: p.metered ?? METERED_BY_DEFAULT.includes(p.kind),
+      placement: p.placement ?? true,
+      ...(p.projects ? { projects: p.projects.map(expandHome) } : {}),
+      ...(p.env ? { env: { ...p.env } } : {}),
       rawModels: p.models,
     };
   });
@@ -167,6 +194,21 @@ export function loadProviders(file = providersPath()) {
     throw new ProvidersError(`${file} is not JSON: ${error.message}`);
   }
   return parseProviders(raw, file);
+}
+
+// Whether a provider may run a step of the project at `root` (the main checkout): always, without a projects list;
+// with one, only when the project's real path is one of the listed folders' real paths (never a prefix match).
+export function projectListed(provider, root) {
+  if (!provider.projects) return true;
+  const real = (dir) => {
+    try {
+      return fs.realpathSync(dir);
+    } catch {
+      return null;
+    }
+  };
+  const project = root ? real(root) : null;
+  return Boolean(project) && provider.projects.some((dir) => real(dir) === project);
 }
 
 export function findProvider(config, name) {

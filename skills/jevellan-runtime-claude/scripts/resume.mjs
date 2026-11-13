@@ -21,6 +21,7 @@ import {
   appendStarted,
   archiveStaleReport,
   assertNoLiveWorker,
+  assertProjectAllowed,
   claudeArgs,
   currentView,
   loadTask,
@@ -65,6 +66,7 @@ export async function resume(argv) {
 
   const d = started.data;
   const provider = providerFor(d.provider, d.model, d.effort);
+  assertProjectAllowed(provider, root);
   const session = d.nativeSessionId;
   const cwd = d.cwd;
   const wt = worktreeOf(info);

@@ -6,7 +6,7 @@ import { NO_TOOL_DUTIES, READ_ONLY_DUTIES, dutyMode } from './prompt.mjs';
 import { pluginRoot } from './roles.mjs';
 
 export * from './task.mjs';
-export { RuntimeError, workerEnv, nodeBinary } from './env.mjs';
+export { RuntimeError, assertProjectAllowed, workerEnv, nodeBinary } from './env.mjs';
 export { dutyMode };
 
 // The claude command line for a turn in the step's worktree `cwd`. The prompt always follows "--" (H-005). When these

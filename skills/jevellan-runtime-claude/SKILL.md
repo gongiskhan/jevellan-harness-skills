@@ -51,3 +51,20 @@ project (or a folder inside it) as their working folder.
 - `status.mjs --task T --step N --json` -> `{task, step, state, pid, session, startedAt, model, effort, provider,
   ended, lastLine}`, `state` `alive` or `exited`, `ended` the kind of the line that ended the turn or null, `lastLine`
   the last thing the log says, with secrets masked.
+- A step on a provider with a `projects` list starts and resumes only in a listed project (exit 2 otherwise), and a
+  claude-endpoint provider's `env` is part of its workers' environment (H-044).
+
+For the owner and Ekoa, not for other skills (docs/endpoint-sessions.md):
+
+- `session.mjs --provider P [--cwd DIR] [--dry-run] [--json] [-- <claude arguments>]` starts a Claude Code session of
+  the owner's (a coordinator, or any session) on provider P in the foreground and exits with its exit code: the
+  provider's login and `env`, its own config folder under `~/.jevellan-harness/claude-config-sessions/P`, strict MCP,
+  this plugin; `--model` becomes the provider's model, `--remote-control` is left out. Exit 2 before anything starts
+  when P is not a Claude provider, is disabled, is an endpoint without a `projects` list, with a baseUrl ending in /v1
+  or with a key file others can read, or when the folder (or an `--add-dir`) is not in a listed project; 3 for an
+  unknown P. `--dry-run` prints `{provider, kind, model, project, cwd, configDir, args, set, inherited, bypass,
+  notices}` with the secret masked and starts nothing.
+- `probe.mjs --provider P [--json]` -> `{provider, model, base, checks: [{name, ok, status, ms, detail}], ok, thinking}`:
+  the Anthropic Messages requests Claude Code sends (models, a streamed text, a tool loop without and with thinking,
+  count_tokens) against a claude-endpoint provider with its key. Exit 0 when the checks ran, 2 refused (not an
+  endpoint, no key or one others can read, a baseUrl ending in /v1), 3 an unknown provider. The key is never printed.

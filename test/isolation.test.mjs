@@ -32,7 +32,8 @@ const STACK_FRAME = /\n\s+at \S.*:\d+:\d+\)?\s*(\n|$)/;
 const CLOSED_PORT = 'http://127.0.0.1:9';
 
 // The role-dependent command of each public script, by the role of its skill. `roles`: the roles whose absence may be
-// the one reported (a script may look up any of them first). `cwdArg` adds --cwd <project>.
+// the one reported (a script may look up any of them first). `cwdArg` adds --cwd <project>. A script that needs no
+// other role (`refuses`) is run alone instead and must refuse with its own reason: exit 2, {"error"}, no crash.
 const TABLE = {
   git: {
     'worktree.mjs': { args: ['create', '--task', TASK, '--json'], roles: ['ledger'] },
@@ -49,6 +50,8 @@ const TABLE = {
     'resume.mjs': { args: ['--task', TASK, '--step', '1', '--message', 'Carry on.', '--json'], roles: ['ledger'] },
     'stop.mjs': { args: ['--task', TASK, '--step', '1', '--json'], roles: ['ledger'] },
     'status.mjs': { args: ['--task', TASK, '--step', '1', '--json'], roles: ['ledger'] },
+    'session.mjs': { refuses: /provider glm is an endpoint outside the owner's own logins and has no projects list/, args: ['--provider', 'glm', '--dry-run', '--json'] },
+    'probe.mjs': { refuses: /provider glm: key file .* is missing/, args: ['--provider', 'glm', '--json'] },
   },
   ledger: {
     'ledger.mjs': { alone: true, args: ['status', '--json'] },
@@ -199,6 +202,20 @@ for (const skill of skills) {
           assert.equal(r.code, 0, show(r));
           const json = lastJson(r.stdout);
           assert.ok(json && typeof json === 'object', `${script} ${row.args.join(' ')} printed no JSON\n${show(r)}`);
+          assert.doesNotMatch(r.stderr, /no installed skill has the role/, show(r));
+        });
+        continue;
+      }
+
+      if (row.refuses) {
+        test(`${script} ${row.args.join(' ')} needs no other role and refuses with its own reason, exit 2`, () => {
+          const fx = isolate(skill);
+          const r = runScript(fx, script, row.args);
+          assertNoCrash(r, script);
+          assert.equal(r.code, 2, show(r));
+          const json = lastJson(r.stdout);
+          assert.ok(json && typeof json.error === 'string' && json.exitCode === 2, `with --json, stdout is {"error", "exitCode": 2}\n${show(r)}`);
+          assert.match(json.error, row.refuses, show(r));
           assert.doesNotMatch(r.stderr, /no installed skill has the role/, show(r));
         });
         continue;

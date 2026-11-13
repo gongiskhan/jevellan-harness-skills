@@ -230,6 +230,24 @@ describe('placement through the ledger skill', () => {
     assert.equal(readJson(path.join(decisionsDir(fx.root), files[0])).kind, 'workflow');
   });
 
+  test('--owner may place on a provider that is not offered to Jev, never on one whose projects list leaves the project out (H-044)', async () => {
+    jev.reset();
+    const GLM = { id: 'glm-5.3', label: 'GLM', efforts: ['low', 'medium', 'high'] };
+    const fx = setup({ providers: [{ name: 'claude-main', kind: 'claude-subscription', models: [OPUS, SONNET, HAIKU] }, { name: 'hidden', kind: 'claude-endpoint', placement: false, models: [GLM] }] });
+    let r = await run(fx, ['--task', T, '--step', '2', '--duty', 'implement', '--owner', 'hidden/glm-5.3/low']);
+    assert.equal(r.status, 0, r.stderr);
+    assert.equal(r.json().provider, 'hidden');
+    assert.equal(JSON.parse(fx.ledger.calls()[1].stdin).providerReason, 'not-offered');
+    assert.equal(jev.requests.length, 0);
+
+    const elsewhere = tempDir('jh-owner-elsewhere-');
+    const fy = setup({ providers: [{ name: 'claude-main', kind: 'claude-subscription', models: [OPUS, SONNET, HAIKU] }, { name: 'listed', kind: 'claude-endpoint', placement: false, projects: [elsewhere], models: [GLM] }] });
+    r = await run(fy, ['--task', T, '--step', '2', '--duty', 'implement', '--owner', 'listed/glm-5.3/low']);
+    assert.equal(r.status, 2);
+    assert.match(r.stderr, /provider listed runs only in the projects its projects list in providers.json names, and .* is not one of them/);
+    assert.deepEqual(fy.ledger.calls().map((c) => c.argv[0]), ['show'], 'nothing recorded');
+  });
+
   test('--owner records task.placed with source owner and asks no Jev', async () => {
     jev.reset();
     const fx = setup({ state: { 'claude-main': { weeklyPct: 95 } } });
