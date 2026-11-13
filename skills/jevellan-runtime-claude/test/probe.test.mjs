@@ -1,5 +1,6 @@
 // The live check (lib/probe.mjs, probe.mjs) against a loopback Messages server, alone: every check passing, a gateway
-// that refuses thinking in tool loops, one that streams without named events, the refusals, and the key never shown.
+// that refuses thinking in tool loops, one that accepts thinking but returns none, one that streams without named
+// events, the refusals, and the key never shown.
 
 import { test, describe, before, after } from 'node:test';
 import assert from 'node:assert/strict';
@@ -68,7 +69,7 @@ before(async () => {
       }
       const last = body.messages.at(-1);
       const result = Array.isArray(last.content) ? last.content.find((c) => c.type === 'tool_result') : null;
-      const thinking = body.thinking ? [{ type: 'thinking', thinking: 'I should look it up.' }] : [];
+      const thinking = body.thinking && mode !== 'drops-thinking' ? [{ type: 'thinking', thinking: 'I should look it up.' }] : [];
       if (result) return sse(res, [{ type: 'text', text: result.content }]);
       if (body.tools) return sse(res, [...thinking, { type: 'tool_use', name: 'lookup' }]);
       return sse(res, [{ type: 'text', text: 'PONG' }], { named: mode !== 'unnamed' });
@@ -114,6 +115,16 @@ describe('the live check', () => {
     assert.equal(check.status, 400);
     assert.match(check.detail, /reasoning_content must be passed back; key \[key\]/);
     assert.ok(!JSON.stringify(out).includes(KEY));
+  });
+
+  test('a gateway that accepts thinking but returns none: ok, thinking false, the detail says none came back', async () => {
+    mode = 'drops-thinking';
+    const out = await probe(provider());
+    assert.equal(out.ok, true);
+    assert.equal(out.thinking, false);
+    const check = out.checks.find((c) => c.name === 'tools-thinking');
+    assert.equal(check.status, 200);
+    assert.match(check.detail, /0 thinking block\(s\) sent back \(none came back: thinking accepted, no reasoning returned\); answer "ZEBRA-42"/);
   });
 
   test('a stream without named events fails the text check (Claude Code\'s client needs them); a wrong key fails everything', async () => {

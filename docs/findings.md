@@ -320,3 +320,11 @@ no model behind it), for H-044 (`endpoint-sessions.md`).
   `/v1/messages/count_tokens`, `/v1/chat/completions`, `/v1/responses` and `/v1/models` answer LiteLLM's 401
   ("Authentication Error, No api key passed in."); an unknown `/v1/...` route answers 404 `{"detail":"Not Found"}`;
   `/health/readiness` answers 200 `{"status":"healthy","db":"connected"}`; `server: cloudflare`.
+- With the key (13 Nov 2026 17:36 to 17:45 UTC, `probe.mjs` and a scratch matrix of the same tool loop): `/v1/models`
+  lists `deepseek-v4.1-flash-1017-uncensored`; a streamed answer comes as `text/event-stream` with Anthropic's named
+  events; a tool loop without thinking and `count_tokens` answer 200. Adaptive thinking with effort `medium`, or with no
+  effort, answers 400 `litellm.BadRequestError: ... DeepSeek V4.1 reasoning_effort must be one of low, high, max or an
+  integer within [1, 100] in chat_template_kwargs`; adaptive with `low`, `high` or `max`, `enabled` with
+  `budget_tokens` 8000, and no thinking with effort `medium` answer 200. No answer carried a thinking block or a
+  signature. A question needing reasoning, answered with three characters, took 72 to 151 output tokens whether
+  thinking was asked for or not.

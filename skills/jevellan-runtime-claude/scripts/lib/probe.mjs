@@ -6,7 +6,8 @@
 // - text: a streamed answer with Anthropic's named SSE events (event: + data:), which Claude Code's client needs;
 // - tools: a tool loop without thinking (tool_use, then the tool_result answered);
 // - tools-thinking: the same loop with thinking {type: adaptive}, the assistant's blocks (thinking included) sent back
-//   as returned, which is where a gateway translating to another format breaks first;
+//   as returned, which is where a gateway translating to another format breaks first; it passes only when a thinking
+//   block came back and went back, since a gateway that accepts thinking but returns no reasoning never tests that;
 // - count-tokens: POST /v1/messages/count_tokens.
 //
 // The key goes only into the Authorization header; redirects are not followed (a credential never goes elsewhere);
@@ -132,8 +133,9 @@ async function toolLoop(target, fetchImpl, thinking) {
   if (b.status !== 200) return { ok: false, status: b.status, ms, detail: `tool_result turn: HTTP ${b.status} ${scrub(b.text, target.key)}` };
   const two = parseSse(b.text);
   const answer = two.content.filter((x) => x.type === 'text').map((x) => x.text).join('');
-  const ok = answer.includes(TOOL_VALUE) && !two.error;
-  return { ok, status: b.status, ms, detail: `tool_use ${use.name}(${JSON.stringify(use.input)}), ${thoughts} thinking block(s) sent back; answer ${JSON.stringify(scrub(answer, target.key))}${two.error ? `; error ${scrub(two.error, target.key)}` : ''}` };
+  const ok = answer.includes(TOOL_VALUE) && !two.error && (!thinking || thoughts > 0);
+  const none = thinking && !thoughts ? ' (none came back: thinking accepted, no reasoning returned)' : '';
+  return { ok, status: b.status, ms, detail: `tool_use ${use.name}(${JSON.stringify(use.input)}), ${thoughts} thinking block(s) sent back${none}; answer ${JSON.stringify(scrub(answer, target.key))}${two.error ? `; error ${scrub(two.error, target.key)}` : ''}` };
 }
 
 // Runs every check; returns {provider, model, base, checks: [{name, ok, status, ms, detail}], ok, thinking}, where

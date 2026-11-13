@@ -23,9 +23,11 @@ Decision H-044 in `decisions.md`; what Claude Code was seen sending is in `findi
 No api key passed in." and an unknown route with 404 `{"detail":"Not Found"}`: the Anthropic Messages routes are
 registered, so Claude Code talks to it directly and no local translating layer is used. That is evidence of the
 route, not of this model's behaviour through it: LiteLLM translates `/v1/messages` to the backend's chat format, and
-whether tool calls, thinking blocks and streamed events survive the translation is what `probe.mjs` checks once the
-key is saved. Should the probe fail on the Messages route itself, the smallest layer would be a local proxy started
-and stopped by `session.mjs` with the session; none is built, because nothing yet says it is needed.
+whether tool calls, thinking blocks and streamed events survive the translation is what `probe.mjs` checks with the
+key. It did on 13 Nov 2026 17:36 UTC: models listed, a streamed answer with Anthropic's named SSE events, a tool loop
+answered and count_tokens all returned 200, so no layer is needed (thinking is the exception, under Settings). Should
+the Messages route itself fail one day, the smallest layer would be a local proxy started and stopped by `session.mjs`
+with the session.
 
 Claude Code wants the origin without `/v1` (it appends `/v1/messages`); `session.mjs` and `probe.mjs` refuse a
 `baseUrl` ending in `/v1`.
@@ -52,8 +54,10 @@ Claude Code wants the origin without `/v1` (it appends `/v1/messages`); `session
 
    It writes `acceptance/results/P7-deepseek-rtx.json`: the probe's checks (models, streamed text with named SSE
    events, a tool loop without and with thinking, count_tokens), then the session's time, tool calls, tool errors,
-   API errors and whether the branch it committed passes its tests. If `tools-thinking` passes, thinking can be turned
-   on (remove `MAX_THINKING_TOKENS` from `env`).
+   API errors and whether the branch it committed passes its tests. `--from <providers.json>` takes the entry from
+   another file, for a key saved under another name (the file stays where it is). Keep `MAX_THINKING_TOKENS=0` even
+   if `tools-thinking` passes one day: remove it only after a session at the caller's effort (Ekoa's is `medium`)
+   passes with thinking on and its thinking blocks come back (Settings, `MAX_THINKING_TOKENS`).
 
 3. Add the entry to `~/.jevellan-harness/providers.json` only after this branch's placement and Claude runtime are
    installed: the released placement refuses the new keys (`placement`, `projects`, `env`) and would stop every
@@ -140,9 +144,9 @@ documents describe DeepSeek's own API, not LiteLLM in front of a self-hosted cop
 | `API_TIMEOUT_MS` | `1800000` | derived, not measured: 65,536 tokens at a slow 40 tokens per second is about 27 minutes, longer than Claude Code's default of 10 minutes. Every request streams (seen), which keeps Cloudflare's 100 s limit on silent responses away | seen (streaming); derived |
 | `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC` | `1` | no telemetry, error reports or update checks from the session | asked for; [1] |
 | `CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS` | `1` | removes `context_management` (thinking clearing), tool search's `defer_loading` and four beta headers: fewer things for the gateway to translate. Tools are then all listed up front (21), which the 1M window affords | seen |
-| `MAX_THINKING_TOKENS` | `0`, provisional | removes `thinking` (and `context_management`) from every request. DeepSeek's thinking with tools needs the reasoning sent back on every later request of the loop, and returns 400 when it cannot recover it [2]; clients that translate formats are where that breaks [8], [9]. Unverified for this gateway: the probe's `tools-thinking` decides | seen; [2], [8], [9] |
+| `MAX_THINKING_TOKENS` | `0` | removes `thinking` (and `context_management`) from every request. Measured through this gateway (13 Nov 2026): adaptive thinking with effort `medium`, or with no effort, is refused with 400 "DeepSeek V4.1 reasoning_effort must be one of low, high, max or an integer within [1, 100]", and Claude Code sends adaptive thinking with the caller's effort, so Ekoa's `--effort medium` would fail every request. With effort `low`, `high` or `max`, or `enabled` with a budget, the request is accepted but no thinking block ever comes back, so turning thinking on gains nothing visible (output tokens of 72 to 151 for a three-character answer, with or without thinking, suggest the model reasons on the server and the gateway drops it: an inference). DeepSeek's own API needs the reasoning sent back in tool loops [2], and translating clients break there [8], [9]; that path was never reached here | measured; [2], [8], [9] |
 | `CLAUDE_CODE_DISABLE_AUTO_MEMORY` | `1` | nothing accumulates in a memory the provider reads back; the ledger is the harness's state | seen: memory instructions gone |
-| `--effort` | the caller's | sent as `output_config.effort` (default `high` without the flag); DeepSeek's API honours only `effort` in `output_config` [2]; LiteLLM forwarding `output_config` to a backend that rejects it is a known failure [6], and the probe's tool checks send it | seen; [2], [6] |
+| `--effort` | the caller's | sent as `output_config.effort` (default `high` without the flag); DeepSeek's API honours only `effort` in `output_config` [2]; LiteLLM forwarding `output_config` to a backend that rejects it is a known failure [6]. Measured: with thinking off, `medium` is accepted on every request (the probe's tool loop and the P7 session), so the gateway does not pass it on as `reasoning_effort`; with thinking on, only `low`, `high` and `max` are | seen, measured; [2], [6] |
 | Sampling | not set | Claude Code sends no `temperature` or `top_p` (seen), so the gateway's defaults apply; the model card recommends 1.0 and 1.0 [3]; a community copy uses 0.5 [4] | seen; [3], [4] |
 | Parallel tool calls | not set | Claude Code sends no `disable_parallel_tool_use`; DeepSeek ignores it anyway [2] | seen; [2] |
 | Context | 1,048,576 tokens | Claude Code already assumes 1M for this name, so the `[1m]` suffix is not needed (it only adds the `context-1m` beta header) | seen |
@@ -188,18 +192,20 @@ on it, calls `titleCase` itself, and counts tool calls, failed tool calls and AP
 | | claude-main (default) | deepseek-rtx |
 |---|---|---|
 | Model, effort | claude-opus-5-5, medium | deepseek-v4.1-flash-1017-uncensored, medium |
-| Run | 13 Nov 2026 09:09 UTC, `acceptance/results/P7-claude-main.json` | blocked: the key file does not exist yet (`P7-deepseek-rtx.json`) |
-| Checks | 10 of 10 | - |
-| Session time | 19.3 s (18.1 s in the session, 16.5 s of it in the API) | - |
-| Tool calls | 3 (Bash) in 4 turns | - |
-| Failed tool calls, API errors | 0, 0 | - |
-| Branch | one commit, "Add titleCase text helper with tests"; its 3 tests pass; `titleCase` correct | - |
+| Run | 13 Nov 2026 09:09 UTC, `acceptance/results/P7-claude-main.json` | 13 Nov 2026 17:36 UTC, `acceptance/results/P7-deepseek-rtx.json` |
+| Checks | 10 of 10 | 15 of 16: the probe's five plus the session's ten; the one failing is the probe's `tools-thinking` (400, above), which the profile does not use |
+| Live check | - | models 200 (480 ms), streamed text 200 with named events (878 ms), tool loop 200 (1184 ms), tool loop with thinking 400 (353 ms), count_tokens 200 (382 ms) |
+| Session time | 19.3 s (18.1 s in the session, 16.5 s of it in the API) | 11.4 s (10.8 s in the session, 9.9 s of it in the API) |
+| Tool calls | 3 (Bash) in 4 turns | 7 (Bash 3, Read 2, Edit 2) in 8 turns |
+| Failed tool calls, API errors | 0, 0 | 0, 0 |
+| Branch | one commit, "Add titleCase text helper with tests"; its 3 tests pass; `titleCase` correct | one commit, "Add titleCase helper with tests"; its tests pass; `titleCase` correct |
 
 Both sessions start through `session.mjs`, each in its own config folder, so neither sees the owner's personal
 configuration and the comparison is of the providers alone. An earlier default run (09:08 UTC) did the same in 20.1 s
 with 3 Bash calls and no errors; the journey's own branch check failed on it (the branch was checked out in the
-repository) and was fixed before the recorded run. To fill the right-hand column, save the key and run
-`node acceptance/p7-endpoint-session.mjs --provider deepseek-rtx`.
+repository) and was fixed before the recorded run. One run each, so the times compare these two runs, not the
+providers in general. The DeepSeek run read the key from where it had been saved, through `--from` and a providers
+file outside the repository; the key appears in none of the run's 108 output files.
 
 ## What Ekoa needs
 

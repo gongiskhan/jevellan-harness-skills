@@ -36,6 +36,7 @@ Changes made by the trigger-eval improvement loop (brief section 10); `evals/RES
   providers.json by name, with its own config folder, the provider's login and `env`, and the guards of H-044. The
   description and the calling body are unchanged (the scripts are run from a shell, not chosen by a model); the
   Interface section lists them.
-- `probe.mjs`: the live check of a claude-endpoint provider against the requests Claude Code sends.
+- `probe.mjs`: the live check of a claude-endpoint provider against the requests Claude Code sends; its
+  `tools-thinking` check passes only when a thinking block comes back and goes back.
 - `start.mjs` and `resume.mjs` refuse a provider whose `projects` list leaves the task's project out; a claude-endpoint
   provider's `env` reaches its workers.
