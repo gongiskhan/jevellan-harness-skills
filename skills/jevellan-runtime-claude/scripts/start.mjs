@@ -8,7 +8,8 @@
 // gone (whatever its step and whatever the ledger says after its start) and the step not done, checked again on a
 // fresh reading of the task when step.started is appended (only if the task did not change since that reading), so
 // two concurrent starts never both run; the provider must be a Claude provider whose token or key file has a value;
-// a step that may touch files runs in the task's worktree, never in the project's main checkout. The worker gets the
+// a step that may touch files runs in the task's worktree, never in the project's main checkout; a provider with a
+// projects list runs only in a project it names (H-044). The worker gets the
 // environment of lib/env.mjs, the system prompt append of lib/prompt.mjs (written to
 // ~/.jevellan-harness/logs/<session>.append.md) and the prompt "Start the step now. End by writing
 // .jevellan/report.json."; its stdout and stderr go to ~/.jevellan-harness/logs/<session>.log. The ledger (the
@@ -25,6 +26,7 @@ import {
   appendStarted,
   archiveStaleReport,
   assertDutyInstalled,
+  assertProjectAllowed,
   assertNoLiveWorker,
   buildAppend,
   buildTaskBlock,
@@ -88,6 +90,7 @@ export async function start(argv) {
   assertNoLiveWorker(info, step, { graceMs: EXIT_GRACE_MS });
   if (currentView(info, step).done) throw new RuntimeError(`step ${step} of ${values.task} is done`);
   const provider = providerFor(values.provider, values.model, values.effort);
+  assertProjectAllowed(provider, root);
   const placed = requirePlacement(info, step, values);
 
   const session = crypto.randomUUID();

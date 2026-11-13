@@ -208,6 +208,13 @@ cannot drift from the providers. Run `node .claude/skills/jevellan-placement/scr
 login and usage. A kind is offered only when an installed runtime skill lists it in `jh-kinds`; `openai-compatible`
 has no runtime skill yet.
 
+A claude-endpoint provider may also carry `placement: false` (never offered to Jev; only the owner's placement or a
+session by name uses it), `projects` (the only projects whose steps and sessions may run on it, by real path) and `env`
+(more non-secret variables for every Claude session on it). `skills/jevellan-runtime-claude/scripts/session.mjs
+--provider <name> -- <claude arguments>` starts a coordinator or any session of the owner's on such a provider, and
+`probe.mjs --provider <name>` checks it against the requests Claude Code sends; `docs/endpoint-sessions.md` has the
+`deepseek-rtx` example, its settings and their sources.
+
 ## Adding a skill
 
 A skill is a folder under `skills/` with a `SKILL.md` whose frontmatter has `name` (the folder name), `description`
@@ -233,6 +240,7 @@ own tests alone, the repository suites, the role lint and the decoupling lint.
   lints. `acceptance/`: the H1 to H12 journeys, `timings.mjs` and `RESULTS.md`. `behaviour/`: the behaviour evals, real
   coordinator sessions on fixture repositories scored on what the harness did (`behaviour/README.md`, `RESULTS.md`).
 - `docs/decoupling.md` (each kind of coupling the repository forbids and how the lint catches it).
+- `docs/endpoint-sessions.md` (sessions on an endpoint provider by name: the guard, the settings and their sources, P7).
 - `tools/viewer.mjs --project <path> --host <tailnet address>`: a read-only page over a project's ledger (tasks, step
   reports, landings, questions waiting on you, screenshots), refreshed every 10 s; bind it to the machine's Tailscale
   address (or 127.0.0.1 behind `tailscale serve`), never to a public interface.

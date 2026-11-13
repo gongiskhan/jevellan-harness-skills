@@ -51,7 +51,7 @@ import path from 'node:path';
 import { parseArgs } from 'node:util';
 import { fileURLToPath } from 'node:url';
 import { JevError, STATE_LIMIT, jevClient, jevMessage } from './jev.mjs';
-import { EFFORTS, PROVIDER_KINDS, currentUsage, freshProviderState, loadProviders, readProvidersState, secretFile, secretPresent } from './lib/providers-file.mjs';
+import { EFFORTS, PROVIDER_KINDS, currentUsage, freshProviderState, loadProviders, projectListed, readProvidersState, secretFile, secretPresent } from './lib/providers-file.mjs';
 import { loadPolicy, parseIdLines, parseQuestionLines, requireSection } from './lib/policy.mjs';
 import { RoleMissing, skillWithRole, skillsWithRole } from './lib/roles.mjs';
 import { LedgerCallError, NOT_FOUND, appendLine, readEvents, readTask } from './lib/ledger-client.mjs';
@@ -197,12 +197,14 @@ const HAS_WINDOWS = ['claude-subscription', 'codex-subscription'];
 /**
  * Ranks providers for a placement. Excluded providers stay in the list with their reason, so the decision file can
  * say why a provider was not in the menu. Reasons, in the order they are tested: unsupported (a kind that cannot run
- * this step), model-not-served, disabled, no-key, needs-login (no probe of the last twelve hours said ready),
+ * this step), model-not-served, disabled, project-not-listed (its projects list does not name this project), no-key,
+ * not-offered (placement: false: only the owner's placement uses it), needs-login (no probe of the last twelve hours
+ * said ready),
  * usage-ceiling (a subscription at or over its ceilingPct in either current window), paid-not-allowed. Order:
  * eligible first, then subscriptions before metered providers, then known usage before unknown, then lower effective
  * usage, then lower weekly usage, then name.
  */
-export function rankProviders({ providers, state, kinds, model, keyReady = providerKeyReady, now = Date.now() }) {
+export function rankProviders({ providers, state, kinds, model, project, keyReady = providerKeyReady, now = Date.now() }) {
   const base = providers.map((provider) => {
     const entry = freshProviderState(state, provider.name, now);
     const usage = currentUsage(entry, now);
@@ -212,7 +214,9 @@ export function rankProviders({ providers, state, kinds, model, keyReady = provi
     if (kinds && !kinds.includes(provider.kind)) reason = 'unsupported';
     else if (model && !provider.models.some((m) => m.id === model)) reason = 'model-not-served';
     else if (!provider.enabled) reason = 'disabled';
+    else if (!projectListed(provider, project)) reason = 'project-not-listed';
     else if (!keyReady(provider)) reason = 'no-key';
+    else if (provider.placement === false) reason = 'not-offered';
     else if (entry?.auth !== 'ready') reason = 'needs-login';
     else if (windows.some((value) => value >= provider.ceilingPct)) reason = 'usage-ceiling';
     return {
@@ -253,7 +257,7 @@ export function rankProviders({ providers, state, kinds, model, keyReady = provi
  */
 export async function refreshStale(config, state, kinds, now = Date.now()) {
   const names = config.providers
-    .filter((p) => kinds.includes(p.kind) && p.enabled && providerKeyReady(p) && !freshProviderState(state, p.name, now))
+    .filter((p) => kinds.includes(p.kind) && p.enabled && p.placement !== false && providerKeyReady(p) && !freshProviderState(state, p.name, now))
     .map((p) => p.name);
   if (!names.length) return { state, probed: [], probeError: null };
   try {
@@ -276,8 +280,8 @@ export async function refreshStale(config, state, kinds, now = Date.now()) {
  * The menu of 7.2 step 2: one entry per model id, attributed to its best-ranked eligible provider. Exit 2 when it is
  * empty or a menu model has no description line.
  */
-export function buildMenu({ config, state, kinds, policy, keyReady, now = Date.now(), probeError = null }) {
-  const ranking = rankProviders({ providers: config.providers, state, kinds, ...(keyReady ? { keyReady } : {}), now });
+export function buildMenu({ config, state, kinds, policy, keyReady, project, now = Date.now(), probeError = null }) {
+  const ranking = rankProviders({ providers: config.providers, state, kinds, project, ...(keyReady ? { keyReady } : {}), now });
   const eligible = ranking.filter((r) => r.eligible);
   if (!eligible.length) {
     const why = ranking.map((r) => `${r.provider.name} ${r.reason}`).join(', ');
@@ -744,7 +748,7 @@ export async function placeStep({ taskId, ordinal, duty, cwd = process.cwd(), no
   const needs = dutyNeeds(duty);
   const kinds = dutyKinds(duty, needs, runtimeKinds());
   const refreshed = await refreshStale(config, readProvidersState(), kinds, now);
-  const menu = buildMenu({ config, state: refreshed.state, kinds, policy, now, probeError: refreshed.probeError });
+  const menu = buildMenu({ config, state: refreshed.state, kinds, policy, project: root, now, probeError: refreshed.probeError });
   const state = redactValue({
     project: projectState(root),
     task: taskState(task),
@@ -859,6 +863,7 @@ const HARD_REASONS = {
   unsupported: (r, ctx) => `provider ${r.provider.name} is kind ${r.provider.kind}, which cannot run the duty ${ctx.duty} here (kinds that can: ${ctx.kinds.join(', ') || 'none'})`,
   'model-not-served': (r, ctx) => `provider ${r.provider.name} does not serve the model ${ctx.model} (it serves ${r.provider.models.map((m) => m.id).join(', ')})`,
   disabled: (r) => `provider ${r.provider.name} is disabled in providers.json`,
+  'project-not-listed': (r, ctx) => `provider ${r.provider.name} runs only in the projects its projects list in providers.json names, and ${ctx.project} is not one of them`,
   'no-key': (r) => `provider ${r.provider.name} has no value in its key or token file (${secretFile(r.provider)})`,
 };
 
@@ -872,10 +877,10 @@ export async function placeOwner({ taskId, ordinal, duty, owner, cwd = process.c
   const step = stepState(task, ordinal, duty);
   const needs = dutyNeeds(duty);
   const kinds = dutyKinds(duty, needs, runtimeKinds());
-  const ranking = rankProviders({ providers: config.providers, state: readProvidersState(), kinds, model: wanted.model });
+  const ranking = rankProviders({ providers: config.providers, state: readProvidersState(), kinds, model: wanted.model, project: root });
   const chosen = ranking.find((r) => r.provider.name === wanted.provider);
   if (!chosen) throw notFound(`no provider ${wanted.provider} in ${config.file}`);
-  if (HARD_REASONS[chosen.reason]) throw refused(HARD_REASONS[chosen.reason](chosen, { duty, kinds, model: wanted.model }));
+  if (HARD_REASONS[chosen.reason]) throw refused(HARD_REASONS[chosen.reason](chosen, { duty, kinds, model: wanted.model, project: root }));
   const providerModel = chosen.provider.models.find((m) => m.id === wanted.model);
   const effort = mapEffort(wanted.effort, providerModel.efforts);
   let policyHash = '';

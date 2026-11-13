@@ -20,18 +20,81 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { RuntimeError, baseWorkerEnv, harnessHome, readSecret } from './common.mjs';
+import { RuntimeError, baseWorkerEnv, expandHome, harnessHome, readSecret } from './common.mjs';
+import { gitLocate } from './project.mjs';
 
 export * from './common.mjs';
 export const CLAUDE_KINDS = ['claude-subscription', 'claude-endpoint'];
 
-export function claudeConfigDir() {
-  const dir = path.join(harnessHome(), 'claude-config');
+// The variables a provider's `env` may not set: the login, the config folder and the hooks' variables are the
+// runtime's own, and a secret lives in the provider's key file, never in providers.json.
+export const RESERVED_ENV = ['ANTHROPIC_BASE_URL', 'ANTHROPIC_AUTH_TOKEN', 'ANTHROPIC_API_KEY', 'ANTHROPIC_MODEL', 'CLAUDE_CODE_OAUTH_TOKEN', 'CLAUDE_CONFIG_DIR'];
+export const SECRET_NAME = /(^|_)(TOKEN|KEY|SECRET|PASSWORD|CREDENTIALS?)(_|$)/;
+
+function privateDir(dir) {
   fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
   try {
     fs.chmodSync(dir, 0o700);
   } catch {}
   return dir;
+}
+
+export function claudeConfigDir() {
+  return privateDir(path.join(harnessHome(), 'claude-config'));
+}
+
+// The Claude config folder of the owner's sessions on one provider (session.mjs): its own per provider, so nothing
+// of the owner's personal configuration (instructions, memory, MCP servers, plugins, login) reaches the provider,
+// and its transcripts stay apart from the workers'.
+export function sessionConfigDir(provider) {
+  return privateDir(path.join(harnessHome(), 'claude-config-sessions', provider.name));
+}
+
+// A claude-endpoint provider's `env` (H-044): more variables for every Claude session on it, a step's or the
+// owner's, such as the output and compaction settings its model needs. Names in capitals, texts as values, none of
+// RESERVED_ENV, JH_* or a secret's name.
+export function providerEnv(provider) {
+  if (provider.env === undefined) return {};
+  const env = provider.env;
+  const where = `provider ${provider.name}`;
+  if (provider.kind !== 'claude-endpoint') throw new RuntimeError(`${where}: env is for claude-endpoint providers only`);
+  if (env === null || typeof env !== 'object' || Array.isArray(env)) throw new RuntimeError(`${where}: env must be an object of variable names and texts`);
+  for (const [name, value] of Object.entries(env)) {
+    if (!/^[A-Z][A-Z0-9_]*$/.test(name)) throw new RuntimeError(`${where}: env name ${name} must be capitals, digits and underscores`);
+    if (RESERVED_ENV.includes(name) || name.startsWith('JH_')) throw new RuntimeError(`${where}: env may not set ${name}; the runtime sets it`);
+    if (SECRET_NAME.test(name)) throw new RuntimeError(`${where}: env may not hold a secret (${name}); a secret lives in the provider's key file`);
+    if (typeof value !== 'string') throw new RuntimeError(`${where}: env.${name} must be a text`);
+  }
+  return { ...env };
+}
+
+function realOrNull(dir) {
+  try {
+    return fs.realpathSync(dir);
+  } catch {
+    return null;
+  }
+}
+
+// The project guard of a provider with a `projects` list (H-044): its sessions and steps run only inside one of
+// the repositories it names, and a task worktree counts as its repository. Compared by real path, never by prefix,
+// so naming a parent folder allows nothing below it. A provider without the list is not restricted here; session.mjs
+// requires the list of every claude-endpoint provider. Returns the project's real path, or null when unrestricted.
+export function assertProjectAllowed(provider, dir) {
+  if (provider.projects === undefined) return null;
+  const where = `provider ${provider.name}`;
+  const list = provider.projects;
+  if (!Array.isArray(list) || list.length === 0 || !list.every((p) => typeof p === 'string' && p.trim())) {
+    throw new RuntimeError(`${where}: projects must be a non-empty list of project folders`);
+  }
+  const root = gitLocate(dir)?.root;
+  const real = root ? realOrNull(root) : null;
+  if (!real) throw new RuntimeError(`${where} runs only in the projects its projects list names, and ${dir} is not inside a git repository`);
+  const allowed = list.map((p) => realOrNull(path.resolve(expandHome(p)))).filter(Boolean);
+  if (!allowed.includes(real)) {
+    throw new RuntimeError(`${where} runs only in the projects its projects list in providers.json names, and ${real} is not one of them; add a project there only when its material may go to this provider`);
+  }
+  return real;
 }
 
 // The provider's login variables. Refuses when the provider cannot run a Claude session here.
@@ -58,6 +121,7 @@ export function providerLogin(provider) {
       env.ANTHROPIC_DEFAULT_HAIKU_MODEL = ids[ids.length - 1];
     }
   }
+  Object.assign(env, providerEnv(provider));
   return env;
 }
 

@@ -66,6 +66,26 @@ describe('providers and the menu', () => {
     assert.equal(route.providerCriterion({ name: 'x', weeklyPct: 12.345, fiveHourPct: null, ceilingPct: 90 }), 'x: week 12.3% of 90%, five hours unknown');
   });
 
+  test('rankProviders: a provider with placement false is not offered, one whose projects list leaves the project out is not listed (H-044)', () => {
+    const now = Date.now();
+    const repo = tempDir('jh-rank-repo-');
+    const entry = { auth: 'ready', weeklyPct: null, fiveHourPct: null, observedAt: new Date(now).toISOString() };
+    const p = (name, extra = {}) => ({ name, kind: 'claude-endpoint', enabled: true, ceilingPct: 90, paidUse: 'always', metered: false, placement: true, models: [OPUS], ...extra });
+    const ranked = route.rankProviders({
+      providers: [p('open'), p('hidden', { placement: false }), p('listed', { projects: [repo] }), p('elsewhere', { projects: [tempDir('jh-rank-other-')] }), p('both', { placement: false, projects: [tempDir('jh-rank-other-')] })],
+      state: { providers: { open: entry, hidden: entry, listed: entry, elsewhere: entry, both: entry } },
+      kinds: ['claude-endpoint'],
+      project: repo,
+      keyReady: () => true,
+      now,
+    });
+    assert.deepEqual(ranked.map((r) => `${r.provider.name}:${r.reason}`), ['listed:eligible', 'open:eligible', 'both:project-not-listed', 'elsewhere:project-not-listed', 'hidden:not-offered']);
+    const keyless = route.rankProviders({ providers: [p('hidden', { placement: false })], state: { providers: { hidden: entry } }, kinds: ['claude-endpoint'], project: repo, keyReady: () => false, now });
+    assert.equal(keyless[0].reason, 'no-key', 'a provider without its key is no-key, which the owner\'s placement cannot override, before not-offered');
+    const policy = route.loadRouterPolicy();
+    assert.throws(() => route.buildMenu({ config: { providers: [p('hidden', { placement: false })] }, state: { providers: { hidden: entry } }, kinds: ['claude-endpoint'], policy, project: repo, keyReady: () => true, now }), (e) => e.exitCode === 2 && /no provider can run this step \(kinds claude-endpoint\): hidden not-offered/.test(e.message));
+  });
+
   test('buildMenu names each model by its best provider and refuses a model without a description; the questions follow it', () => {
     const now = Date.now();
     const observedAt = new Date(now).toISOString();

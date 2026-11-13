@@ -33,3 +33,10 @@ Changes made by the trigger-eval improvement loop (brief section 10); `evals/RES
 - Renamed from jevellan-router to jevellan-placement, so the folder name matches the role (owner decision,
   docs/decisions.md H-040). The role word, the description, the policy and every script are unchanged; the policy's
   error messages say "the placement policy".
+
+## Provider placement, projects and env, 2026-11-13 (H-044)
+
+- providers.json accepts `placement` (false keeps a provider out of Jev's menu; the owner's placement may still name
+  it), `projects` and `env` (claude-endpoint only). A provider whose `projects` list leaves the task's project out is
+  neither offered nor placeable (reason project-not-listed). The policy text and its hash are unchanged; the Interface
+  section says it.

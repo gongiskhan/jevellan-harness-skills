@@ -1,0 +1,243 @@
+# Sessions on an endpoint provider
+
+How to run a Claude Code session of the owner's (a coordinator, or any session he or Ekoa starts) on a provider other
+than his own Claude login, by name, with the default untouched; what reaches that provider and what cannot; and the
+settings chosen for the first such provider, `deepseek-rtx` (DeepSeek V4.1 Flash behind an OpenAI-compatible gateway).
+Decision H-044 in `decisions.md`; what Claude Code was seen sending is in `findings.md`.
+
+## In short
+
+- `skills/jevellan-runtime-claude/scripts/session.mjs --provider deepseek-rtx -- <claude arguments>` starts the
+  session; plain `claude` stays exactly what it was.
+- The provider entry lives in `~/.jevellan-harness/providers.json` (example: `providers.example.json`). It names the
+  only projects whose sessions and steps may use it; everything else is refused before anything starts.
+- The session gets its own Claude config folder, so the owner's instructions, memory, MCP servers, connectors, plugins
+  and claude.ai login never reach the provider.
+- `probe.mjs --provider deepseek-rtx` checks the gateway against the requests Claude Code sends; P7
+  (`acceptance/p7-endpoint-session.mjs`) runs the probe and a real edit-test-commit session and records both.
+
+## The endpoint
+
+`https://llm-rtx.culturabuilder.com` is LiteLLM behind Cloudflare. Without a key (13 Nov 2026) it answers
+`POST /v1/messages`, `/v1/messages?beta=true` and `/v1/messages/count_tokens` with LiteLLM's 401 "Authentication Error,
+No api key passed in." and an unknown route with 404 `{"detail":"Not Found"}`: the Anthropic Messages routes are
+registered, so Claude Code talks to it directly and no local translating layer is used. That is evidence of the
+route, not of this model's behaviour through it: LiteLLM translates `/v1/messages` to the backend's chat format, and
+whether tool calls, thinking blocks and streamed events survive the translation is what `probe.mjs` checks with the
+key. It did on 13 Nov 2026 17:36 UTC: models listed, a streamed answer with Anthropic's named SSE events, a tool loop
+answered and count_tokens all returned 200, so no layer is needed (thinking is the exception, under Settings). Should
+the Messages route itself fail one day, the smallest layer would be a local proxy started and stopped by `session.mjs`
+with the session.
+
+Claude Code wants the origin without `/v1` (it appends `/v1/messages`); `session.mjs` and `probe.mjs` refuse a
+`baseUrl` ending in `/v1`.
+
+## Setting up
+
+1. Save the key, the key only, readable by the owner only:
+
+   ```
+   mkdir -p ~/.config/cultura-builder-llm && chmod 700 ~/.config/cultura-builder-llm
+   $EDITOR ~/.config/cultura-builder-llm/rtx-litellm-key     # paste the key, save
+   chmod 600 ~/.config/cultura-builder-llm/rtx-litellm-key
+   ```
+
+   `session.mjs` and `probe.mjs` refuse a key file that is missing, is not a regular file, or that group or others can
+   read.
+
+2. Check the gateway and the profile end to end before using it for real work, with no change to the live
+   providers.json (the journey copies the entry into a private harness home and lists only its scratch repository):
+
+   ```
+   node acceptance/p7-endpoint-session.mjs --provider deepseek-rtx
+   ```
+
+   It writes `acceptance/results/P7-deepseek-rtx.json`: the probe's checks (models, streamed text with named SSE
+   events, a tool loop without and with thinking, count_tokens), then the session's time, tool calls, tool errors,
+   API errors and whether the branch it committed passes its tests. `--from <providers.json>` takes the entry from
+   another file, for a key saved under another name (the file stays where it is). Keep `MAX_THINKING_TOKENS=0` even
+   if `tools-thinking` passes one day: remove it only after a session at the caller's effort (Ekoa's is `medium`)
+   passes with thinking on and its thinking blocks come back (Settings, `MAX_THINKING_TOKENS`).
+
+3. Add the entry to `~/.jevellan-harness/providers.json` only after this branch's placement and Claude runtime are
+   installed: the released placement refuses the new keys (`placement`, `projects`, `env`) and would stop every
+   placement until then.
+
+## Starting a session
+
+From a shell, in a listed project:
+
+```
+node <plugin>/skills/jevellan-runtime-claude/scripts/session.mjs --provider deepseek-rtx -- --model opus --effort medium
+```
+
+`<plugin>` is the installed plugin (or this checkout). Everything after `--` goes to `claude`. `--dry-run` prints
+what would run, the key masked, and starts nothing. A session ends as usual; to resume one, run the same command
+with `-- --resume <session id>` (its transcript lives in the session's config folder, not the owner's).
+
+What `session.mjs` changes compared with plain `claude`:
+
+- environment: the provider's login (`ANTHROPIC_BASE_URL`, `ANTHROPIC_AUTH_TOKEN` read from the key file), its model
+  in every slot, the entry's `env`, `CLAUDE_CONFIG_DIR=~/.jevellan-harness/claude-config-sessions/deepseek-rtx`,
+  `ENABLE_CLAUDEAI_MCP_SERVERS=false`; from the caller's environment it drops every `ANTHROPIC_*` and `CLAUDE*`
+  variable, the hooks' step variables and any variable named like a secret (`*_TOKEN`, `*_KEY`, `*_SECRET`, ...);
+- arguments: `--model` becomes the provider's model when it names one the provider does not serve (`opus` included),
+  `--remote-control` is left out (it needs a claude.ai login, which the session's folder has none of; Claude Code would
+  ignore it silently), `--strict-mcp-config` is added, this plugin is loaded with `--plugin-dir`, and `--settings`
+  gains the workers' settings: no instruction file from a folder above the session's folder (the owner's home is
+  one), no attribution, no Read or Edit of the harness's secrets;
+- Claude Code's first-run screens (onboarding, folder trust, the bypass-mode warning when bypass is asked for) are
+  answered in the session's config folder for that folder only, so a session Ekoa starts in tmux does not stop at them.
+
+A worker step can run on the provider too, through the owner's placement only (`route.mjs ... --owner
+deepseek-rtx/deepseek-v4.1-flash-1017-uncensored/medium`): `placement: false` keeps it out of Jev's menu, and the
+runtime refuses it outside the listed projects.
+
+## Third-party guard
+
+The endpoint is a third party's. Sessions on a client's or another sensitive project's material must not use it unless
+the owner says so, and the profile makes that hard to do by accident:
+
+- Fail closed by project. An endpoint provider is usable only in the git repositories its `projects` list names,
+  compared by real path (a worktree counts as its repository; a parent folder allows nothing below it; a folder
+  outside git is refused). `session.mjs` refuses every endpoint without a list, `start.mjs` and `resume.mjs` refuse a
+  step outside it, placement neither offers nor accepts it for an unlisted project. The example lists only
+  `~/dev/jevellan-harness-skills`. Adding a project to the list is the decision that its material may go to this
+  provider, and it is the only way to make that happen.
+
+  ```
+  $ cd ~/dev/some-client && node .../session.mjs --provider deepseek-rtx --dry-run
+  provider deepseek-rtx runs only in the projects its projects list in providers.json names, and /home/<owner>/dev/some-client is not one of them; add a project there only when its material may go to this provider   (exit 2)
+  ```
+
+- Never by default. Nothing chooses the provider but its name: plain `claude` and Ekoa's current command are
+  unchanged, and Jev never sees it (`placement: false`).
+
+- Nothing personal in the session. Measured on the requests Claude Code 2.1.323 sent to a loopback server
+  (`findings.md`): with the owner's own config the first request carried his global instructions (13 matches of one
+  of his rules), the names of his MCP servers and skills, and memory instructions; through `session.mjs` with the
+  example's settings every one of those counts is 0. What remains by design: the repository's files and instructions
+  (`AGENTS.md`), the machine's git user name, the working folder's path.
+
+What the profile does not stop, and is the owner's call:
+
+- MCP servers named explicitly with `--mcp-config` still load. Ekoa passes its session MCP that way, and that server
+  can read the inbox, the archive and clients: sensitive material from any project reaches the provider the moment
+  the model calls one of those tools. See "What Ekoa needs".
+- The session runs Bash with the owner's rights. The deny rules keep Read and Edit away from the harness's secrets,
+  but a shell command can still read any file the owner can, and its output goes to the provider. Only Claude Code's
+  sandbox would close that; it is not turned on here.
+
+## The settings
+
+Claude Code 2.1.323 was run against a loopback Messages server to see each setting's effect on the request (the
+"seen" column); the published sources are listed below with the layer each one describes, because DeepSeek's own
+documents describe DeepSeek's own API, not LiteLLM in front of a self-hosted copy of the model.
+
+| Setting | Value | Why | Seen / source |
+|---|---|---|---|
+| `ANTHROPIC_BASE_URL` | `https://llm-rtx.culturabuilder.com` | the origin; Claude Code adds `/v1/messages?beta=true` | seen; [5] |
+| `ANTHROPIC_AUTH_TOKEN` | the key file's value | sent as `Authorization: Bearer`, which LiteLLM accepts | seen; [5] |
+| `ANTHROPIC_MODEL`, `ANTHROPIC_DEFAULT_OPUS/SONNET/HAIKU_MODEL`, `CLAUDE_CODE_SUBAGENT_MODEL` | `deepseek-v4.1-flash-1017-uncensored` | every slot, so `--model opus`, the small fast model and subagents never ask the gateway for a Claude model | [1], [7] |
+| `CLAUDE_CODE_MAX_OUTPUT_TOKENS` | `65536` | the provider's maximum output | seen: `max_tokens` 32000 becomes 65536 |
+| `CLAUDE_CODE_AUTO_COMPACT_WINDOW` | `786432` | Claude Code assumes 1M tokens for an unknown model (it says so at start), so compaction would otherwise wait until the window is nearly full; 786,432 is three quarters of 1M and DeepSeek's own value | seen; [1], [5] |
+| `API_TIMEOUT_MS` | `1800000` | derived, not measured: 65,536 tokens at a slow 40 tokens per second is about 27 minutes, longer than Claude Code's default of 10 minutes. Every request streams (seen), which keeps Cloudflare's 100 s limit on silent responses away | seen (streaming); derived |
+| `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC` | `1` | no telemetry, error reports or update checks from the session | asked for; [1] |
+| `CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS` | `1` | removes `context_management` (thinking clearing), tool search's `defer_loading` and four beta headers: fewer things for the gateway to translate. Tools are then all listed up front (21), which the 1M window affords | seen |
+| `MAX_THINKING_TOKENS` | `0` | removes `thinking` (and `context_management`) from every request. Measured through this gateway (13 Nov 2026): adaptive thinking with effort `medium`, or with no effort, is refused with 400 "DeepSeek V4.1 reasoning_effort must be one of low, high, max or an integer within [1, 100]", and Claude Code sends adaptive thinking with the caller's effort, so Ekoa's `--effort medium` would fail every request. With effort `low`, `high` or `max`, or `enabled` with a budget, the request is accepted but no thinking block ever comes back, so turning thinking on gains nothing visible (output tokens of 72 to 151 for a three-character answer, with or without thinking, suggest the model reasons on the server and the gateway drops it: an inference). DeepSeek's own API needs the reasoning sent back in tool loops [2], and translating clients break there [8], [9]; that path was never reached here | measured; [2], [8], [9] |
+| `CLAUDE_CODE_DISABLE_AUTO_MEMORY` | `1` | nothing accumulates in a memory the provider reads back; the ledger is the harness's state | seen: memory instructions gone |
+| `--effort` | the caller's | sent as `output_config.effort` (default `high` without the flag); DeepSeek's API honours only `effort` in `output_config` [2]; LiteLLM forwarding `output_config` to a backend that rejects it is a known failure [6]. Measured: with thinking off, `medium` is accepted on every request (the probe's tool loop and the P7 session), so the gateway does not pass it on as `reasoning_effort`; with thinking on, only `low`, `high` and `max` are | seen, measured; [2], [6] |
+| Sampling | not set | Claude Code sends no `temperature` or `top_p` (seen), so the gateway's defaults apply; the model card recommends 1.0 and 1.0 [3]; a community copy uses 0.5 [4] | seen; [3], [4] |
+| Parallel tool calls | not set | Claude Code sends no `disable_parallel_tool_use`; DeepSeek ignores it anyway [2] | seen; [2] |
+| Context | 1,048,576 tokens | Claude Code already assumes 1M for this name, so the `[1m]` suffix is not needed (it only adds the `context-1m` beta header) | seen |
+
+Not available on this provider: WebSearch (Anthropic runs it server side), remote control (no claude.ai login), the
+advisor and auto mode's server-side checks.
+
+Sources, with the layer each describes:
+
+1. DeepSeek, "Integrate with Claude Code", https://api-docs.deepseek.com/quick_start/agent_integrations/claude_code/
+   (DeepSeek's own Anthropic API): every model slot set, `CLAUDE_CODE_SUBAGENT_MODEL`, `CLAUDE_CODE_EFFORT_LEVEL=max`,
+   `CLAUDE_CODE_AUTO_COMPACT_WINDOW=786432`.
+2. DeepSeek, "Using the Anthropic API", https://api-docs.deepseek.com/guides/anthropic_api (DeepSeek's own API): the
+   field table (`thinking` adaptive treated as enabled, `temperature` fixed in thinking mode, `output_config` effort
+   only, `tool_choice` any treated as auto, `disable_parallel_tool_use` ignored) and, for thinking with tools, "pass
+   back the assistant's complete content array" and a 400 when recovery fails.
+3. deepseek-ai/DeepSeek-V4.1-Flash-1017 model card, https://huggingface.co/deepseek-ai/DeepSeek-V4.1-Flash-1017
+   (the model): temperature 1.0, top_p 1.0, 1M context, max_tokens of at least 256K recommended, no Jinja chat
+   template (a Python encoder instead), Claude Code used as a benchmark harness.
+4. dealignai/DeepSeek-V4.1-Flash-1017-UNCENSORED-FP8,
+   https://huggingface.co/dealignai/DeepSeek-V4.1-Flash-1017-UNCENSORED-FP8 (an uncensored copy, probably the kind
+   this gateway serves: unconfirmed): refusals removed from the weights, MMLU 3.86 points lower than the base, SGLang
+   `--reasoning-parser deepseek-v41 --tool-call-parser deepseekv41`, effort tiers low, high (default) and max.
+5. LiteLLM, "Use Claude Code with Non-Anthropic Models",
+   https://docs.litellm.ai/docs/tutorials/claude_non_anthropic_models (the gateway): base URL without `/v1`,
+   `ANTHROPIC_AUTH_TOKEN`, an unknown model gets Claude Code's default window, `CLAUDE_CODE_AUTO_COMPACT_WINDOW`.
+6. LiteLLM issue 22963, https://github.com/BerriAI/litellm/issues/22963 (the gateway; read as a search summary):
+   `output_config` forwarded to an OpenAI backend fails.
+7. "Claude Code on DeepSeek V4.1-Flash-1017", https://blog.sandbase.ai/claude-code-deepseek-v4-1-flash-1017-2026/
+   (secondary, 21 Oct 2026): set every slot, or an unset Opus slot falls back to another model.
+8. Cursor forum, "Compatibility with DeepSeek model's design to return reasoning content after tool calls",
+   https://forum.cursor.com/t/compatibility-with-deepseek-models-design-to-return-reasoning-content-after-tool-calls/158905
+   (another client; read as a search summary).
+9. cc-switch issue 3246, https://github.com/farion1231/cc-switch/issues/3246 (Claude Code against DeepSeek; one
+   report, read as a search summary): adaptive thinking not supported, reasoning not kept.
+
+## Proof
+
+P7 gives the same task to a session on each provider: in a scratch repository with one function and its test, add
+`titleCase`, add tests, run `npm test`, commit on `proof/title-case`. The journey then checks the branch, runs the tests
+on it, calls `titleCase` itself, and counts tool calls, failed tool calls and API errors from the session's stream.
+
+| | claude-main (default) | deepseek-rtx |
+|---|---|---|
+| Model, effort | claude-opus-5-5, medium | deepseek-v4.1-flash-1017-uncensored, medium |
+| Run | 13 Nov 2026 09:09 UTC, `acceptance/results/P7-claude-main.json` | 13 Nov 2026 17:36 UTC, `acceptance/results/P7-deepseek-rtx.json` |
+| Checks | 10 of 10 | 15 of 16: the probe's five plus the session's ten; the one failing is the probe's `tools-thinking` (400, above), which the profile does not use |
+| Live check | - | models 200 (480 ms), streamed text 200 with named events (878 ms), tool loop 200 (1184 ms), tool loop with thinking 400 (353 ms), count_tokens 200 (382 ms) |
+| Session time | 19.3 s (18.1 s in the session, 16.5 s of it in the API) | 11.4 s (10.8 s in the session, 9.9 s of it in the API) |
+| Tool calls | 3 (Bash) in 4 turns | 7 (Bash 3, Read 2, Edit 2) in 8 turns |
+| Failed tool calls, API errors | 0, 0 | 0, 0 |
+| Branch | one commit, "Add titleCase text helper with tests"; its 3 tests pass; `titleCase` correct | one commit, "Add titleCase helper with tests"; its tests pass; `titleCase` correct |
+
+Both sessions start through `session.mjs`, each in its own config folder, so neither sees the owner's personal
+configuration and the comparison is of the providers alone. An earlier default run (09:08 UTC) did the same in 20.1 s
+with 3 Bash calls and no errors; the journey's own branch check failed on it (the branch was checked out in the
+repository) and was fixed before the recorded run. One run each, so the times compare these two runs, not the
+providers in general. The DeepSeek run read the key from where it had been saved, through `--from` and a providers
+file outside the repository; the key appears in none of the run's 108 output files.
+
+## What Ekoa needs
+
+Ekoa starts a coordinator today, in tmux, as
+`claude --dangerously-skip-permissions --mcp-config <bridge>/claude-mcp.json --remote-control <name> --model opus --effort medium`.
+For this provider it would start instead:
+
+```
+node <plugin>/skills/jevellan-runtime-claude/scripts/session.mjs --provider deepseek-rtx --cwd <project> -- \
+  --dangerously-skip-permissions --mcp-config <bridge>/claude-mcp.json --model opus --effort medium
+```
+
+- What to pass: a provider name next to `--model` and `--effort`, `deepseek-rtx`; no name means today's command.
+  `<plugin>` is the installed plugin's folder once this is released; nothing is installed from this branch.
+- A refusal (exit 2, the reason on stderr) happens before anything starts: Ekoa should show the reason, not retry.
+- Ekoa's hooks. Ekoa's bridge follows its sessions through hooks in the owner's user settings (SessionEnd, Stop,
+  UserPromptSubmit, Notification, each run when `EKOA_SESSION` is set). The session's own config folder loads none of
+  the owner's settings, so Ekoa has to pass those hooks with `--settings` (a JSON object with a `hooks` key, or a file
+  of one); `session.mjs` keeps the caller's settings and adds its own. Checked on the loopback server: a Stop and a
+  UserPromptSubmit hook passed that way both ran, and `EKOA_SESSION` reached them.
+- Transcripts of these sessions live under `~/.jevellan-harness/claude-config-sessions/deepseek-rtx/`, not under the
+  owner's Claude folder; whatever Ekoa reads from transcripts has to look there.
+- Lost on this provider: remote control. Driving the session through tmux (typed input) is what is left; it was
+  checked here only by hand in one tmux session, not with Ekoa's bridge.
+- The owner's decision: Ekoa's session MCP. Passed as today, it gives the session the inbox, archive and client tools
+  as well as the task's, so any project's sensitive material can reach the provider through them. A task-only MCP
+  configuration for sessions on a third-party provider would close that; until one exists, the projects list is the
+  only guard.
+
+## Overlap
+
+An earlier branch, `jh/deepseek-rtx-run-harness-work-on-the-cul-TDMS2GF` (7 Nov, never pushed), routed some duties and
+the evals to the same endpoint with a request gate; it is not merged and this work does not build on it. Its loopback
+findings agree with this document's (Bearer token, `/v1/messages?beta=true`, named SSE events needed). The live
+providers.json already has a provider called `deepseek` (api.deepseek.com), hence the name `deepseek-rtx`.

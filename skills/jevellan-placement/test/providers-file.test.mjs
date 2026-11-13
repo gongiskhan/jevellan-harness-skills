@@ -15,6 +15,7 @@ import {
   loadProviders,
   ownerHome,
   parseProviders,
+  projectListed,
   providersPath,
   providersStatePath,
   readProvidersState,
@@ -70,6 +71,45 @@ describe('providers.json', () => {
       [one({ tokenFlie: '/t' }), 'providers.json: providers[0] (p) has an unknown key "tokenFlie"'],
     ];
     for (const [raw, message] of cases) assert.throws(() => parseProviders(raw, '/x/providers.json'), refusal(message), message);
+  });
+
+  test('placement, projects and env (H-044): defaults, ~ expanded, and every wrong shape refused', () => {
+    const endpoint = (p) => ({ jev: JEV, providers: [{ name: 'e', kind: 'claude-endpoint', baseUrl: 'https://x.invalid', keyFile: '/k', models: MODELS, ...p }] });
+    const plain = parseProviders(endpoint({}), '/x/providers.json').providers[0];
+    assert.equal(plain.placement, true);
+    assert.equal('projects' in plain, false);
+    assert.equal('env' in plain, false);
+    const full = parseProviders(endpoint({ placement: false, projects: ['~/dev/a', '/srv/b'], env: { CLAUDE_CODE_MAX_OUTPUT_TOKENS: '65536', MAX_THINKING_TOKENS: '0' } }), '/x/providers.json').providers[0];
+    assert.equal(full.placement, false);
+    assert.deepEqual(full.projects, [path.join(ownerHome(), 'dev/a'), '/srv/b']);
+    assert.deepEqual(full.env, { CLAUDE_CODE_MAX_OUTPUT_TOKENS: '65536', MAX_THINKING_TOKENS: '0' });
+    const sub = (p) => ({ jev: JEV, providers: [{ name: 's', kind: 'claude-subscription', models: MODELS, ...p }] });
+    const cases = [
+      [endpoint({ placement: 'no' }), 'providers.json: providers.e placement must be true or false'],
+      [endpoint({ projects: [] }), 'providers.json: providers.e projects must be a non-empty list of absolute project folders (or ~/...)'],
+      [endpoint({ projects: ['relative/dir'] }), 'providers.json: providers.e projects must be a non-empty list of absolute project folders (or ~/...)'],
+      [sub({ projects: ['/srv/b'] }), 'providers.json: providers.s projects is for claude-endpoint providers only'],
+      [sub({ env: { A: 'b' } }), 'providers.json: providers.s env is for claude-endpoint providers only'],
+      [endpoint({ env: ['A=b'] }), 'providers.json: providers.e env must be an object of variable names and texts'],
+      [endpoint({ env: { lower: 'b' } }), 'providers.json: providers.e env name lower must be capitals, digits and underscores'],
+      [endpoint({ env: { ANTHROPIC_AUTH_TOKEN: 'b' } }), 'providers.json: providers.e env may not set ANTHROPIC_AUTH_TOKEN; the runtime sets it'],
+      [endpoint({ env: { JH_TASK: 'b' } }), 'providers.json: providers.e env may not set JH_TASK; the runtime sets it'],
+      [endpoint({ env: { GITHUB_TOKEN: 'b' } }), "providers.json: providers.e env may not hold a secret (GITHUB_TOKEN); a secret lives in the provider's key file"],
+      [endpoint({ env: { API_TIMEOUT_MS: 600000 } }), 'providers.json: providers.e env.API_TIMEOUT_MS must be a text'],
+    ];
+    for (const [raw, message] of cases) assert.throws(() => parseProviders(raw, '/x/providers.json'), refusal(message), message);
+  });
+
+  test('projectListed: no list allows every project; a list allows its folders by real path, never a parent or a missing root', () => {
+    const repo = tempDir('jh-pf-repo-');
+    const link = path.join(tempDir('jh-pf-link-'), 'repo');
+    fs.symlinkSync(repo, link);
+    assert.equal(projectListed({ name: 'x' }, repo), true);
+    assert.equal(projectListed({ name: 'x', projects: [repo] }, repo), true);
+    assert.equal(projectListed({ name: 'x', projects: [link] }, repo), true, 'a symlinked spelling of the same folder');
+    assert.equal(projectListed({ name: 'x', projects: [path.dirname(repo)] }, repo), false, 'a parent folder allows nothing below it');
+    assert.equal(projectListed({ name: 'x', projects: [repo] }, tempDir('jh-pf-other-')), false);
+    assert.equal(projectListed({ name: 'x', projects: [repo] }, null), false);
   });
 
   test('loadProviders reads JH_HARNESS_HOME/providers.json; a missing or broken file is exit 2', () => {

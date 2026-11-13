@@ -170,6 +170,33 @@ describe('start', () => {
     assert.equal(appends('step.started').length, 0);
   });
 
+  test('a provider with a projects list starts a step only in a listed project, with its env (H-044)', () => {
+    const file = path.join(HARNESS_HOME, 'providers.json');
+    const config = JSON.parse(fs.readFileSync(file, 'utf8'));
+    const listed = { name: 'listed-test', kind: 'claude-endpoint', keyFile: path.join(HARNESS_HOME, 'secrets', 'endpoint.key'), baseUrl: 'http://127.0.0.1:9', placement: false, projects: [makeProject().project], env: { API_TIMEOUT_MS: '1800000' }, models: [{ id: 'model-a', efforts: ['low'] }] };
+    fs.writeFileSync(file, JSON.stringify({ ...config, providers: [...config.providers, listed] }));
+    const where = { provider: 'listed-test', model: 'model-a', effort: 'low' };
+    const lines = new TaskLines({ task: 'T0FAKE9' });
+    lines.worktree(wt);
+    lines.placed(1, where);
+    skills.script({ shows: { [lines.task]: [lines.show()] } });
+    const before = allRuns().length;
+    let r = run('start.mjs', startArgs(lines.task, { where }));
+    assert.equal(r.status, 2, r.stderr);
+    assert.match(r.json.error, /provider listed-test runs only in the projects its projects list in providers.json names, and .* is not one of them/);
+    assert.equal(allRuns().length, before, 'no worker was spawned');
+    assert.equal(appends('step.started').length, 0);
+
+    fs.writeFileSync(file, JSON.stringify({ ...config, providers: [...config.providers, { ...listed, projects: [project] }] }));
+    r = run('start.mjs', startArgs(lines.task, { where }));
+    assert.equal(r.status, 0, r.stderr);
+    assert.ok(waitFor(() => runs(r.json.session).length === 1));
+    const rec = runs(r.json.session)[0];
+    assert.equal(rec.env.API_TIMEOUT_MS, '1800000');
+    assert.equal(rec.env.ANTHROPIC_BASE_URL, 'http://127.0.0.1:9');
+    fs.writeFileSync(file, JSON.stringify(config));
+  });
+
   test('a tool-less duty gets one turn in the project and its duty body inline, without the Interface section', () => {
     const lines = new TaskLines({ task: 'T0FAKE6', duty: 'answer' });
     lines.placed(1, CLAUDE);

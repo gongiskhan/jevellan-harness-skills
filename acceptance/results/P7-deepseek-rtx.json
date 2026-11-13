@@ -1,0 +1,118 @@
+{
+  "id": "P7-deepseek-rtx",
+  "title": "Session on deepseek-rtx: edit, test, commit (H-044)",
+  "status": "failed",
+  "startedAt": "2026-11-13T17:36:09.684Z",
+  "finishedAt": "2026-11-13T17:36:24.740Z",
+  "elapsedMs": 15056,
+  "passed": 15,
+  "total": 16,
+  "timings": {
+    "session": 11395
+  },
+  "notes": [
+    "provider entry from /tmp/claude-1001/-home-ggomes-dev-jevellan-harness-skills/e7611d78-a6d4-4916-90e3-a6b66e83897c/scratchpad/providers-rtx.json; scratch repository /home/ggomes/dev/jevellan-harness-skills-d2/acceptance/out/p7-deepseek-rtx-j54QH6/proof",
+    "live check: ok true, thinking in tool loops fails",
+    "model deepseek-v4.1-flash-1017-uncensored, effort medium; turns 8, assistant messages 8; tools {\"Bash\":3,\"Read\":2,\"Edit\":2}; tool errors 0; API errors 0",
+    "duration_ms 10768, duration_api_ms 9933, cost reported 0.22321300000000002 USD, usage {\"input_tokens\":283,\"cache_creation_input_tokens\":23424,\"cache_read_input_tokens\":90496,\"output_tokens\":1206,\"output_tokens_details\":{\"thinking_tokens\":0},\"server_tool_use\":{\"web_search_requests\":0,\"web_fetch_requests\":0},\"service_tier\":\"standard\",\"cache_creation\":{\"ephemeral_1h_input_tokens\":0,\"ephemeral_5m_input_tokens\":0},\"inference_geo\":\"\",\"iterations\":[],\"speed\":\"standard\",\"fallback_credit\":null}",
+    "transcript /home/ggomes/dev/jevellan-harness-skills-d2/acceptance/out/p7-deepseek-rtx-j54QH6/transcript.jsonl"
+  ],
+  "checks": [
+    {
+      "name": "the live check ran",
+      "ok": true,
+      "detail": "",
+      "at": "2026-11-13T17:36:13.041Z"
+    },
+    {
+      "name": "live check models",
+      "ok": true,
+      "detail": "HTTP 200, 480 ms: deepseek-v4.1-flash-1017-uncensored listed",
+      "at": "2026-11-13T17:36:13.041Z"
+    },
+    {
+      "name": "live check text",
+      "ok": true,
+      "detail": "HTTP 200, 878 ms: named SSE events (message_start, content_block_start, content_block_delta, content_block_stop, message_delta, message_stop), text/event-stream; charset=utf-8; answer \"PONG\"",
+      "at": "2026-11-13T17:36:13.041Z"
+    },
+    {
+      "name": "live check tools",
+      "ok": true,
+      "detail": "HTTP 200, 1184 ms: tool_use lookup({\"key\":\"alpha\"}), 0 thinking block(s) sent back; answer \"ZEBRA-42\"",
+      "at": "2026-11-13T17:36:13.041Z"
+    },
+    {
+      "name": "live check tools-thinking",
+      "ok": false,
+      "detail": "HTTP 400, 353 ms: first turn: HTTP 400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"litellm.BadRequestError: OpenAIException - {\\\"error\\\":{\\\"message\\\":\\\"DeepSeek V4.1 reasoning_effort must be one of low, high, max or an integer within [1, 100] in chat_template_kwargs\\\",\\\"type\\\":\\\"BadRequestError\\\",\\\"param\\\":null,\\\"c",
+      "at": "2026-11-13T17:36:13.041Z"
+    },
+    {
+      "name": "live check count-tokens",
+      "ok": true,
+      "detail": "HTTP 200, 382 ms: input_tokens 11",
+      "at": "2026-11-13T17:36:13.041Z"
+    },
+    {
+      "name": "the session ended with exit 0",
+      "ok": true,
+      "detail": "",
+      "at": "2026-11-13T17:36:24.438Z"
+    },
+    {
+      "name": "the result is a success",
+      "ok": true,
+      "detail": "{\"subtype\":\"success\",\"is_error\":false}",
+      "at": "2026-11-13T17:36:24.438Z"
+    },
+    {
+      "name": "branch proof/title-case exists",
+      "ok": true,
+      "detail": "06d0171b26f73f06adf7d82463c10f48a719f2e4",
+      "at": "2026-11-13T17:36:24.442Z"
+    },
+    {
+      "name": "the branch carries the change in commits of its own",
+      "ok": true,
+      "detail": "1 commit(s)",
+      "at": "2026-11-13T17:36:24.445Z"
+    },
+    {
+      "name": "the change is in src/text.mjs and test/text.test.mjs",
+      "ok": true,
+      "detail": "src/text.mjs, test/text.test.mjs",
+      "at": "2026-11-13T17:36:24.448Z"
+    },
+    {
+      "name": "the commits carry no attribution",
+      "ok": true,
+      "detail": "Add titleCase helper with tests",
+      "at": "2026-11-13T17:36:24.452Z"
+    },
+    {
+      "name": "npm test passes on the branch",
+      "ok": true,
+      "detail": "",
+      "at": "2026-11-13T17:36:24.704Z"
+    },
+    {
+      "name": "titleCase does what was asked",
+      "ok": true,
+      "detail": "[\"Hello World\",\"A\",\"Mixed Case Words\"]",
+      "at": "2026-11-13T17:36:24.740Z"
+    },
+    {
+      "name": "no tool call failed",
+      "ok": true,
+      "detail": "",
+      "at": "2026-11-13T17:36:24.740Z"
+    },
+    {
+      "name": "no API error",
+      "ok": true,
+      "detail": "",
+      "at": "2026-11-13T17:36:24.740Z"
+    }
+  ]
+}
