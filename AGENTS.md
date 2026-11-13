@@ -36,7 +36,8 @@ deterministically, plain Node scripts next to it.
   harness did (ledger, reports, git, gh calls, what the owner was told); `behaviour/RESULTS.md` is their record and
   `behaviour/README.md` says how to run and add one.
 - `docs/decisions.md` (append-only, H-numbers), `docs/findings.md` (verified tool behaviour), `docs/roles.md`
-  (generated).
+  (generated), `docs/endpoint-sessions.md` (sessions on a third party's endpoint: never by default, only in the projects
+  the provider's `projects` list names).
 
 ## Decoupling over efficiency
 

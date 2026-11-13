@@ -1,0 +1,15 @@
+{
+  "id": "P7-deepseek-rtx",
+  "title": "Session on deepseek-rtx: edit, test, commit (H-044)",
+  "status": "blocked: the key file ~/.config/cultura-builder-llm/rtx-litellm-key does not exist yet; save the key there with mode 600 and run this again",
+  "startedAt": "2026-11-13T09:11:14.161Z",
+  "finishedAt": "2026-11-13T09:11:14.162Z",
+  "elapsedMs": 1,
+  "passed": 0,
+  "total": 0,
+  "timings": {},
+  "notes": [
+    "provider entry from /home/ggomes/dev/jevellan-harness-skills-d2/providers.example.json"
+  ],
+  "checks": []
+}

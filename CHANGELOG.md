@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+- Sessions on a named provider (docs/decisions.md H-044, docs/endpoint-sessions.md): the Claude runtime's
+  `session.mjs` starts a coordinator or any session of the owner's on a provider from providers.json, in its own config
+  folder with the provider's login and settings; `probe.mjs` checks an endpoint against the requests Claude Code
+  sends; providers.json gains `placement`, `projects` and `env`; `providers.example.json` adds `deepseek-rtx`; P7
+  (`acceptance/p7-endpoint-session.mjs`) compares an edit-test-commit session across providers.
+
 ## 0.4.0 - 2026-11-04
 
 From the first real week on ekoa-code (msg-harness-004; docs/decisions.md H-042, H-043).

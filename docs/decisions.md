@@ -642,3 +642,29 @@ text (hash b0e1671b...) are unchanged.
   landing fails after it. The pull request body gains "Decisions taken" and "Follow-ups".
 - Both report fields are additive: reports without them stay valid, and the runtimes, which list the report's fields
   in their prompts and may not change, need nothing: the duty skills ask for the new fields.
+
+## H-044 Sessions on a named provider, and providers that stay out of the way (owner request, 13 Nov 2026)
+
+The owner asked for coordinator sessions on DeepSeek V4.1 Flash through a third party's OpenAI-compatible gateway
+(LiteLLM at llm-rtx.culturabuilder.com), started by name, the default untouched, and safe by default for HUB and CSG
+material.
+
+- The gateway registers the Anthropic Messages routes, so a provider is environment only: no translating layer. A
+  local proxy stays the fallback if the live check (probe.mjs) shows the Messages route itself failing.
+- The session launcher is the Claude runtime's `session.mjs`, not a root tool: the runtime already owns the provider
+  login (providerLogin), the worker settings and the secrets' handling, and steps and sessions on one provider must
+  get the same environment and the same guard. It runs Claude Code in the foreground and exits with its code.
+- A session gets its own config folder per provider (`claude-config-sessions/<provider>`), as workers got theirs in
+  H-001, because the owner's folder sent his instructions, memory and MCP names to the endpoint (measured,
+  findings.md). The price: no claude.ai login there, so no remote control and no claude.ai connectors; the first-run
+  screens are answered in that folder for the session's folder only.
+- providers.json gains `placement` (false: never in Jev's menu; the owner's placement may still name it), `projects`
+  and `env`, both for claude-endpoint only. `projects` is an allowlist by real path, fail-closed: session.mjs requires
+  it of every endpoint, the runtime refuses steps outside it, placement neither offers nor accepts them. A denylist of
+  sensitive projects was rejected: a list of what may go to a third party cannot miss a new project, a list of what may
+  not can. `env` holds non-secret variables only (names like a secret, the login and JH_* are refused).
+- Settings: the provider's maximum output, a compaction window of three quarters of 1M (DeepSeek's value), a 30-minute
+  request timeout, non-essential traffic off, experimental betas off, thinking off until the live check shows the
+  gateway keeping reasoning across a tool loop, auto memory off. Each was checked on the requests Claude Code sends.
+- Not solved here, the owner's decision: MCP configuration files passed explicitly (Ekoa's session MCP reads the
+  inbox and the archive), and shell commands, which can read any file the owner can; only a sandbox closes the second.

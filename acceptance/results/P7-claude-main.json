@@ -1,0 +1,81 @@
+{
+  "id": "P7-claude-main",
+  "title": "Session on claude-main: edit, test, commit (H-044)",
+  "status": "passed",
+  "startedAt": "2026-11-13T09:09:38.392Z",
+  "finishedAt": "2026-11-13T09:09:57.969Z",
+  "elapsedMs": 19576,
+  "passed": 10,
+  "total": 10,
+  "timings": {
+    "session": 19250
+  },
+  "notes": [
+    "provider entry from /home/ggomes/.jevellan-harness/providers.json; scratch repository /home/ggomes/dev/jevellan-harness-skills-d2/acceptance/out/p7-claude-main-H2Mr80/proof",
+    "model claude-opus-5-5, effort medium; turns 4, assistant messages 5; tools {\"Bash\":3}; tool errors 0; API errors 0",
+    "duration_ms 18054, duration_api_ms 16463, cost reported 0.1323676 USD, usage {\"input_tokens\":8,\"cache_creation_input_tokens\":12571,\"cache_read_input_tokens\":81038,\"output_tokens\":778,\"output_tokens_details\":{\"thinking_tokens\":40},\"server_tool_use\":{\"web_search_requests\":0,\"web_fetch_requests\":0},\"service_tier\":\"standard\",\"cache_creation\":{\"ephemeral_1h_input_tokens\":12571,\"ephemeral_5m_input_tokens\":0},\"inference_geo\":\"global\",\"iterations\":[{\"input_tokens\":2,\"output_tokens\":210,\"cache_read_input_tokens\":23663,\"cache_creation_input_tokens\":162,\"cache_creation\":{\"ephemeral_5m_input_tokens\":0,\"ephemeral_1h_input_tokens\":162},\"type\":\"message\"}],\"speed\":\"standard\",\"fallback_credit\":null}",
+    "transcript /home/ggomes/dev/jevellan-harness-skills-d2/acceptance/out/p7-claude-main-H2Mr80/transcript.jsonl"
+  ],
+  "checks": [
+    {
+      "name": "the session ended with exit 0",
+      "ok": true,
+      "detail": "",
+      "at": "2026-11-13T09:09:57.665Z"
+    },
+    {
+      "name": "the result is a success",
+      "ok": true,
+      "detail": "{\"subtype\":\"success\",\"is_error\":false}",
+      "at": "2026-11-13T09:09:57.665Z"
+    },
+    {
+      "name": "branch proof/title-case exists",
+      "ok": true,
+      "detail": "08e6a499745bb68a12a6cbe52d893da34551ff56",
+      "at": "2026-11-13T09:09:57.668Z"
+    },
+    {
+      "name": "the branch carries the change in commits of its own",
+      "ok": true,
+      "detail": "1 commit(s)",
+      "at": "2026-11-13T09:09:57.672Z"
+    },
+    {
+      "name": "the change is in src/text.mjs and test/text.test.mjs",
+      "ok": true,
+      "detail": "src/text.mjs, test/text.test.mjs",
+      "at": "2026-11-13T09:09:57.676Z"
+    },
+    {
+      "name": "the commits carry no attribution",
+      "ok": true,
+      "detail": "Add titleCase text helper with tests",
+      "at": "2026-11-13T09:09:57.679Z"
+    },
+    {
+      "name": "npm test passes on the branch",
+      "ok": true,
+      "detail": "",
+      "at": "2026-11-13T09:09:57.931Z"
+    },
+    {
+      "name": "titleCase does what was asked",
+      "ok": true,
+      "detail": "[\"Hello World\",\"A\",\"Mixed Case Words\"]",
+      "at": "2026-11-13T09:09:57.969Z"
+    },
+    {
+      "name": "no tool call failed",
+      "ok": true,
+      "detail": "",
+      "at": "2026-11-13T09:09:57.969Z"
+    },
+    {
+      "name": "no API error",
+      "ok": true,
+      "detail": "",
+      "at": "2026-11-13T09:09:57.969Z"
+    }
+  ]
+}

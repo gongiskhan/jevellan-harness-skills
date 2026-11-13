@@ -288,3 +288,35 @@ the environment by a small script, never on a command line.
   before any add is not picked up by the `claude plugin` commands ("Plugin not found in marketplace"). The update pass
   itself runs only in an interactive session, up to ten minutes after the first message (documentation), and was not
   observed here.
+
+## Claude Code on an endpoint provider (2.1.323), 2026-11-13
+
+Measured by running the real `claude -p` against a loopback Messages server that records every request (fake key,
+no model behind it), for H-044 (`endpoint-sessions.md`).
+
+- The client calls `POST <ANTHROPIC_BASE_URL>/v1/messages?beta=true` with `Authorization: Bearer <ANTHROPIC_AUTH_TOKEN>`
+  and no `x-api-key`, and `stream: true` on every inference request. A model name it does not know gets a 1M-token
+  window ("Claude Code doesn't recognize the model ..., so it assumes a context window of 1m tokens"); the `[1m]`
+  suffix only adds the `context-1m-2025-08-07` beta header.
+- Default request for an unknown model: `max_tokens` 32000, `thinking: {type: "adaptive", display: "omitted"}`,
+  `output_config: {effort}` (`high` without `--effort`), `context_management: {edits: [clear_thinking_20251015]}`,
+  no `temperature` or `top_p`, tool search on (a `ToolSearch` tool and a `DeferredToolPlaceholder` with
+  `defer_loading: true`), seven beta headers.
+- `CLAUDE_CODE_MAX_OUTPUT_TOKENS=65536` makes `max_tokens` 65536. `MAX_THINKING_TOKENS=0` and
+  `CLAUDE_CODE_DISABLE_THINKING=1` each remove `thinking` and `context_management`. `CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS=1`
+  leaves three beta headers (`claude-code-20250219,interleaved-thinking-2025-05-14,effort-2025-11-24`), removes
+  `context_management` and tool search (21 tools listed up front). `output_config.effort` is sent in every variant.
+- In the owner's own config folder, a session in a folder under his home sent his global instructions (the folder
+  above is his home, whose `.claude/` rules load as a parent folder's), memory instructions and MCP server names, and
+  the claude.ai login added `safeguards` and two more betas. With its own `CLAUDE_CONFIG_DIR` and the workers'
+  `claudeMdExcludes`, none of these appear; the machine's git user name (git status context) does.
+- With its own `CLAUDE_CONFIG_DIR` an interactive session first shows the theme picker and security notes
+  (`hasCompletedOnboarding` in `.claude.json`), then the folder trust dialog (`projects[<folder>].hasTrustDialogAccepted`),
+  then, with `--dangerously-skip-permissions`, the bypass warning (`skipDangerousModePermissionPrompt` in
+  `settings.json`). Seeding those three lets a session start straight to the prompt.
+- Without a claude.ai login, `--remote-control <name>` is ignored silently (no error, no indicator) and
+  `/remote-control` is an unknown command.
+- Unauthenticated probes of `https://llm-rtx.culturabuilder.com`: `/v1/messages`, `/v1/messages?beta=true`,
+  `/v1/messages/count_tokens`, `/v1/chat/completions`, `/v1/responses` and `/v1/models` answer LiteLLM's 401
+  ("Authentication Error, No api key passed in."); an unknown `/v1/...` route answers 404 `{"detail":"Not Found"}`;
+  `/health/readiness` answers 200 `{"status":"healthy","db":"connected"}`; `server: cloudflare`.
