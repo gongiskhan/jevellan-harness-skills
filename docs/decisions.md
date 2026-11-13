@@ -646,8 +646,8 @@ text (hash b0e1671b...) are unchanged.
 ## H-044 Sessions on a named provider, and providers that stay out of the way (owner request, 13 Nov 2026)
 
 The owner asked for coordinator sessions on DeepSeek V4.1 Flash through a third party's OpenAI-compatible gateway
-(LiteLLM at llm-rtx.culturabuilder.com), started by name, the default untouched, and safe by default for HUB and CSG
-material.
+(LiteLLM at llm-rtx.culturabuilder.com), started by name, the default untouched, and safe by default for clients' and
+other sensitive projects' material.
 
 - The gateway registers the Anthropic Messages routes, so a provider is environment only: no translating layer. A
   local proxy stays the fallback if the live check (probe.mjs) shows the Messages route itself failing.

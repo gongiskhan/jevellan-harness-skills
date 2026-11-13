@@ -91,8 +91,8 @@ runtime refuses it outside the listed projects.
 
 ## Third-party guard
 
-The endpoint is a third party's. Sessions on HUB or CSG material must not use it unless the owner says so, and the
-profile makes that hard to do by accident:
+The endpoint is a third party's. Sessions on a client's or another sensitive project's material must not use it unless
+the owner says so, and the profile makes that hard to do by accident:
 
 - Fail closed by project. An endpoint provider is usable only in the git repositories its `projects` list names,
   compared by real path (a worktree counts as its repository; a parent folder allows nothing below it; a folder
@@ -102,24 +102,24 @@ profile makes that hard to do by accident:
   provider, and it is the only way to make that happen.
 
   ```
-  $ cd ~/dev/csg && node .../session.mjs --provider deepseek-rtx --dry-run
-  provider deepseek-rtx runs only in the projects its projects list names, and /home/ggomes/dev/csg is not inside a git repository   (exit 2)
+  $ cd ~/dev/some-client && node .../session.mjs --provider deepseek-rtx --dry-run
+  provider deepseek-rtx runs only in the projects its projects list in providers.json names, and /home/<owner>/dev/some-client is not one of them; add a project there only when its material may go to this provider   (exit 2)
   ```
 
 - Never by default. Nothing chooses the provider but its name: plain `claude` and Ekoa's current command are
   unchanged, and Jev never sees it (`placement: false`).
 
 - Nothing personal in the session. Measured on the requests Claude Code 2.1.323 sent to a loopback server
-  (`findings.md`): with the owner's own config the first request carried his global instructions (13 hits for the
-  caveman rule), his name, MCP server names and memory instructions; through `session.mjs` with the example's
-  settings every one of those counts is 0. What remains by design: the repository's files and instructions
+  (`findings.md`): with the owner's own config the first request carried his global instructions (13 matches of one
+  of his rules), the names of his MCP servers and skills, and memory instructions; through `session.mjs` with the
+  example's settings every one of those counts is 0. What remains by design: the repository's files and instructions
   (`AGENTS.md`), the machine's git user name, the working folder's path.
 
 What the profile does not stop, and is the owner's call:
 
 - MCP servers named explicitly with `--mcp-config` still load. Ekoa passes its session MCP that way, and that server
-  can read the inbox, the archive and clients: HUB or CSG material reaches the provider the moment the model calls
-  one of those tools. See "What Ekoa needs".
+  can read the inbox, the archive and clients: sensitive material from any project reaches the provider the moment
+  the model calls one of those tools. See "What Ekoa needs".
 - The session runs Bash with the owner's rights. The deny rules keep Read and Edit away from the harness's secrets,
   but a shell command can still read any file the owner can, and its output goes to the provider. Only Claude Code's
   sandbox would close that; it is not turned on here.
@@ -137,7 +137,7 @@ documents describe DeepSeek's own API, not LiteLLM in front of a self-hosted cop
 | `ANTHROPIC_MODEL`, `ANTHROPIC_DEFAULT_OPUS/SONNET/HAIKU_MODEL`, `CLAUDE_CODE_SUBAGENT_MODEL` | `deepseek-v4.1-flash-1017-uncensored` | every slot, so `--model opus`, the small fast model and subagents never ask the gateway for a Claude model | [1], [7] |
 | `CLAUDE_CODE_MAX_OUTPUT_TOKENS` | `65536` | the provider's maximum output | seen: `max_tokens` 32000 becomes 65536 |
 | `CLAUDE_CODE_AUTO_COMPACT_WINDOW` | `786432` | Claude Code assumes 1M tokens for an unknown model (it says so at start), so compaction would otherwise wait until the window is nearly full; 786,432 is three quarters of 1M and DeepSeek's own value | seen; [1], [5] |
-| `API_TIMEOUT_MS` | `1800000` | 65,536 tokens at a slow 40 tokens per second is about 27 minutes; Claude Code's default of 10 minutes would cut a long answer. Every request streams (seen), which also keeps Cloudflare's 100 s limit on silent responses away | seen; derived |
+| `API_TIMEOUT_MS` | `1800000` | derived, not measured: 65,536 tokens at a slow 40 tokens per second is about 27 minutes, longer than Claude Code's default of 10 minutes. Every request streams (seen), which keeps Cloudflare's 100 s limit on silent responses away | seen (streaming); derived |
 | `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC` | `1` | no telemetry, error reports or update checks from the session | asked for; [1] |
 | `CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS` | `1` | removes `context_management` (thinking clearing), tool search's `defer_loading` and four beta headers: fewer things for the gateway to translate. Tools are then all listed up front (21), which the 1M window affords | seen |
 | `MAX_THINKING_TOKENS` | `0`, provisional | removes `thinking` (and `context_management`) from every request. DeepSeek's thinking with tools needs the reasoning sent back on every later request of the loop, and returns 400 when it cannot recover it [2]; clients that translate formats are where that breaks [8], [9]. Unverified for this gateway: the probe's `tools-thinking` decides | seen; [2], [8], [9] |
@@ -215,10 +215,19 @@ node <plugin>/skills/jevellan-runtime-claude/scripts/session.mjs --provider deep
 - What to pass: a provider name next to `--model` and `--effort`, `deepseek-rtx`; no name means today's command.
   `<plugin>` is the installed plugin's folder once this is released; nothing is installed from this branch.
 - A refusal (exit 2, the reason on stderr) happens before anything starts: Ekoa should show the reason, not retry.
-- Lost on this provider: remote control. Ekoa has to drive the session through tmux.
+- Ekoa's hooks. Ekoa's bridge follows its sessions through hooks in the owner's user settings (SessionEnd, Stop,
+  UserPromptSubmit, Notification, each run when `EKOA_SESSION` is set). The session's own config folder loads none of
+  the owner's settings, so Ekoa has to pass those hooks with `--settings` (a JSON object with a `hooks` key, or a file
+  of one); `session.mjs` keeps the caller's settings and adds its own. Checked on the loopback server: a Stop and a
+  UserPromptSubmit hook passed that way both ran, and `EKOA_SESSION` reached them.
+- Transcripts of these sessions live under `~/.jevellan-harness/claude-config-sessions/deepseek-rtx/`, not under the
+  owner's Claude folder; whatever Ekoa reads from transcripts has to look there.
+- Lost on this provider: remote control. Driving the session through tmux (typed input) is what is left; it was
+  checked here only by hand in one tmux session, not with Ekoa's bridge.
 - The owner's decision: Ekoa's session MCP. Passed as today, it gives the session the inbox, archive and client tools
-  as well as the task's, so HUB or CSG material can reach the provider through them. A task-only MCP configuration for
-  sessions on a third-party provider would close that; until one exists, the projects list is the only guard.
+  as well as the task's, so any project's sensitive material can reach the provider through them. A task-only MCP
+  configuration for sessions on a third-party provider would close that; until one exists, the projects list is the
+  only guard.
 
 ## Overlap
 

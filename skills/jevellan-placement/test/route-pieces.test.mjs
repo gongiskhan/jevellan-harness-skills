@@ -80,6 +80,8 @@ describe('providers and the menu', () => {
       now,
     });
     assert.deepEqual(ranked.map((r) => `${r.provider.name}:${r.reason}`), ['listed:eligible', 'open:eligible', 'both:project-not-listed', 'elsewhere:project-not-listed', 'hidden:not-offered']);
+    const keyless = route.rankProviders({ providers: [p('hidden', { placement: false })], state: { providers: { hidden: entry } }, kinds: ['claude-endpoint'], project: repo, keyReady: () => false, now });
+    assert.equal(keyless[0].reason, 'no-key', 'a provider without its key is no-key, which the owner\'s placement cannot override, before not-offered');
     const policy = route.loadRouterPolicy();
     assert.throws(() => route.buildMenu({ config: { providers: [p('hidden', { placement: false })] }, state: { providers: { hidden: entry } }, kinds: ['claude-endpoint'], policy, project: repo, keyReady: () => true, now }), (e) => e.exitCode === 2 && /no provider can run this step \(kinds claude-endpoint\): hidden not-offered/.test(e.message));
   });

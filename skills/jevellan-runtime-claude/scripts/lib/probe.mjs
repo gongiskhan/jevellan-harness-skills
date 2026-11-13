@@ -114,7 +114,8 @@ async function call(target, method, route, body, fetchImpl) {
   }
 }
 
-const messagesBody = (model, messages, extra = {}) => ({ model, max_tokens: 2048, stream: true, messages, ...extra });
+// Room for a heavy reasoner to think before its tool call, so a cut-off answer does not pass for a gateway failure.
+const messagesBody = (model, messages, extra = {}) => ({ model, max_tokens: 16384, stream: true, messages, ...extra });
 
 async function toolLoop(target, fetchImpl, thinking) {
   const extra = { tools: [TOOL], output_config: { effort: 'medium' }, ...(thinking ? { thinking: { type: 'adaptive' } } : {}) };

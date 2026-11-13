@@ -197,9 +197,9 @@ const HAS_WINDOWS = ['claude-subscription', 'codex-subscription'];
 /**
  * Ranks providers for a placement. Excluded providers stay in the list with their reason, so the decision file can
  * say why a provider was not in the menu. Reasons, in the order they are tested: unsupported (a kind that cannot run
- * this step), model-not-served, disabled, project-not-listed (its projects list does not name this project),
- * not-offered (placement: false: only the owner's placement uses it), no-key, needs-login (no probe of the last
- * twelve hours said ready),
+ * this step), model-not-served, disabled, project-not-listed (its projects list does not name this project), no-key,
+ * not-offered (placement: false: only the owner's placement uses it), needs-login (no probe of the last twelve hours
+ * said ready),
  * usage-ceiling (a subscription at or over its ceilingPct in either current window), paid-not-allowed. Order:
  * eligible first, then subscriptions before metered providers, then known usage before unknown, then lower effective
  * usage, then lower weekly usage, then name.
@@ -215,8 +215,8 @@ export function rankProviders({ providers, state, kinds, model, project, keyRead
     else if (model && !provider.models.some((m) => m.id === model)) reason = 'model-not-served';
     else if (!provider.enabled) reason = 'disabled';
     else if (!projectListed(provider, project)) reason = 'project-not-listed';
-    else if (provider.placement === false) reason = 'not-offered';
     else if (!keyReady(provider)) reason = 'no-key';
+    else if (provider.placement === false) reason = 'not-offered';
     else if (entry?.auth !== 'ready') reason = 'needs-login';
     else if (windows.some((value) => value >= provider.ceilingPct)) reason = 'usage-ceiling';
     return {
